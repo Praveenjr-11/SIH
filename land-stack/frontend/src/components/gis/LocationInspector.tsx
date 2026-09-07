@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { calculateGeodesicZoneMetrics } from "@/utils/gisGeometry";
 import { ClickedLocation } from "@/types/gis";
 import { fetchGisLocation, fetchLocationAnalysis } from "@/services/gisAnalysisService";
 import { MapPin, Copy, Check, X, Compass, Loader2, Building2, Layers, ShieldCheck, HardHat } from "lucide-react";
@@ -106,6 +107,7 @@ export default function LocationInspector({ location, onClear }: LocationInspect
       };
 
   const zoning = analysisData?.zoningMarking || fallbackZoning;
+  const zoneMetrics = calculateGeodesicZoneMetrics(location.lat, location.lng, 0.008, 0.008);
 
   return (
     <div className="absolute bottom-6 left-6 z-20 w-80 md:w-96 bg-white/95 backdrop-blur-xl border border-slate-200 p-5 rounded-3xl shadow-2xl space-y-3.5 transition-all animate-in fade-in slide-in-from-bottom-3 text-slate-900">
@@ -175,23 +177,23 @@ export default function LocationInspector({ location, onClear }: LocationInspect
           </p>
         </div>
 
-        {/* EXPANDED PERIMETER METRICS */}
+        {/* EXACT GEODESIC ZONE PERIMETER & AREA METRICS */}
         <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 space-y-1.5 font-mono text-[10px] text-slate-800 shadow-2xs">
           <div className="flex items-center justify-between text-blue-900 font-bold border-b border-blue-200/80 pb-1">
-            <span>EXPANDED ZONE PERIMETER</span>
-            <span className="text-emerald-700 font-bold">7.10 km (7,100 m)</span>
+            <span>ZONE BOUNDARY PERIMETER</span>
+            <span className="text-emerald-700 font-bold">{zoneMetrics.perimeterKm} km ({zoneMetrics.perimeterMeters.toLocaleString()} m)</span>
           </div>
           <div className="flex justify-between items-center text-slate-600">
-            <span>Enclosed Surface Area:</span>
-            <span className="font-bold text-slate-900">778.5 Acres (315 Ha)</span>
+            <span>Enclosed Zone Area:</span>
+            <span className="font-bold text-slate-900">{zoneMetrics.areaAcres} Acres ({zoneMetrics.areaHectares} Ha / {zoneMetrics.areaSqKm} km²)</span>
           </div>
           <div className="flex justify-between items-center text-slate-600">
-            <span>Radial Buffer Radius:</span>
-            <span className="font-bold text-indigo-900 font-mono">± 880m Buffer Scope</span>
+            <span>Radial Scope:</span>
+            <span className="font-bold text-indigo-900 font-mono">± {zoneMetrics.radialBufferMeters}m Corner Radius</span>
           </div>
           <div className="flex justify-between items-center text-slate-500 text-[9px]">
             <span>Bounds:</span>
-            <span className="text-slate-700 font-mono">N:{(location.lat + 0.008).toFixed(4)}° | S:{(location.lat - 0.008).toFixed(4)}°</span>
+            <span className="text-slate-700 font-mono">N:{zoneMetrics.bounds.north}° | S:{zoneMetrics.bounds.south}° | E:{zoneMetrics.bounds.east}°</span>
           </div>
         </div>
 

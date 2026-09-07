@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchLocationAnalysis } from "@/services/gisAnalysisService";
+import { calculateGeodesicZoneMetrics } from "@/utils/gisGeometry";
 import {
   Sparkles,
   ShieldCheck,
@@ -241,6 +242,7 @@ export default function AILandIntelligencePanel({ lat, lng, onClose }: AILandInt
   const court = analysis?.courtCase || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).courtCase;
   const zoning = analysis?.zoningMarking || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).zoningMarking;
   const geology = analysis?.geology || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).geology;
+  const zoneMetrics = calculateGeodesicZoneMetrics(lat || 9.43954, lng || 77.52919, 0.008, 0.008);
 
   const isDisputed = court?.status?.includes("Stay") || court?.status?.includes("Litigation");
 
@@ -423,28 +425,28 @@ export default function AILandIntelligencePanel({ lat, lng, onClose }: AILandInt
                     <span className="text-xs font-bold text-blue-950 uppercase tracking-wide">Expanded Spatial Zone Scope</span>
                   </div>
                   <span className="text-[10px] font-mono bg-blue-600 text-white font-bold px-2 py-0.5 rounded shadow-xs">
-                    7.10 km Scope
+                    {zoneMetrics.perimeterKm} km Scope
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
                   <div className="bg-white p-2 rounded-lg border border-blue-100 shadow-2xs">
                     <span className="text-slate-500 block text-[9px]">Zone Boundary Perimeter</span>
-                    <span className="text-blue-900 font-bold text-xs">7.10 km (7,100 m)</span>
+                    <span className="text-blue-900 font-bold text-xs">{zoneMetrics.perimeterKm} km ({zoneMetrics.perimeterMeters.toLocaleString()} m)</span>
                   </div>
                   <div className="bg-white p-2 rounded-lg border border-blue-100 shadow-2xs">
-                    <span className="text-slate-500 block text-[9px]">Radial Buffer Scope</span>
-                    <span className="text-emerald-700 font-bold text-xs">±880 m (0.008°)</span>
+                    <span className="text-slate-500 block text-[9px]">Radial Scope</span>
+                    <span className="text-emerald-700 font-bold text-xs">±{zoneMetrics.radialBufferMeters}m Corner Radius</span>
                   </div>
                   <div className="bg-white p-2 rounded-lg border border-blue-100 shadow-2xs col-span-2">
                     <span className="text-slate-500 block text-[9px]">Enclosed Spatial Zone Area</span>
-                    <span className="text-indigo-900 font-bold text-xs">778.5 Acres (315 Hectares / 3.15 km²)</span>
+                    <span className="text-indigo-900 font-bold text-xs">{zoneMetrics.areaAcres} Acres ({zoneMetrics.areaHectares} Ha / {zoneMetrics.areaSqKm} km²)</span>
                   </div>
                 </div>
 
                 <div className="bg-white p-2 rounded-lg text-[10px] font-mono text-slate-700 flex items-center justify-between border border-blue-200 shadow-2xs">
-                  <span>Lat Limits: {(lat - 0.008).toFixed(4)}° to {(lat + 0.008).toFixed(4)}° N</span>
-                  <span>Lng Limits: {(lng - 0.008).toFixed(4)}° to {(lng + 0.008).toFixed(4)}° E</span>
+                  <span>Lat Limits: {zoneMetrics.bounds.south}° to {zoneMetrics.bounds.north}° N</span>
+                  <span>Lng Limits: {zoneMetrics.bounds.west}° to {zoneMetrics.bounds.east}° E</span>
                 </div>
               </div>
             </div>
