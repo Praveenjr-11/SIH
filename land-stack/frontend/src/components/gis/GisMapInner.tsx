@@ -9,7 +9,7 @@ import MapClickHandler from "./MapClickHandler";
 import MapControls from "./MapControls";
 import { reverseGeocode } from "@/services/gisService";
 import { fetchLocationAnalysis } from "@/services/gisAnalysisService";
-import { resolveMasterPlanZone } from "@/utils/zoneResolver";
+import { resolveMasterPlanZone, resolveZoneWithBackendType, MasterPlanZoneConfig } from "@/utils/zoneResolver";
 
 // Fix missing marker icon issue in Leaflet + Next.js
 const defaultIcon = L.icon({
@@ -63,7 +63,7 @@ export default function GisMapInner({
   targetFlyTo,
 }: GisMapInnerProps) {
   const [basemap, setBasemap] = useState<BasemapType>("satellite");
-  const [zoneData, setZoneData] = useState<any>(null);
+  const [zoneData, setZoneData] = useState<MasterPlanZoneConfig | null>(null);
   const [analysisData, setAnalysisData] = useState<any>(null);
 
   const basemapUrls = {
@@ -85,23 +85,30 @@ export default function GisMapInner({
       return;
     }
 
-    // Always compute authentic location-driven zoning & polygon bounds
+    // Step 1: Compute zone from frontend Nominatim data (instant, no API wait)
     const resolvedZoning = resolveMasterPlanZone(
       clickedLocation.lat,
       clickedLocation.lng,
       clickedLocation.displayName,
       clickedLocation.addressDetails
     );
-
     setZoneData(resolvedZoning);
 
+    // Step 2: Fetch backend analysis (Overpass + Elevation + full data) for more accurate zone
     async function loadZone() {
       try {
         const analysis = await fetchLocationAnalysis(clickedLocation!.lat, clickedLocation!.lng);
         if (analysis) {
           setAnalysisData(analysis);
-          if (analysis.zoningMarking) {
-            setZoneData(analysis.zoningMarking);
+          if (analysis.zoningMarking?.zoneType) {
+            // Backend has a more accurate classification — recompute geometry with correct scope
+            const backendZone = resolveZoneWithBackendType(
+              clickedLocation!.lat,
+              clickedLocation!.lng,
+              analysis.zoningMarking.zoneType,
+              analysis.zoningMarking
+            );
+            setZoneData(backendZone);
           }
         }
       } catch (err) {
@@ -173,7 +180,7 @@ export default function GisMapInner({
         {/* Dynamic Zone Polygon Overlay when a Location is Clicked */}
         {clickedLocation && zoneData && zoneData.polygonCoordinates && (
           <Polygon
-            key={`zone-${clickedLocation.lat}-${clickedLocation.lng}`}
+            key={`zone-${clickedLocation.lat}-${clickedLocation.lng}-${zoneData.zoneType}`}
             positions={zoneData.polygonCoordinates}
             pathOptions={{
               color: zoneData.color || "#10b981",

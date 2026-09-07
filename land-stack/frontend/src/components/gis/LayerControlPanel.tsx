@@ -91,7 +91,7 @@ export default function LayerControlPanel({
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="bg-white/95 backdrop-blur-md border border-slate-200 px-3.5 py-2 rounded-2xl shadow-md flex items-center space-x-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors"
+            className="h-10 px-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xs flex items-center space-x-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors shrink-0"
           >
             <Layers className="w-4 h-4 text-blue-600" />
             <span>GIS Layers ({activeLayers.length})</span>
@@ -104,7 +104,7 @@ export default function LayerControlPanel({
 
           <button
             onClick={() => setIsVillageManagerOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-2xl shadow-md flex items-center space-x-1.5 text-xs font-bold transition-all hover:scale-[1.02]"
+            className="h-10 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl shadow-xs flex items-center space-x-1.5 text-xs font-bold transition-all shrink-0"
           >
             <Building2 className="w-3.5 h-3.5" />
             <span>Village Boundaries ZIP</span>

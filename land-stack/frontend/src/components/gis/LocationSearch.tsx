@@ -6,7 +6,7 @@ import { searchLocations } from "@/services/gisService";
 import { SearchResult } from "@/types/gis";
 
 interface LocationSearchProps {
-  onSelectLocation: (lat: number, lng: number, displayName: string) => void;
+  onSelectLocation: (lat: number, lng: number, displayName: string, addressDetails?: any) => void;
 }
 
 export default function LocationSearch({ onSelectLocation }: LocationSearchProps) {
@@ -49,7 +49,7 @@ export default function LocationSearch({ onSelectLocation }: LocationSearchProps
   const handleSelect = (item: SearchResult) => {
     const lat = parseFloat(item.lat);
     const lng = parseFloat(item.lon);
-    onSelectLocation(lat, lng, item.display_name);
+    onSelectLocation(lat, lng, item.display_name, item.address);
     setIsOpen(false);
     setQuery(item.display_name.split(",")[0]); // Show concise name in search input
   };
@@ -61,10 +61,10 @@ export default function LocationSearch({ onSelectLocation }: LocationSearchProps
   };
 
   return (
-    <div ref={dropdownRef} className="relative w-80 md:w-96">
+    <div ref={dropdownRef} className="relative w-full sm:w-72 md:w-80 lg:w-96 flex-1 sm:flex-initial">
       {/* Search Input Box */}
-      <div className="relative flex items-center bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl shadow-md px-3.5 py-2.5 transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500">
-        <Search className="w-4 h-4 text-slate-400 mr-2 flex-shrink-0" />
+      <div className="relative flex items-center h-10 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xs px-3 transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500">
+        <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
         <input
           type="text"
           value={query}
@@ -72,11 +72,11 @@ export default function LocationSearch({ onSelectLocation }: LocationSearchProps
           placeholder="Search location across India..."
           className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
         />
-        {loading && <Loader2 className="w-4 h-4 text-blue-600 animate-spin ml-2 flex-shrink-0" />}
+        {loading && <Loader2 className="w-4 h-4 text-blue-600 animate-spin ml-2 shrink-0" />}
         {query && !loading && (
           <button
             onClick={handleClear}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-full transition-colors ml-1"
+            className="p-1 text-slate-400 hover:text-slate-600 rounded-full transition-colors ml-1 shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>

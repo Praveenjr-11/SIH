@@ -23,9 +23,24 @@ export interface ClickedLocation {
   lng: number;
   displayName?: string;
   addressDetails?: {
-    villageOrCity?: string;
+    village?: string;
+    hamlet?: string;
+    town?: string;
+    city?: string;
+    suburb?: string;
+    neighbourhood?: string;
+    county?: string;
     district?: string;
+    subdistrict?: string;
+    state_district?: string;
     state?: string;
+    postcode?: string;
+    country?: string;
+    category?: string;
+    type?: string;
+    landuse?: string;
+    // Legacy compat
+    villageOrCity?: string;
     pincode?: string;
   };
   loading?: boolean;

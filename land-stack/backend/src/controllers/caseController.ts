@@ -180,7 +180,7 @@ export async function getCaseDetails(req: AuthenticatedRequest, res: Response) {
       spatial.cadastralParcel.ownerName = foundCase.ownerName;
       spatial.cadastralParcel.areaAcres = foundCase.areaAcres;
       spatial.cadastralParcel.landClassification = foundCase.landClassification;
-      spatial.cadastralParcel.currentLandUse = foundCase.currentUse;
+      (spatial.cadastralParcel as any).currentLandUse = foundCase.currentUse;
       spatial.administrative.district = foundCase.district;
       spatial.administrative.subdistrict = foundCase.taluk;
       spatial.administrative.village = foundCase.village;
@@ -205,9 +205,9 @@ export async function getCaseDetails(req: AuthenticatedRequest, res: Response) {
         ownerName: foundCase ? foundCase.ownerName : spatial.cadastralParcel.ownerName,
         pattaNumber: foundCase ? foundCase.pattaNumber : 'PATTA-3121-TN',
         areaAcres: foundCase ? foundCase.areaAcres : spatial.cadastralParcel.areaAcres,
-        areaSqMeters: foundCase ? foundCase.areaSqMeters : Math.round(spatial.cadastralParcel.areaAcres * 4046.86),
+        areaSqMeters: foundCase ? foundCase.areaSqMeters : Math.round((spatial.cadastralParcel.areaAcres || 0) * 4046.86),
         landClassification: foundCase ? foundCase.landClassification : spatial.cadastralParcel.landClassification,
-        currentUse: foundCase ? foundCase.currentUse : spatial.cadastralParcel.currentLandUse,
+        currentUse: foundCase ? foundCase.currentUse : (spatial.cadastralParcel as any).currentLandUse,
         district: foundCase ? foundCase.district : spatial.administrative.district,
         taluk: foundCase ? foundCase.taluk : spatial.administrative.subdistrict,
         village: foundCase ? foundCase.village : spatial.administrative.village,

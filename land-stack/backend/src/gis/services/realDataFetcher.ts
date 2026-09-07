@@ -411,10 +411,13 @@ export function classifyZoneFromRealData(
   const subdistrict = (nominatimData?.subdistrict || '').toLowerCase();
   const district = (nominatimData?.district || '').toLowerCase();
 
-  const text = `${displayName} ${category} ${placeType} ${village} ${subdistrict} ${district} ${landUse}`;
+  // Include nearby amenity names for richer keyword matching
+  const amenityNames = (landUseData?.amenities || []).map((a: any) => `${a.type || ''} ${a.name || ''}`).join(' ').toLowerCase();
 
-  // 1. Healthcare & Medical Zone (Hospitals, Clinics, Health Centers)
-  const healthcareKeywords = ['hospital', 'healthcare', 'clinic', 'nursing home', 'medical center', 'medical college', 'dispensary', 'health center', 'phc', 'sanatorium', 'trauma', 'ambulance', 'apollo', 'fortis', 'aiims', 'manipal'];
+  const text = `${displayName} ${category} ${placeType} ${village} ${subdistrict} ${district} ${landUse} ${amenityNames}`;
+
+  // 1. Healthcare & Medical Zone
+  const healthcareKeywords = ['hospital', 'healthcare', 'clinic', 'nursing home', 'medical center', 'medical college', 'dispensary', 'health center', 'phc', 'sanatorium', 'trauma', 'ambulance', 'apollo', 'fortis', 'aiims', 'manipal', 'kauvery', 'narayana', 'aster', 'blood bank', 'diagnostic', 'pathology'];
   if (healthcareKeywords.some(k => text.includes(k)) || category === 'healthcare' || category === 'hospital') {
     return {
       zoneType: 'HEALTHCARE_ZONE',
@@ -428,8 +431,8 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 2. Educational & Institutional Zone (Schools, Colleges, Universities)
-  const eduKeywords = ['school', 'college', 'university', 'institute', 'academy', 'polytechnic', 'campus', 'vidyalaya', 'matriculation', 'convent', 'educational', 'iit', 'nit', 'bits', 'iim', 'iiit', 'high school', 'primary school'];
+  // 2. Educational & Institutional Zone
+  const eduKeywords = ['school', 'college', 'university', 'institute', 'academy', 'polytechnic', 'campus', 'vidyalaya', 'matriculation', 'convent', 'educational', 'iit', 'nit', 'bits', 'iim', 'iiit', 'high school', 'primary school', 'kindergarten', 'cbse', 'icse', 'kendriya', 'navodaya'];
   if (eduKeywords.some(k => text.includes(k)) || category === 'school' || category === 'college' || category === 'university' || landUse === 'education') {
     return {
       zoneType: 'INSTITUTIONAL_ZONE',
@@ -443,8 +446,53 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 3. Water Reserve
-  const waterKeywords = ['lake', 'river', 'water', 'sea', 'ocean', 'beach', 'dam', 'reservoir', 'basin', 'canal', 'kulam', 'nadi', 'erikarai', 'pond', 'wetland', 'coast', 'creek', 'stream'];
+  // 3. Government & Civic Zone
+  const governmentKeywords = ['collectorate', 'taluk office', 'tahsildar', 'sub-registrar', 'sro', 'court', 'government', 'municipality', 'corporation', 'panchayat', 'block development', 'revenue office', 'district office', 'police station', 'fire station', 'post office', 'secretariat', 'registrar', 'treasury', 'rto', 'jail', 'prison', 'cantonment', 'military', 'army', 'navy', 'air force', 'defence'];
+  if (governmentKeywords.some(k => text.includes(k)) || category === 'government' || category === 'office') {
+    return {
+      zoneType: 'GOVERNMENT_ZONE',
+      zoneTitle: '🏛️ GOVERNMENT & CIVIC ZONE',
+      color: '#7c3aed',
+      fillColor: '#a78bfa',
+      permissibleUse: 'Government Offices, Civic Administration, Courts, Revenue & Regulatory Bodies',
+      fsiLimit: '2.00 FSI (Govt Special)',
+      maxBuildingHeight: '30.0 Meters (G+9)',
+      constructionPolicy: 'State / Central Government Authorized Construction Zone',
+    };
+  }
+
+  // 4. Transport & Infrastructure Hub
+  const transportKeywords = ['railway station', 'airport', 'aerodrome', 'bus terminal', 'bus depot', 'port', 'harbor', 'harbour', 'metro station', 'freight', 'cargo', 'transit hub'];
+  if (transportKeywords.some(k => text.includes(k)) || category === 'railway' || category === 'aeroway') {
+    return {
+      zoneType: 'TRANSPORT_HUB',
+      zoneTitle: '🚉 TRANSPORT & INFRASTRUCTURE HUB',
+      color: '#0891b2',
+      fillColor: '#22d3ee',
+      permissibleUse: 'Railways, Airports, Bus Terminals, National Highways & Freight Corridors',
+      fsiLimit: '2.00 FSI (Infrastructure)',
+      maxBuildingHeight: '24.0 Meters (Transit Oriented)',
+      constructionPolicy: 'National Infrastructure Pipeline — Central / State Transit Authority Zone',
+    };
+  }
+
+  // 5. Religious & Heritage Zone
+  const religiousKeywords = ['temple', 'kovil', 'mandir', 'church', 'cathedral', 'mosque', 'masjid', 'dargah', 'gurudwara', 'monastery', 'ashram', 'math', 'mutt', 'shrine', 'tomb', 'memorial', 'fort', 'palace', 'heritage', 'monument', 'archaeological', 'asi', 'museum', 'pilgrimage', 'devasthanam'];
+  if (religiousKeywords.some(k => text.includes(k)) || category === 'place_of_worship' || category === 'historic' || category === 'tourism') {
+    return {
+      zoneType: 'RELIGIOUS_HERITAGE',
+      zoneTitle: '🛕 RELIGIOUS & HERITAGE ZONE',
+      color: '#dc2626',
+      fillColor: '#f87171',
+      permissibleUse: 'Religious Institutions, Heritage Conservation, Pilgrimage Tourism',
+      fsiLimit: '1.00 FSI (Heritage Restricted)',
+      maxBuildingHeight: '12.0 Meters (G+2)',
+      constructionPolicy: 'ASI / State Heritage Conservation Authority Restrictions Apply',
+    };
+  }
+
+  // 6. Water Reserve
+  const waterKeywords = ['lake', 'river', 'water', 'sea', 'ocean', 'beach', 'dam', 'reservoir', 'basin', 'canal', 'kulam', 'nadi', 'erikarai', 'pond', 'wetland', 'coast', 'creek', 'stream', 'falls', 'waterfall', 'backwater', 'estuary'];
   if (waterCount > 0 || waterKeywords.some(w => text.includes(w)) || category === 'waterway' || category === 'natural') {
     return {
       zoneType: 'ECO_WATER_RESERVE',
@@ -458,8 +506,8 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 4. Forest / Protected Reserve
-  const forestKeywords = ['forest', 'reserve forest', 'sanctuary', 'national park', 'jungle', 'kadu', 'vana', 'wildlife', 'wood'];
+  // 7. Forest / Protected Reserve
+  const forestKeywords = ['forest', 'reserve forest', 'sanctuary', 'national park', 'jungle', 'kadu', 'vana', 'wildlife', 'wood', 'biosphere', 'tiger reserve', 'mangrove', 'shola'];
   if (forestKeywords.some(f => text.includes(f)) || landUse === 'forest' || landUse === 'nature_reserve') {
     return {
       zoneType: 'FOREST_RESERVE',
@@ -473,8 +521,8 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 5. Hill Station / Eco Sensitive Zone (Ooty, Kodaikanal, Coorg, Himalayas)
-  const hillKeywords = ['hill station', 'mountain peak', 'ghat reserve', 'shola forest', 'high range'];
+  // 8. Hill Station / Eco Sensitive Zone
+  const hillKeywords = ['hill station', 'mountain', 'peak', 'ghat', 'shola', 'high range', 'ooty', 'kodaikanal', 'coorg', 'munnar', 'yercaud', 'coonoor', 'valparai', 'shimla', 'manali', 'darjeeling'];
   if ((elevationM > 1400 && !village && !subdistrict) || hillKeywords.some(h => text.includes(h))) {
     return {
       zoneType: 'HILL_ECO_ZONE',
@@ -488,8 +536,8 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 6. Manufacturing / Industrial Hub
-  const industrialKeywords = ['industrial', 'factory', 'sipcot', 'midc', 'gidc', 'riico', 'kiadb', 'tidco', 'estate', 'tech park', 'sez', 'manufacturing', 'steel', 'auto', 'assembly', 'mill', 'power plant', 'refinery', 'warehouse', 'logistics', 'foundry', 'processing', 'depot', 'sidco'];
+  // 9. Manufacturing / Industrial Hub
+  const industrialKeywords = ['industrial', 'factory', 'sipcot', 'midc', 'gidc', 'riico', 'kiadb', 'tidco', 'estate', 'tech park', 'sez', 'manufacturing', 'steel', 'auto', 'assembly', 'mill', 'power plant', 'refinery', 'warehouse', 'logistics', 'foundry', 'processing', 'depot', 'sidco', 'bhel', 'it park', 'technopark', 'elcot'];
   if (industrialKeywords.some(k => text.includes(k)) || category === 'industrial' || landUse === 'industrial' || landUse === 'quarry' || landUse === 'construction') {
     return {
       zoneType: 'MANUFACTURING_HUB',
@@ -503,8 +551,8 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 7. Commercial Business Zone
-  const commercialKeywords = ['commercial', 'retail', 'mall', 'market', 'bazaar', 'plaza', 'tower', 'complex', 'shopping', 'bank', 'hotel', 'centre', 'center', 'office', 'mart', 'junction', 'broadway', 'bus stand', 'station', 'supermarket', 'store', 'showroom'];
+  // 10. Commercial Business Zone
+  const commercialKeywords = ['commercial', 'retail', 'mall', 'market', 'bazaar', 'plaza', 'tower', 'complex', 'shopping', 'bank', 'hotel', 'centre', 'center', 'office', 'mart', 'junction', 'broadway', 'bus stand', 'station', 'supermarket', 'store', 'showroom', 'cinema', 'restaurant', 'cafe', 'petrol pump', 'fuel', 'atm'];
   if (commercialKeywords.some(k => text.includes(k)) || category === 'commercial' || category === 'shop' || category === 'amenity' || landUse === 'commercial' || landUse === 'retail') {
     return {
       zoneType: 'COMMERCIAL_HUB',
@@ -518,8 +566,8 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 8. Residential Living Zone (Urban Areas with nagar, colony, layout, street, suburb, ward, city)
-  const residentialKeywords = ['nagar', 'colony', 'puram', 'layout', 'apartments', 'society', 'sector', 'vihar', 'enclave', 'villa', 'housing', 'phase', 'block', 'street', 'road', 'lane', 'suburb', 'neighbourhood', 'ward', 'city', 'town', 'residence', 'gali', 'palli', 'cross'];
+  // 11. Residential Living Zone
+  const residentialKeywords = ['nagar', 'colony', 'puram', 'layout', 'apartments', 'society', 'sector', 'vihar', 'enclave', 'villa', 'housing', 'phase', 'block', 'street', 'road', 'lane', 'suburb', 'neighbourhood', 'ward', 'city', 'town', 'residence', 'gali', 'palli', 'cross', 'pet', 'pettai', 'theru', 'salai', 'mohalla'];
   const isUrbanSettlement = residentialKeywords.some(k => text.includes(k)) || category === 'place' || category === 'building' || category === 'residential' || landUse === 'residential' || landUse === 'built-up';
   
   if (isUrbanSettlement) {
@@ -535,7 +583,7 @@ export function classifyZoneFromRealData(
     };
   }
 
-  // 9. Default: Agricultural Green Belt (For rural farmland & open village land)
+  // 12. Default: Agricultural Green Belt
   return {
     zoneType: 'AGRI_ZONE',
     zoneTitle: '🌾 AGRICULTURAL GREEN BELT',

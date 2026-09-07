@@ -38,7 +38,7 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
   ]);
   const [showAIPanel, setShowAIPanel] = useState(false);
 
-  const handleSelectLocationFromSearch = (lat: number, lng: number, displayName: string) => {
+  const handleSelectLocationFromSearch = (lat: number, lng: number, displayName: string, addressDetails?: any) => {
     // Set target coordinates for map flyTo animation
     setTargetFlyTo({ lat, lng, zoom: 13 });
 
@@ -47,6 +47,7 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
       lat,
       lng,
       displayName,
+      addressDetails,
       loading: false,
     });
 
@@ -76,7 +77,7 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Top Floating GIS Control Bar */}
-      <div className="absolute top-4 left-6 z-20 flex items-center space-x-3">
+      <div className="absolute top-3 left-3 sm:left-4 z-30 flex flex-wrap items-center gap-2 max-w-[calc(100vw-2rem)]">
         <LocationSearch onSelectLocation={handleSelectLocationFromSearch} />
         <AdministrativeBoundarySelector onSelectBoundary={handleSelectBoundary} />
         <LayerControlPanel activeLayers={activeLayers} onToggleLayer={handleToggleLayer} />
@@ -105,6 +106,8 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
         <AILandIntelligencePanel
           lat={clickedLocation.lat}
           lng={clickedLocation.lng}
+          displayName={clickedLocation.displayName}
+          addressDetails={clickedLocation.addressDetails}
           onClose={() => setShowAIPanel(false)}
         />
       )}

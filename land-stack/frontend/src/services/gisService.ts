@@ -37,16 +37,20 @@ export async function searchLocations(query: string): Promise<SearchResult[]> {
 }
 
 /**
- * Reverse geocode clicked latitude and longitude to get place name & location details
+ * Reverse geocode clicked latitude and longitude to get FULL place details.
+ * Returns all Nominatim fields so zoneResolver can do accurate keyword matching.
  */
 export async function reverseGeocode(lat: number, lng: number): Promise<Partial<ClickedLocation>> {
   try {
     const params = new URLSearchParams({
-      format: "json",
+      format: "jsonv2",
       lat: lat.toString(),
       lon: lng.toString(),
       addressdetails: "1",
-      zoom: "14",
+      extratags: "1",
+      namedetails: "1",
+      zoom: "18",
+      "accept-language": "en",
     });
 
     const response = await fetch(`${NOMINATIM_BASE}/reverse?${params.toString()}`, {
@@ -62,19 +66,32 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Partial<
 
     const data = await response.json();
     const addr = data.address || {};
-
-    const villageOrCity = addr.village || addr.town || addr.city || addr.suburb || addr.neighbourhood || "Unknown Area";
-    const district = addr.county || addr.state_district || addr.district || "";
-    const state = addr.state || "India";
-    const pincode = addr.postcode || "";
+    const extratags = data.extratags || {};
 
     return {
       displayName: data.display_name || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`,
       addressDetails: {
-        villageOrCity,
-        district,
-        state,
-        pincode,
+        // Full Nominatim address fields
+        village: addr.village || addr.hamlet || null,
+        hamlet: addr.hamlet || null,
+        town: addr.town || null,
+        city: addr.city || null,
+        suburb: addr.suburb || null,
+        neighbourhood: addr.neighbourhood || null,
+        county: addr.county || null,
+        district: addr.county || addr.state_district || addr.city_district || null,
+        subdistrict: addr.suburb || addr.town || addr.city || addr.municipality || null,
+        state_district: addr.state_district || null,
+        state: addr.state || "India",
+        postcode: addr.postcode || null,
+        country: addr.country || "India",
+        // OSM classification fields — critical for zone identification
+        category: data.category || null,
+        type: data.type || null,
+        landuse: extratags?.landuse || extratags?.["land_use"] || addr.landuse || null,
+        // Legacy compat
+        villageOrCity: addr.village || addr.town || addr.city || addr.suburb || addr.neighbourhood || "Unknown Area",
+        pincode: addr.postcode || null,
       },
     };
   } catch (error) {
