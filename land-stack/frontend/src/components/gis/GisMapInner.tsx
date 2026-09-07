@@ -9,6 +9,7 @@ import MapClickHandler from "./MapClickHandler";
 import MapControls from "./MapControls";
 import { reverseGeocode } from "@/services/gisService";
 import { fetchLocationAnalysis } from "@/services/gisAnalysisService";
+import { resolveMasterPlanZone } from "@/utils/zoneResolver";
 
 // Fix missing marker icon issue in Leaflet + Next.js
 const defaultIcon = L.icon({
@@ -84,6 +85,16 @@ export default function GisMapInner({
       return;
     }
 
+    // Always compute authentic location-driven zoning & polygon bounds
+    const resolvedZoning = resolveMasterPlanZone(
+      clickedLocation.lat,
+      clickedLocation.lng,
+      clickedLocation.displayName,
+      clickedLocation.addressDetails
+    );
+
+    setZoneData(resolvedZoning);
+
     async function loadZone() {
       try {
         const analysis = await fetchLocationAnalysis(clickedLocation!.lat, clickedLocation!.lng);
@@ -99,7 +110,7 @@ export default function GisMapInner({
     }
 
     loadZone();
-  }, [clickedLocation?.lat, clickedLocation?.lng]);
+  }, [clickedLocation?.lat, clickedLocation?.lng, clickedLocation?.displayName]);
 
   const handleMapClick = async (lat: number, lng: number) => {
     setClickedLocation({

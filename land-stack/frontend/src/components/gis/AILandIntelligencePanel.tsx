@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchLocationAnalysis } from "@/services/gisAnalysisService";
 import { calculateGeodesicZoneMetrics } from "@/utils/gisGeometry";
+import { resolveMasterPlanZone } from "@/utils/zoneResolver";
 import {
   Sparkles,
   ShieldCheck,
@@ -237,12 +238,19 @@ export default function AILandIntelligencePanel({ lat, lng, onClose }: AILandInt
     runAnalysis();
   }, [lat, lng]);
 
+  const resolvedZone = resolveMasterPlanZone(
+    lat,
+    lng,
+    analysis?.administration?.displayName || analysis?.administration?.village,
+    analysis?.administration
+  );
+
   const survey = analysis?.cadastralSurvey || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).cadastralSurvey;
   const tax = analysis?.propertyTax || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).propertyTax;
   const court = analysis?.courtCase || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).courtCase;
-  const zoning = analysis?.zoningMarking || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).zoningMarking;
+  const zoning = analysis?.zoningMarking || resolvedZone;
   const geology = analysis?.geology || createFallbackAnalysis(lat || 9.43954, lng || 77.52919).geology;
-  const zoneMetrics = calculateGeodesicZoneMetrics(lat || 9.43954, lng || 77.52919, 0.008, 0.008);
+  const zoneMetrics = resolvedZone.metrics;
 
   const isDisputed = court?.status?.includes("Stay") || court?.status?.includes("Litigation");
 

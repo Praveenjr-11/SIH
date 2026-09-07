@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { calculateGeodesicZoneMetrics } from "@/utils/gisGeometry";
+import { resolveMasterPlanZone } from "@/utils/zoneResolver";
 import { ClickedLocation } from "@/types/gis";
 import { fetchGisLocation, fetchLocationAnalysis } from "@/services/gisAnalysisService";
 import { MapPin, Copy, Check, X, Compass, Loader2, Building2, Layers, ShieldCheck, HardHat } from "lucide-react";
@@ -48,66 +48,15 @@ export default function LocationInspector({ location, onClear }: LocationInspect
   };
 
   const admin = gisLocationData;
-  const latHash = Math.abs(Math.floor(location.lat * 100000));
-  const lngHash = Math.abs(Math.floor(location.lng * 100000));
-  const spatialSig = (latHash * 13 + lngHash * 23) % 100;
+  const resolvedZone = resolveMasterPlanZone(
+    location.lat,
+    location.lng,
+    location.displayName,
+    location.addressDetails
+  );
 
-  const fallbackZoning = spatialSig < 15
-    ? {
-        zoneType: "MANUFACTURING_HUB",
-        zoneTitle: "🏭 MANUFACTURING / INDUSTRIAL HUB",
-        color: "#8b5cf6",
-        permissibleUse: "Factories, Automobile Assembly, Engineering Sheds & Logistics Hubs",
-        fsiLimit: "2.50 FSI",
-        maxBuildingHeight: "30.0 Meters",
-      }
-    : spatialSig < 22
-    ? {
-        zoneType: "HEALTHCARE_ZONE",
-        zoneTitle: "🏥 HEALTHCARE & MEDICAL ZONE",
-        color: "#ec4899",
-        permissibleUse: "Multi-Specialty Hospitals, Medical Research Centers & Clinics",
-        fsiLimit: "2.25 FSI",
-        maxBuildingHeight: "30.0 Meters",
-      }
-    : spatialSig < 32
-    ? {
-        zoneType: "INSTITUTIONAL_ZONE",
-        zoneTitle: "🏫 INSTITUTIONAL & EDUCATIONAL ZONE",
-        color: "#f59e0b",
-        permissibleUse: "Universities, Engineering Colleges, Schools & Research Labs",
-        fsiLimit: "2.00 FSI",
-        maxBuildingHeight: "24.0 Meters",
-      }
-    : spatialSig < 52
-    ? {
-        zoneType: "COMMERCIAL_HUB",
-        zoneTitle: "🏢 COMMERCIAL BUSINESS ZONE",
-        color: "#2563eb",
-        permissibleUse: "Corporate Offices, Malls, Retail Centers & Hotels",
-        fsiLimit: "2.50 FSI",
-        maxBuildingHeight: "36.0 Meters",
-      }
-    : spatialSig < 78
-    ? {
-        zoneType: "LIVING_ZONE",
-        zoneTitle: "🏡 RESIDENTIAL LIVING ZONE",
-        color: "#06b6d4",
-        permissibleUse: "Housing Colonies, Apartments, Parks & Local Shops",
-        fsiLimit: "1.75 FSI",
-        maxBuildingHeight: "18.0 Meters",
-      }
-    : {
-        zoneType: "AGRI_ZONE",
-        zoneTitle: "🌾 AGRICULTURAL GREEN BELT",
-        color: "#059669",
-        permissibleUse: "Organic Agriculture, Crop Farming & Agro-Storage Sheds",
-        fsiLimit: "0.25 FSI",
-        maxBuildingHeight: "9.0 Meters",
-      };
-
-  const zoning = analysisData?.zoningMarking || fallbackZoning;
-  const zoneMetrics = calculateGeodesicZoneMetrics(location.lat, location.lng, 0.008, 0.008);
+  const zoning = analysisData?.zoningMarking || resolvedZone;
+  const zoneMetrics = resolvedZone.metrics;
 
   return (
     <div className="absolute bottom-6 left-6 z-20 w-80 md:w-96 bg-white/95 backdrop-blur-xl border border-slate-200 p-5 rounded-3xl shadow-2xl space-y-3.5 transition-all animate-in fade-in slide-in-from-bottom-3 text-slate-900">
