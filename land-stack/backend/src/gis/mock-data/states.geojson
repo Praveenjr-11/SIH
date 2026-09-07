@@ -1,0 +1,55 @@
+{
+  "type": "FeatureCollection",
+  "name": "states",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "state_code": "TN", "state_name": "Tamil Nadu", "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[76.2, 8.0], [80.3, 8.0], [80.3, 13.5], [76.2, 13.5], [76.2, 8.0]]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "state_code": "MH", "state_name": "Maharashtra", "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[72.6, 15.6], [80.9, 15.6], [80.9, 22.0], [72.6, 22.0], [72.6, 15.6]]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "state_code": "KA", "state_name": "Karnataka", "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[74.0, 11.5], [78.6, 11.5], [78.6, 18.4], [74.0, 18.4], [74.0, 11.5]]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "state_code": "DL", "state_name": "Delhi NCR", "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[76.8, 28.4], [77.4, 28.4], [77.4, 28.9], [76.8, 28.9], [76.8, 28.4]]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "state_code": "GJ", "state_name": "Gujarat", "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[68.5, 20.0], [74.5, 20.0], [74.5, 24.8], [68.5, 24.8], [68.5, 20.0]]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "state_code": "RJ", "state_name": "Rajasthan", "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[69.5, 23.5], [78.2, 23.5], [78.2, 30.2], [69.5, 30.2], [69.5, 23.5]]]]
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "name": "risk-zones",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "hazard_type": "Flood Inundation", "risk_level": "Moderate", "description": "Monsoonal drainage basin inundation buffer", "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[79.93, 12.96], [79.95, 12.96], [79.95, 12.98], [79.93, 12.98], [79.93, 12.96]]]]
+      }
+    }
+  ]
+}

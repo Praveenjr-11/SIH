@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "name": "waterbodies",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Sriperumbudur Lake Catchment Basin", "water_type": "Reservoir", "buffer_zone_meters": 50, "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[79.93, 12.96], [79.95, 12.96], [79.95, 12.98], [79.93, 12.98], [79.93, 12.96]]]]
+      }
+    }
+  ]
+}

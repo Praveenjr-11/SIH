@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "name": "geology",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "rock_formation": "Charnockite & Peninsular Gneissic Complex",
+        "lithology": "Weathered Charnockitic Massif",
+        "geomorphology_unit": "Pediment Plain with Shallow Regolith",
+        "bearing_capacity_kpa": 280,
+        "gsi_report_id": "GSI-MOCK-SRIPERUMBUDUR-2024",
+        "source": "MOCK_GSI"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[79.94, 12.94], [79.98, 12.94], [79.98, 12.98], [79.94, 12.98], [79.94, 12.94]]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "rock_formation": "Deccan Trap Basaltic Lava Flows",
+        "lithology": "Hard Amygdaloidal Basalt",
+        "geomorphology_unit": "Structural Plateau",
+        "bearing_capacity_kpa": 310,
+        "gsi_report_id": "GSI-MOCK-DECCAN-2024",
+        "source": "MOCK_GSI"
+      },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[73.3, 18.1], [74.5, 18.1], [74.5, 19.2], [73.3, 19.2], [73.3, 18.1]]]]
+      }
+    }
+  ]
+}

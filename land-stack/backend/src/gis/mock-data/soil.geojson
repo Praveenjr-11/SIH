@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "name": "soil",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "soil_type": "Red Sandy Loam", "texture": "Gravelly Sandy Loam", "permeability": "Moderate", "bearing_capacity_kpa": 250, "source": "MOCK_SURVEY" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [[[[79.90, 12.90], [79.99, 12.90], [79.99, 12.99], [79.90, 12.99], [79.90, 12.90]]]]
+      }
+    }
+  ]
+}
