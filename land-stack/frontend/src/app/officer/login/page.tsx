@@ -61,7 +61,7 @@ export default function OfficerLoginPage() {
           phone: "044-27237433",
           badgeNo: data.officer.badge_number || "TN-GOV-2026",
           department: data.officer.department || "Revenue & Disaster Management"
-        });
+        }, data.token);
         router.push("/officer/dashboard");
       } else {
         const matched = PRESET_OFFICERS.find(p => p.email.toLowerCase() === email.toLowerCase()) || PRESET_OFFICERS[0];

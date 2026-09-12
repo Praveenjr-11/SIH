@@ -14,6 +14,7 @@ export async function searchLocations(query: string): Promise<SearchResult[]> {
       q: query.trim(),
       countrycodes: "in", // Filter for India
       addressdetails: "1",
+      polygon_geojson: "1", // Get actual boundary polygon for districts/cities
       limit: "6",
     });
 
@@ -49,6 +50,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Partial<
       addressdetails: "1",
       extratags: "1",
       namedetails: "1",
+      polygon_geojson: "1",
       zoom: "18",
       "accept-language": "en",
     });
@@ -70,6 +72,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Partial<
 
     return {
       displayName: data.display_name || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`,
+      geojson: data.geojson || null,
       addressDetails: {
         // Full Nominatim address fields
         village: addr.village || addr.hamlet || null,

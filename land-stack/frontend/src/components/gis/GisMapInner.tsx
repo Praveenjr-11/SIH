@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip, useMap, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import { Parcel } from "@/types";
 import { ClickedLocation, BasemapType } from "@/types/gis";
@@ -142,6 +142,13 @@ export default function GisMapInner({
   const court = analysisData?.courtCase;
   const admin = analysisData?.administration;
 
+  // Determine if the clicked location is a broad administrative region boundary
+  const locCategory = (clickedLocation?.addressDetails?.category || "").toLowerCase();
+  const locType = (clickedLocation?.addressDetails?.type || "").toLowerCase();
+  const isState = locCategory === "boundary" && (locType === "state" || locType === "country");
+  const isDistrict = locCategory === "boundary" && (locType === "state_district" || locType === "county" || locType === "region" || locType === "administrative");
+  const isRegion = isState || isDistrict;
+
   return (
     <div className="w-full h-full relative">
       <MapContainer
@@ -178,25 +185,52 @@ export default function GisMapInner({
         <MapControls currentBasemap={basemap} onSelectBasemap={(b) => setBasemap(b)} />
 
         {/* Dynamic Zone Polygon Overlay when a Location is Clicked */}
-        {clickedLocation && zoneData && zoneData.polygonCoordinates && (
-          <Polygon
-            key={`zone-${clickedLocation.lat}-${clickedLocation.lng}-${zoneData.zoneType}`}
-            positions={zoneData.polygonCoordinates}
-            pathOptions={{
-              color: zoneData.color || "#10b981",
-              fillColor: zoneData.fillColor || "#10b981",
-              fillOpacity: 0.35,
-              weight: 3,
-              dashArray: "6, 6",
-            }}
-          >
-            <Tooltip permanent direction="top" className="custom-zone-tooltip shadow-xl border-none">
-              <span className="font-bold text-xs tracking-tight" style={{ color: zoneData.color || "#059669" }}>
-                {zoneData.zoneTitle}
-              </span>
-            </Tooltip>
-          </Polygon>
+        {clickedLocation && zoneData && (
+          <>
+            {/* Render Actual Geographical Boundary if available */}
+            {clickedLocation.geojson ? (
+              <GeoJSON
+                key={`geojson-${clickedLocation.lat}-${clickedLocation.lng}-${zoneData.zoneType}`}
+                data={clickedLocation.geojson}
+                style={{
+                  color: zoneData.color || "#10b981",
+                  fillColor: zoneData.fillColor || "#10b981",
+                  fillOpacity: 0.15,
+                  weight: 3,
+                  dashArray: "4, 4",
+                }}
+              >
+                <Tooltip direction="center" className="custom-zone-tooltip shadow-xl border-none">
+                  <span className="font-bold text-xs tracking-tight" style={{ color: zoneData.color || "#059669" }}>
+                    {zoneData.zoneTitle} Boundary
+                  </span>
+                </Tooltip>
+              </GeoJSON>
+            ) : (
+              /* Fallback to Synthetic Geometric Polygon */
+              zoneData.polygonCoordinates && (
+                <Polygon
+                  key={`zone-${clickedLocation.lat}-${clickedLocation.lng}-${zoneData.zoneType}`}
+                  positions={zoneData.polygonCoordinates}
+                  pathOptions={{
+                    color: zoneData.color || "#10b981",
+                    fillColor: zoneData.fillColor || "#10b981",
+                    fillOpacity: 0.35,
+                    weight: 3,
+                    dashArray: "6, 6",
+                  }}
+                >
+                  <Tooltip permanent direction="top" className="custom-zone-tooltip shadow-xl border-none">
+                    <span className="font-bold text-xs tracking-tight" style={{ color: zoneData.color || "#059669" }}>
+                      {zoneData.zoneTitle}
+                    </span>
+                  </Tooltip>
+                </Polygon>
+              )
+            )}
+          </>
         )}
+
 
         {/* Marker for Clicked GIS Location */}
         {clickedLocation && (
@@ -207,7 +241,9 @@ export default function GisMapInner({
                 <div className="flex items-center justify-between border-b border-slate-200 pb-1.5">
                   <div className="flex items-center space-x-1">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="font-bold text-slate-900 text-xs">CADASTRAL PARCEL RECORD</span>
+                    <span className="font-bold text-slate-900 text-xs">
+                      {isRegion ? "REGIONAL JURISDICTION" : "CADASTRAL PARCEL RECORD"}
+                    </span>
                   </div>
                   {zoneData && (
                     <span
@@ -219,8 +255,25 @@ export default function GisMapInner({
                   )}
                 </div>
 
-                {/* Survey & Owner Details */}
-                {survey ? (
+                {/* Survey & Owner Details (or Regional details) */}
+                {isRegion ? (
+                  <div className="space-y-1.5 text-[11px]">
+                    <div className="bg-slate-50 p-2 rounded-lg border border-slate-200">
+                      <div className="flex justify-between items-center">
+                        <span className="font-mono font-bold text-slate-900 text-xs">
+                          {(clickedLocation.displayName?.split(",")[0] || admin?.district || admin?.state)?.toUpperCase()}
+                        </span>
+                        <span className="font-mono text-[9px] bg-slate-200 text-slate-700 font-bold px-1.5 py-0.5 rounded uppercase">
+                          {locType}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-slate-700">
+                        <span className="font-semibold text-slate-900 block">{admin?.state || "India"}</span>
+                        <span className="text-[10px] text-slate-600">Lat: {clickedLocation.lat.toFixed(4)}° N | Lng: {clickedLocation.lng.toFixed(4)}° E</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : survey ? (
                   <div className="space-y-1.5 text-[11px]">
                     <div className="bg-blue-50/80 p-2 rounded-lg border border-blue-200">
                       <div className="flex justify-between items-center">

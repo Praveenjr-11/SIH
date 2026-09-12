@@ -85,37 +85,51 @@ export const PRESET_OFFICERS: OfficerProfile[] = [
 
 interface OfficerAuthContextType {
   officer: OfficerProfile | null;
-  loginOfficer: (profile: OfficerProfile) => void;
+  token: string | null;
+  loginOfficer: (profile: OfficerProfile, token?: string | null) => void;
   logoutOfficer: () => void;
 }
 
 const OfficerAuthContext = createContext<OfficerAuthContextType>({
   officer: null,
+  token: null,
   loginOfficer: () => {},
   logoutOfficer: () => {}
 });
 
 export function OfficerAuthProvider({ children }: { children: React.ReactNode }) {
   const [officer, setOfficer] = useState<OfficerProfile | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("landstack_officer_session");
-      if (saved) {
-        setOfficer(JSON.parse(saved));
+      const savedProfile = localStorage.getItem("landstack_officer_session");
+      const savedToken = localStorage.getItem("landstack_officer_token");
+      
+      if (savedProfile) {
+        setOfficer(JSON.parse(savedProfile));
+        setToken(savedToken || null);
       } else {
         // Default to District Collector profile for smooth testing experience
         setOfficer(PRESET_OFFICERS[0]);
+        setToken(null);
       }
     } catch {
       setOfficer(PRESET_OFFICERS[0]);
+      setToken(null);
     }
   }, []);
 
-  const loginOfficer = (profile: OfficerProfile) => {
+  const loginOfficer = (profile: OfficerProfile, newToken?: string | null) => {
     setOfficer(profile);
+    setToken(newToken || null);
     try {
       localStorage.setItem("landstack_officer_session", JSON.stringify(profile));
+      if (newToken) {
+        localStorage.setItem("landstack_officer_token", newToken);
+      } else {
+        localStorage.removeItem("landstack_officer_token");
+      }
     } catch (e) {
       console.error("Failed to save officer session", e);
     }
@@ -123,15 +137,17 @@ export function OfficerAuthProvider({ children }: { children: React.ReactNode })
 
   const logoutOfficer = () => {
     setOfficer(null);
+    setToken(null);
     try {
       localStorage.removeItem("landstack_officer_session");
+      localStorage.removeItem("landstack_officer_token");
     } catch (e) {
       console.error("Failed to clear officer session", e);
     }
   };
 
   return (
-    <OfficerAuthContext.Provider value={{ officer, loginOfficer, logoutOfficer }}>
+    <OfficerAuthContext.Provider value={{ officer, token, loginOfficer, logoutOfficer }}>
       {children}
     </OfficerAuthContext.Provider>
   );

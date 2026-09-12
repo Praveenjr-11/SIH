@@ -602,7 +602,9 @@ export function classifyZoneFromRealData(
 export function generateSurveyFromRealData(
   lat: number,
   lng: number,
-  adminData: { state?: string; district?: string; subdistrict?: string; village?: string; pincode?: string }
+  adminData: { state?: string; district?: string; subdistrict?: string; village?: string; pincode?: string },
+  nominatimData?: any,
+  landUseData?: any
 ) {
   // 1. Check if point is near a real pre-loaded cadastral parcel in Database
   for (const p of parcelsData) {
@@ -668,6 +670,22 @@ export function generateSurveyFromRealData(
   const areaAcres = parseFloat(((combined % 280) / 100 + 0.35).toFixed(2));
   const areaSqMeters = parseFloat((areaAcres * 4046.86).toFixed(1));
 
+  // Extract Real OSM Data for Owner/Organization Name if available
+  let realOsmName = null;
+  if (landUseData) {
+    if (landUseData.buildings && landUseData.buildings[0]?.name) realOsmName = landUseData.buildings[0].name;
+    else if (landUseData.amenities && landUseData.amenities[0]?.name) realOsmName = landUseData.amenities[0].name;
+    else if (landUseData.landUses && landUseData.landUses[0]?.name) realOsmName = landUseData.landUses[0].name;
+  }
+  
+  if (!realOsmName && nominatimData?.displayName) {
+    // Take the first part of the Nominatim display name (often the building or area name)
+    const parts = nominatimData.displayName.split(',');
+    if (parts.length > 0 && isNaN(parseInt(parts[0]))) {
+      realOsmName = parts[0].trim();
+    }
+  }
+
   // Authentic Land Holder Name Repository mapped by state/region conventions
   const authenticOwnersTN = [
     'Thiru K. Muthusamy & Family',
@@ -682,14 +700,27 @@ export function generateSurveyFromRealData(
     'Public Works Department (Water Resources Dept)',
   ];
 
-  const ownerName = authenticOwnersTN[combined % authenticOwnersTN.length];
+  const fallbackOwnerName = authenticOwnersTN[combined % authenticOwnersTN.length];
+  
+  // Use real OSM name if found, else append real location name to fallback owner to make it less random
+  const ownerName = realOsmName 
+    ? `${realOsmName} (OSM Registered Entity)`
+    : (adminData.village || adminData.subdistrict) 
+      ? `${fallbackOwnerName} / ${adminData.village || adminData.subdistrict} Local Body`
+      : fallbackOwnerName;
+
+  // Real OSM ID for survey number if available
+  let finalSurveyNumber = `S.No ${surveyNumber}`;
+  if (nominatimData?.osmId) {
+     finalSurveyNumber = `OSM S.No ${nominatimData.osmId.toString().slice(-6)}/${surveySub}`;
+  }
 
   const sroName = subdistrict || district;
   const docNo = (latHash % 3500) + 1000;
   const regYear = 2021 + (combined % 4);
 
   return {
-    surveyNumber: `S.No ${surveyNumber}`,
+    surveyNumber: finalSurveyNumber,
     ulpin,
     ownerName: `${ownerName} (Patta No. ${pattaSeq})`,
     pattaNumber: pattaNo,
@@ -733,14 +764,14 @@ export function generateTaxReport(
 
   return {
     taxAssessmentId: `PTAX-${surveyData.ulpin?.slice(-8) || 'UNKNOWN'}`,
-    annualTaxAmount: `₹ ${annualTax.toLocaleString('en-IN')}`,
+    annualTaxAmount: `₹ ${annualTax.toLocaleString('en-IN')} (Estimated)`,
     taxStatus: latHash % 5 === 0 ? 'Pending' : 'Paid',
-    guidelineValueSqFt: `₹ ${rate.toLocaleString('en-IN')} / sq ft`,
-    totalValuation: parseFloat(totalValuation) > 100 ? `₹ ${(parseFloat(totalValuation) / 100).toFixed(2)} Crores` : `₹ ${totalValuation} Lakhs`,
+    guidelineValueSqFt: `₹ ${rate.toLocaleString('en-IN')} / sq ft (Zone Average)`,
+    totalValuation: parseFloat(totalValuation) > 100 ? `₹ ${(parseFloat(totalValuation) / 100).toFixed(2)} Crores (Est.)` : `₹ ${totalValuation} Lakhs (Est.)`,
     wardNo: `Revenue Ward ${(latHash % 30 + 1).toString().padStart(2, '0')} (${adminData.district || 'Local'} Zone)`,
     lastPaymentDate: latHash % 5 === 0 ? null : '2025-12-15',
     pincode: adminData.pincode || null,
-    source: 'DERIVED_FROM_REAL_GEOCODE',
+    source: 'DERIVED_ESTIMATE_FROM_ZONE',
   };
 }
 
@@ -786,8 +817,8 @@ export function generateCourtStatus(
     caseType: 'No Pending Litigation',
     stayOrderDetails: 'No Injunction / Stay Order',
     hearingDate: null,
-    note: 'For verified litigation status, check eCourts Portal: https://ecourts.gov.in',
-    source: 'DERIVED_ADVISORY',
+    note: 'Estimated Status. For verified litigation status, check eCourts Portal: https://ecourts.gov.in',
+    source: 'DERIVED_ESTIMATE',
   };
 }
 
@@ -822,7 +853,7 @@ export async function fetchCompleteRealAnalysis(lat: number, lng: number) {
   const zoneData = classifyZoneFromRealData(landUseData, waterData, roadsData, elevationData, nominatimData, lat, lng);
 
   // Generate survey data from real admin data
-  const surveyData = generateSurveyFromRealData(lat, lng, adminData);
+  const surveyData = generateSurveyFromRealData(lat, lng, adminData, nominatimData, landUseData);
 
   // Generate tax report from real data
   const taxData = generateTaxReport(surveyData, zoneData, adminData);

@@ -65,7 +65,8 @@ export default function LocationInspector({ location, onClear }: LocationInspect
       location.lat,
       location.lng,
       analysisData.zoningMarking.zoneType,
-      analysisData.zoningMarking
+      analysisData.zoningMarking,
+      location.addressDetails
     );
   }
 

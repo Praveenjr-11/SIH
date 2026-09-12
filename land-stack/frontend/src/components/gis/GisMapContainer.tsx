@@ -38,7 +38,7 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
   ]);
   const [showAIPanel, setShowAIPanel] = useState(false);
 
-  const handleSelectLocationFromSearch = (lat: number, lng: number, displayName: string, addressDetails?: any) => {
+  const handleSelectLocationFromSearch = (lat: number, lng: number, displayName: string, addressDetails?: any, geojson?: any) => {
     // Set target coordinates for map flyTo animation
     setTargetFlyTo({ lat, lng, zoom: 13 });
 
@@ -48,6 +48,7 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
       lng,
       displayName,
       addressDetails,
+      geojson,
       loading: false,
     });
 

@@ -45,10 +45,23 @@ export const ZONE_SCOPE_MAP: Record<string, { dLat: number; dLng: number }> = {
 };
 
 /**
- * Get scope size for a given zone type.
- * Falls back to AGRI_ZONE defaults if zone type is unknown.
+ * Get scope size for a given zone type or location type.
+ * Uses administrative level or place type if available to accurately size the spatial scope for cities, districts, states, etc.
  */
-export function getZoneScopeConfig(zoneType: string): { dLat: number; dLng: number } {
+export function getZoneScopeConfig(zoneType: string, addressDetails?: Record<string, any>): { dLat: number; dLng: number } {
+  const type = (addressDetails?.type || "").toLowerCase();
+  const category = (addressDetails?.category || "").toLowerCase();
+  
+  // Dynamic Spatial Zone Scope based on Location Size (ONLY if it's an administrative boundary)
+  if (category === "boundary") {
+    if (type === "state" || type === "country") {
+      return { dLat: 2.0, dLng: 2.0 };
+    } else if (type === "state_district" || type === "county" || type === "region" || type === "administrative") {
+      return { dLat: 0.35, dLng: 0.35 };
+    }
+  }
+  
+  // Fallback to zone regulation default point-based size for cities, places, and standard pins
   return ZONE_SCOPE_MAP[zoneType] || ZONE_SCOPE_MAP.AGRI_ZONE;
 }
 
@@ -58,9 +71,10 @@ export function getZoneScopeConfig(zoneType: string): { dLat: number; dLng: numb
 export function computeZoneGeometry(
   lat: number,
   lng: number,
-  zoneType: string
+  zoneType: string,
+  addressDetails?: Record<string, any>
 ): { dLat: number; dLng: number; polygonCoordinates: [number, number][]; metrics: GeodesicZoneMetrics } {
-  const scope = getZoneScopeConfig(zoneType);
+  const scope = getZoneScopeConfig(zoneType, addressDetails);
   const dLat = scope.dLat;
   const dLng = scope.dLng;
   const metrics = calculateGeodesicZoneMetrics(lat, lng, dLat, dLng);
@@ -364,7 +378,7 @@ export function resolveMasterPlanZone(
   const fullText = `${name} ${village} ${subdistrict} ${district} ${state} ${category} ${landuse}`;
 
   const classification = classifyZone(fullText, category, landuse);
-  const { dLat, dLng, polygonCoordinates, metrics } = computeZoneGeometry(safeLat, safeLng, classification.zoneType);
+  const { dLat, dLng, polygonCoordinates, metrics } = computeZoneGeometry(safeLat, safeLng, classification.zoneType, addressDetails);
 
   return {
     ...classification,
@@ -383,9 +397,10 @@ export function resolveZoneWithBackendType(
   lat: number,
   lng: number,
   backendZoneType: string,
-  backendZoning: any
+  backendZoning: any,
+  addressDetails?: Record<string, any>
 ): MasterPlanZoneConfig {
-  const { dLat, dLng, polygonCoordinates, metrics } = computeZoneGeometry(lat, lng, backendZoneType);
+  const { dLat, dLng, polygonCoordinates, metrics } = computeZoneGeometry(lat, lng, backendZoneType, addressDetails);
 
   return {
     zoneType: backendZoning.zoneType || backendZoneType,

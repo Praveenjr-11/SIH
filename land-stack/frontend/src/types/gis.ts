@@ -4,6 +4,7 @@ export interface SearchResult {
   lat: string;
   lon: string;
   type: string;
+  class?: string;
   importance: number;
   boundingbox?: string[];
   address?: {
@@ -16,12 +17,14 @@ export interface SearchResult {
     postcode?: string;
     country?: string;
   };
+  geojson?: any;
 }
 
 export interface ClickedLocation {
   lat: number;
   lng: number;
   displayName?: string;
+  geojson?: any;
   addressDetails?: {
     village?: string;
     hamlet?: string;

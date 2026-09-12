@@ -83,23 +83,41 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
   const isDisputed = court?.status?.includes("Stay") || court?.status?.includes("Litigation");
 
+  // Determine if the selected location is a broad administrative region boundary
+  const locCategory = (addressDetails?.category || "").toLowerCase();
+  const locType = (addressDetails?.type || "").toLowerCase();
+  const isState = locCategory === "boundary" && (locType === "state" || locType === "country");
+  const isDistrict = locCategory === "boundary" && (locType === "state_district" || locType === "county" || locType === "region" || locType === "administrative");
+  const isRegion = isState || isDistrict;
+
+  // Make sure we don't land on a parcel-specific tab if we are viewing a region
+  useEffect(() => {
+    if (isRegion && (activeTab === "survey" || activeTab === "tax" || activeTab === "court")) {
+      setActiveTab("zoning");
+    }
+  }, [isRegion, activeTab]);
+
   return (
     <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] max-w-full bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col text-slate-900 overflow-hidden animate-in slide-in-from-right-4">
       {/* Top Header */}
       <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900 flex-shrink-0 shadow-2xs">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shadow-xs">
-            <Sparkles className="w-5 h-5" />
+            {isRegion ? <Compass className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">LAND INTELLIGENCE ENGINE</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
+                {isRegion ? "REGIONAL INTELLIGENCE" : "LAND INTELLIGENCE ENGINE"}
+              </span>
               <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold px-1.5 py-0.5 rounded">
                 DPI Phase 5
               </span>
             </div>
             <h2 className="font-mono text-xs font-bold text-slate-900 mt-0.5">
-              {survey?.surveyNumber || frontendZone.zoneTitle} ({survey?.ulpin || `${lat.toFixed(4)}°N`})
+              {isRegion 
+                ? (displayName || addressDetails?.state || addressDetails?.district || frontendZone.zoneTitle).toUpperCase()
+                : `${survey?.surveyNumber || frontendZone.zoneTitle} (${survey?.ulpin || `${lat.toFixed(4)}°N`})`}
             </h2>
           </div>
         </div>
@@ -123,15 +141,19 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
           <span>Zoning</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab("survey")}
-          className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-            activeTab === "survey" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Survey</span>
-        </button>
+        {!isRegion && (
+          <>
+            <button
+              onClick={() => setActiveTab("survey")}
+              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                activeTab === "survey" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Survey</span>
+            </button>
+          </>
+        )}
 
         <button
           onClick={() => setActiveTab("officers")}
@@ -143,29 +165,33 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
           <span>Admin Officers</span>
         </button>
 
-        <button
-          onClick={() => setActiveTab("tax")}
-          className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-            activeTab === "tax" ? "bg-amber-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          <Receipt className="w-3.5 h-3.5" />
-          <span>Tax</span>
-        </button>
+        {!isRegion && (
+          <>
+            <button
+              onClick={() => setActiveTab("tax")}
+              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                activeTab === "tax" ? "bg-amber-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Tax</span>
+            </button>
 
-        <button
-          onClick={() => setActiveTab("court")}
-          className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-            activeTab === "court"
-              ? isDisputed
-                ? "bg-red-600 text-white shadow-xs"
-                : "bg-purple-600 text-white shadow-xs"
-              : "text-slate-600 hover:bg-slate-200"
-          }`}
-        >
-          <Scale className="w-3.5 h-3.5" />
-          <span>Court Status</span>
-        </button>
+            <button
+              onClick={() => setActiveTab("court")}
+              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+                activeTab === "court"
+                  ? isDisputed
+                    ? "bg-red-600 text-white shadow-xs"
+                    : "bg-purple-600 text-white shadow-xs"
+                  : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              <Scale className="w-3.5 h-3.5" />
+              <span>Court Status</span>
+            </button>
+          </>
+        )}
 
         <button
           onClick={() => setActiveTab("gsi")}

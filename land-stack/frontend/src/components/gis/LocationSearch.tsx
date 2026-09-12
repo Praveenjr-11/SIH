@@ -6,7 +6,7 @@ import { searchLocations } from "@/services/gisService";
 import { SearchResult } from "@/types/gis";
 
 interface LocationSearchProps {
-  onSelectLocation: (lat: number, lng: number, displayName: string, addressDetails?: any) => void;
+  onSelectLocation: (lat: number, lng: number, displayName: string, addressDetails?: any, geojson?: any) => void;
 }
 
 export default function LocationSearch({ onSelectLocation }: LocationSearchProps) {
@@ -49,7 +49,15 @@ export default function LocationSearch({ onSelectLocation }: LocationSearchProps
   const handleSelect = (item: SearchResult) => {
     const lat = parseFloat(item.lat);
     const lng = parseFloat(item.lon);
-    onSelectLocation(lat, lng, item.display_name, item.address);
+    
+    // Merge type and class into address details so zoneResolver can use them
+    const addressDetails = {
+      ...item.address,
+      type: item.type,
+      category: item.class || item.type,
+    };
+    
+    onSelectLocation(lat, lng, item.display_name, addressDetails, item.geojson);
     setIsOpen(false);
     setQuery(item.display_name.split(",")[0]); // Show concise name in search input
   };

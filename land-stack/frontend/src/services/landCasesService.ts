@@ -303,7 +303,7 @@ function generate100PlusFallbackCases(): LandCaseItem[] {
     const dInfo = tnDistrictsData[dIdx];
     const distCode = (dIdx + 1).toString().padStart(2, "0");
 
-    for (let cIdx = 0; cIdx < 3; cIdx++) {
+    for (let cIdx = 0; cIdx < 30; cIdx++) {
       const caseIdNum = currentId++;
       const caseNo = `CASE-2026-${caseIdNum}`;
       const surveyNo = `${Math.floor(50 + Math.random() * 450)}/${Math.floor(1 + Math.random() * 5)}${String.fromCharCode(65 + (cIdx % 4))}`;
