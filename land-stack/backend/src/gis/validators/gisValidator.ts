@@ -41,10 +41,12 @@ export function validateLayer(layer: string): { valid: boolean; error?: string }
     return { valid: false, error: 'Layer parameter is required.' };
   }
   const cleanLayer = layer.toLowerCase().trim();
-  if (!SUPPORTED_LAYERS.includes(cleanLayer as SupportedLayer)) {
+  // Allow any valid SQL table name (alphanumeric and underscores) to support all registry layers
+  // This also prevents SQL injection in the FROM clause
+  if (!/^[a-z0-9_]+$/.test(cleanLayer)) {
     return {
       valid: false,
-      error: `Invalid GIS layer '${layer}'. Allowed layers are: ${SUPPORTED_LAYERS.join(', ')}.`
+      error: `Invalid GIS layer name '${layer}'. Layer names must be alphanumeric.`
     };
   }
   return { valid: true };

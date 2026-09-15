@@ -123,6 +123,8 @@ export async function getCasesList(req: AuthenticatedRequest, res: Response) {
         title: c.title,
         case_type: c.caseType,
         caseType: c.caseType,
+        forum: c.forum,
+        documentType: c.documentType,
         status: c.status,
         priority: c.priority,
         district_name: c.district,
@@ -133,21 +135,58 @@ export async function getCasesList(req: AuthenticatedRequest, res: Response) {
         village: c.village,
         survey_number: c.surveyNumber,
         surveyNumber: c.surveyNumber,
+        subDivisionNumber: c.subDivisionNumber,
         ulpin: c.ulpin,
         owner_name: c.ownerName,
         ownerName: c.ownerName,
+        ownerDataStatus: c.ownerDataStatus,
+        pattaNumber: c.pattaNumber,
         area_acres: c.areaAcres,
         areaAcres: c.areaAcres,
         guideline_value: c.valuation.guidelineValueSqFt,
+        guidelineDataStatus: c.valuation.guidelineDataStatus,
+        guidelineSource: c.valuation.guidelineSource,
         estimated_market_value: c.valuation.estimatedMarketValue,
+        litigants: c.litigants,
+        encumbranceChain: c.encumbranceChain,
         risk_score: c.riskAssessment.compositeScore,
         risk_level: c.riskAssessment.riskLevel,
         created_at: new Date().toISOString()
       }));
     }
 
+    // Apply query filters if provided
+    const { district, taluk, status, priority, search } = req.query;
+    if (district) {
+      const dNorm = (district as string).toLowerCase().trim();
+      casesList = casesList.filter(c => (c.district || c.district_name || '').toLowerCase().includes(dNorm));
+    }
+    if (taluk) {
+      const tNorm = (taluk as string).toLowerCase().trim();
+      casesList = casesList.filter(c => (c.taluk || c.subdistrict || '').toLowerCase().includes(tNorm));
+    }
+    if (status) {
+      const sNorm = (status as string).toLowerCase().trim();
+      casesList = casesList.filter(c => (c.status || '').toLowerCase() === sNorm);
+    }
+    if (priority) {
+      const pNorm = (priority as string).toLowerCase().trim();
+      casesList = casesList.filter(c => (c.priority || '').toLowerCase() === pNorm);
+    }
+    if (search) {
+      const qNorm = (search as string).toLowerCase().trim();
+      casesList = casesList.filter(c =>
+        (c.title || '').toLowerCase().includes(qNorm) ||
+        (c.caseNumber || c.case_number || '').toLowerCase().includes(qNorm) ||
+        (c.ownerName || c.owner_name || '').toLowerCase().includes(qNorm) ||
+        (c.surveyNumber || c.survey_number || '').toLowerCase().includes(qNorm)
+      );
+    }
+
     return res.json({
       success: true,
+      totalCount: landCasesData.length,
+      filteredCount: casesList.length,
       count: casesList.length,
       cases: casesList
     });

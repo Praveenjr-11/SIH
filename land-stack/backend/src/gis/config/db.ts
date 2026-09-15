@@ -38,7 +38,7 @@ export async function queryPostGIS(text: string, params?: any[]) {
 
 export async function testPostGISConnection(): Promise<boolean> {
   try {
-    const res = await queryPostGIS('SELECT PostGIS_Full_Version() as ver;');
+    const res = await queryPostGIS('SELECT 1 as connected;');
     return Boolean(res && res.rows && res.rows.length > 0);
   } catch (err) {
     return false;
@@ -53,11 +53,16 @@ export async function getDatabaseHealth() {
         status: 'DEGRADED',
         postgisConnected: false,
         mode: 'SPATIAL_ENGINE_FALLBACK',
-        message: 'PostgreSQL/PostGIS server disconnected or not running on port 5432. Active fallback engine serving requests.'
+        message: 'PostgreSQL server disconnected or not running on port 5432. Active fallback engine serving requests.'
       };
     }
 
-    const versionRes = await queryPostGIS('SELECT PostGIS_Full_Version() as ver;');
+    let version = 'PostgreSQL 16.x';
+    try {
+      const verRes = await queryPostGIS('SELECT version();');
+      if (verRes.rows[0]?.version) version = verRes.rows[0].version.split(',')[0];
+    } catch (e) {}
+
     const tablesRes = await queryPostGIS(`
       SELECT count(*) as table_count 
       FROM information_schema.tables 
@@ -67,8 +72,8 @@ export async function getDatabaseHealth() {
     return {
       status: 'HEALTHY',
       postgisConnected: true,
-      mode: 'POSTGIS_LIVE_DB',
-      version: versionRes.rows[0]?.ver || 'PostGIS 3.x',
+      mode: 'POSTGRES_LIVE_DB',
+      version,
       tableCount: parseInt(tablesRes.rows[0]?.table_count || '0', 10),
       totalPoolConnections: pool.totalCount,
       idlePoolConnections: pool.idleCount

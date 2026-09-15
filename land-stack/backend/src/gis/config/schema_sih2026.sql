@@ -301,7 +301,7 @@ CREATE TABLE IF NOT EXISTS cases (
   title VARCHAR(200) NOT NULL,
   description TEXT,
   case_type VARCHAR(100) NOT NULL, -- Zone Conversion, Mutation, Encroachment, Boundary Demarcation, NOC
-  status VARCHAR(50) NOT DEFAULT 'NEW' CHECK (status IN (
+  status VARCHAR(50) NOT NULL DEFAULT 'NEW' CHECK (status IN (
     'NEW', 'DOCUMENT_VERIFICATION', 'GIS_ANALYSIS', 'FIELD_INSPECTION', 
     'OFFICER_REVIEW', 'RECOMMENDATION', 'APPROVED', 'REJECTED', 'CLOSED'
   )),
@@ -394,3 +394,67 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_logs_officer ON audit_logs (officer_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_case ON audit_logs (case_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_timestamp ON audit_logs (timestamp);
+
+-- 7. TN ADMINISTRATIVE OFFICERS PUBLIC DIRECTORY
+-- Sourced from official government portals (NIC, district websites).
+-- Separate from the `officers` auth table which stores login users with password hashes.
+CREATE TABLE IF NOT EXISTS tn_administrative_officers (
+  id SERIAL PRIMARY KEY,
+  state VARCHAR(100) NOT NULL DEFAULT 'Tamil Nadu',
+  district VARCHAR(100) NOT NULL,
+  administrative_level VARCHAR(50) NOT NULL,  -- District, Taluk
+  designation VARCHAR(200) NOT NULL,
+  officer_name VARCHAR(200),
+  official_email VARCHAR(150),
+  official_mobile VARCHAR(20),
+  office_landline VARCHAR(20),
+  source_url TEXT,
+  verified_date DATE,
+  data_status VARCHAR(50) NOT NULL DEFAULT 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_tn_officers_district ON tn_administrative_officers (district);
+CREATE INDEX IF NOT EXISTS idx_tn_officers_designation ON tn_administrative_officers (designation);
+
+-- 8. DATA STATUS COLUMNS — distinguish real government-sourced fields from synthetic demo data
+-- data_status values:
+--   REAL_OFFICIAL_GOVERNMENT_PUBLISHED  — sourced from official govt portals / cadastral records
+--   REAL_OSM_DERIVED                    — derived from OpenStreetMap / Nominatim
+--   SYNTHETIC_DEMO_DATA                 — illustrative, generated for demo purposes
+ALTER TABLE districts
+  ADD COLUMN IF NOT EXISTS lgd_code VARCHAR(50);
+
+ALTER TABLE subdistricts
+  ADD COLUMN IF NOT EXISTS lgd_code VARCHAR(50);
+
+ALTER TABLE villages
+  ADD COLUMN IF NOT EXISTS category VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS census_population INTEGER,
+  ADD COLUMN IF NOT EXISTS census_households INTEGER,
+  ADD COLUMN IF NOT EXISTS census_area_hectares NUMERIC(10, 2),
+  ADD COLUMN IF NOT EXISTS pin_code VARCHAR(10),
+  ADD COLUMN IF NOT EXISTS facilities_reported JSONB,
+  ADD COLUMN IF NOT EXISTS data_status VARCHAR(50) DEFAULT 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED';
+
+ALTER TABLE land_parcels
+  ADD COLUMN IF NOT EXISTS data_status VARCHAR(50) NOT NULL DEFAULT 'SYNTHETIC_DEMO_DATA',
+  ADD COLUMN IF NOT EXISTS data_note TEXT,
+  ADD COLUMN IF NOT EXISTS real_guideline_value_per_sqft NUMERIC(10, 2),
+  ADD COLUMN IF NOT EXISTS guideline_effective_date DATE DEFAULT '2026-04-01',
+  ADD COLUMN IF NOT EXISTS guideline_source_url TEXT DEFAULT 'https://tnreginet.gov.in';
+
+ALTER TABLE land_records
+  ADD COLUMN IF NOT EXISTS data_status VARCHAR(50) NOT NULL DEFAULT 'SYNTHETIC_DEMO_DATA',
+  ADD COLUMN IF NOT EXISTS data_note TEXT,
+  -- Real Tamil Nadu land document fields (Patta / Chitta / Adangal schema):
+  ADD COLUMN IF NOT EXISTS document_type VARCHAR(50),        -- Patta, Chitta, Adangal, FMB, TSLR
+  ADD COLUMN IF NOT EXISTS sub_division_number VARCHAR(50),  -- e.g. "181/9A"
+  ADD COLUMN IF NOT EXISTS land_type VARCHAR(50),            -- Nanjai (wet/irrigated) or Punjai (dry/rainfed)
+  ADD COLUMN IF NOT EXISTS extent_hectares NUMERIC(10, 4),
+  ADD COLUMN IF NOT EXISTS extent_ares NUMERIC(10, 4),
+  ADD COLUMN IF NOT EXISTS extent_sqm NUMERIC(15, 2),
+  ADD COLUMN IF NOT EXISTS tax_amount_inr NUMERIC(12, 2),
+  ADD COLUMN IF NOT EXISTS owner_relationship VARCHAR(100),  -- Self, Inherited, Purchased, Gifted
+  ADD COLUMN IF NOT EXISTS guideline_value_per_sqm NUMERIC(12, 2),  -- From TN Registration Dept (tnreginet.gov.in)
+  ADD COLUMN IF NOT EXISTS guideline_value_source VARCHAR(100);      -- Source reference for guideline value
+

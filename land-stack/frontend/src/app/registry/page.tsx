@@ -5,6 +5,7 @@ import { Parcel } from "@/types";
 import { fetchParcels } from "@/services/api";
 import { Search, Filter, ShieldCheck, AlertCircle, Scale, Building2, Receipt } from "lucide-react";
 import ParcelInspector from "@/components/ParcelInspector";
+import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 
 export default function RegistryPage() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
@@ -24,7 +25,9 @@ export default function RegistryPage() {
   }, [search, statusFilter]);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <OfficerProtectedGuard>
+      <div className="p-8 max-w-7xl mx-auto space-y-6">
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
@@ -154,5 +157,7 @@ export default function RegistryPage() {
         <ParcelInspector parcel={selectedParcel} onClose={() => setSelectedParcel(null)} />
       )}
     </div>
+    </OfficerProtectedGuard>
   );
 }
+

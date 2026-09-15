@@ -1,0 +1,25 @@
+{
+  "state": "Chandigarh",
+  "state_code": "CH",
+  "source_format": "ch_jamabandi_json",
+  "field_mapping": {
+    "khasra_no": "survey_number",
+    "khewat_no": "registration_doc_no",
+    "owner_nm": "owner_name",
+    "extent_sqm": "area_acres",
+    "land_type": "land_classification",
+    "mauza_name": "village_name",
+    "tehsil_nm": "taluk_name"
+  },
+  "unit_conversions": {
+    "extent_sqm": {
+      "multiply_by": 0.000247105,
+      "target_unit": "acres",
+      "comment": "1 sq meter = 0.000247105 acres"
+    }
+  },
+  "defaults": {
+    "district_name": "Chandigarh",
+    "state_name": "Chandigarh"
+  }
+}

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcrypt';
 import { signOfficerToken, AuthenticatedRequest } from '../middleware/authMiddleware.js';
-import { queryPostGIS } from '../gis/config/db.js';
 import { getOfficersForLocation } from '../gis/services/officerService.js';
 
 export const AUTH_ROLES = [
@@ -16,6 +16,30 @@ export const AUTH_ROLES = [
   { role_code: 'SYSTEM_ADMIN', name: 'System Administrator', rank: 10 }
 ];
 
+/**
+ * Demo credential store — bcrypt-hashed passwords for hackathon demo.
+ * In production this would be an `officers` table with hashed passwords.
+ * Hash is bcrypt of 'demo1234' with saltRounds=10.
+ *
+ * To regenerate: await bcrypt.hash('demo1234', 10)
+ */
+const DEMO_PASSWORD_HASH = '$2b$10$lESBG.dAtCsKg9dldTOfPO5oORPMtroInObcALfdfrNAL7Un1TGra';
+
+/** Maps partial email patterns to pre-hashed credentials for demo login */
+const OFFICER_CREDENTIALS: Record<string, string> = {
+  default: DEMO_PASSWORD_HASH,
+};
+
+async function verifyOfficerPassword(password: string): Promise<boolean> {
+  if (!password) return false;
+  try {
+    // All demo officers share the same demo password: 'demo1234'
+    return await bcrypt.compare(password, DEMO_PASSWORD_HASH);
+  } catch {
+    return false;
+  }
+}
+
 export async function loginOfficer(req: Request, res: Response) {
   try {
     const { email, role, district, taluk, password } = req.body;
@@ -24,6 +48,15 @@ export async function loginOfficer(req: Request, res: Response) {
       return res.status(400).json({
         success: false,
         error: 'Missing required credentials: email or role'
+      });
+    }
+
+    // Verify password via bcrypt
+    const passwordValid = await verifyOfficerPassword(password);
+    if (!passwordValid) {
+      return res.status(401).json({
+        success: false,
+        error: 'UNAUTHORIZED: Invalid credentials. Use demo password: demo1234'
       });
     }
 
@@ -81,6 +114,7 @@ export async function loginOfficer(req: Request, res: Response) {
       state: 'Tamil Nadu'
     };
 
+    // Real JWT — cryptographically signed with HS256, not a raw base64 blob
     const token = signOfficerToken(payload);
 
     return res.json({

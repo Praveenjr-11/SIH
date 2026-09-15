@@ -110,25 +110,25 @@ export function OfficerAuthProvider({ children }: { children: React.ReactNode })
         setOfficer(JSON.parse(savedProfile));
         setToken(savedToken || null);
       } else {
-        // Default to District Collector profile for smooth testing experience
-        setOfficer(PRESET_OFFICERS[0]);
+        setOfficer(null);
         setToken(null);
       }
     } catch {
-      setOfficer(PRESET_OFFICERS[0]);
+      setOfficer(null);
       setToken(null);
     }
   }, []);
 
+
   const loginOfficer = (profile: OfficerProfile, newToken?: string | null) => {
+    const effectiveToken = newToken || `DEMO_OFFICER_TOKEN_${profile.role || 'DISTRICT_COLLECTOR'}`;
     setOfficer(profile);
-    setToken(newToken || null);
+    setToken(effectiveToken);
     try {
       localStorage.setItem("landstack_officer_session", JSON.stringify(profile));
-      if (newToken) {
-        localStorage.setItem("landstack_officer_token", newToken);
-      } else {
-        localStorage.removeItem("landstack_officer_token");
+      localStorage.setItem("landstack_officer_token", effectiveToken);
+      if (typeof document !== "undefined") {
+        document.cookie = `landstack_officer_token=${effectiveToken}; path=/; max-age=86400; SameSite=Lax`;
       }
     } catch (e) {
       console.error("Failed to save officer session", e);
@@ -141,10 +141,14 @@ export function OfficerAuthProvider({ children }: { children: React.ReactNode })
     try {
       localStorage.removeItem("landstack_officer_session");
       localStorage.removeItem("landstack_officer_token");
+      if (typeof document !== "undefined") {
+        document.cookie = "landstack_officer_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      }
     } catch (e) {
       console.error("Failed to clear officer session", e);
     }
   };
+
 
   return (
     <OfficerAuthContext.Provider value={{ officer, token, loginOfficer, logoutOfficer }}>

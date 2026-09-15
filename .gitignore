@@ -71,5 +71,15 @@ next-env.d.ts
 .cache/
 .turbo/
 
-# Shapefile ZIP Archives (Optional - comment out if committing datasets to git)
+# Large Data Dumps & Archives (>100MB GitHub limit protection)
 *.zip
+*.7z
+*.geojsonl
+*.shp
+*.dbf
+*.sbx
+*.sbn
+*.shx
+backend/gis-data/raw/
+backend/gis-data/tn_shape/
+

@@ -22,10 +22,12 @@ import {
   BarChart2
 } from "lucide-react";
 import { useOfficerAuth } from "@/context/OfficerAuthContext";
+import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 
 export default function OfficerDashboardPage() {
   const router = useRouter();
   const { officer, logoutOfficer } = useOfficerAuth();
+
 
   const [metrics, setMetrics] = useState({
     total: 12,
@@ -86,26 +88,27 @@ export default function OfficerDashboardPage() {
     router.push("/");
   };
 
-  if (!officer) return null;
-
   return (
-    <div className="max-w-7xl mx-auto p-6 sm:p-8 space-y-8 font-sans antialiased pb-20">
+    <OfficerProtectedGuard>
+      <div className="max-w-7xl mx-auto p-6 sm:p-8 space-y-8 font-sans antialiased pb-20">
+
       
       {/* TOP WELCOME & JURISDICTION HEADER */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="text-2xl font-black text-slate-900">Welcome, {officer.name}</h1>
+          <h1 className="text-2xl font-black text-slate-900">Welcome, {officer?.name || 'Officer'}</h1>
           <div className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
-            <span>Role: <strong className="text-blue-700 font-semibold">{officer.title}</strong></span>
+            <span>Role: <strong className="text-blue-700 font-semibold">{officer?.title}</strong></span>
             <span>•</span>
-            <span>Jurisdiction: <strong className="text-emerald-700 font-semibold">{officer.taluk} Taluk, {officer.district} District</strong></span>
+            <span>Jurisdiction: <strong className="text-emerald-700 font-semibold">{officer?.taluk} Taluk, {officer?.district} District</strong></span>
           </div>
         </div>
 
         <div className="flex items-center space-x-3">
           <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-emerald-700 font-bold">
-            ID: {officer.badgeNo}
+            ID: {officer?.badgeNo}
           </div>
+
           <button
             onClick={handleLogout}
             className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-red-600 font-bold text-xs border border-slate-200 transition-colors shadow-xs"
@@ -215,5 +218,7 @@ export default function OfficerDashboardPage() {
         </div>
       </div>
     </div>
+    </OfficerProtectedGuard>
   );
 }
+

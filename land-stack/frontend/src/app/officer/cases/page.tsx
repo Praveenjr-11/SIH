@@ -18,6 +18,7 @@ import {
   Globe
 } from "lucide-react";
 import { useOfficerAuth } from "@/context/OfficerAuthContext";
+import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 import { fetchCasesList, LandCaseItem } from "@/services/landCasesService";
 
 const TN_DISTRICTS = [
@@ -34,6 +35,7 @@ const TN_DISTRICTS = [
 export default function OfficerCasesPage() {
   const router = useRouter();
   const { officer } = useOfficerAuth();
+
   const [cases, setCases] = useState<LandCaseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -111,7 +113,8 @@ export default function OfficerCasesPage() {
   const pendingInspectionCount = cases.filter(c => c.status === "FIELD_INSPECTION").length;
 
   return (
-    <div className="max-w-7xl mx-auto p-6 sm:p-10 space-y-6 font-sans antialiased pb-20">
+    <OfficerProtectedGuard>
+      <div className="max-w-[1600px] mx-auto p-4 sm:p-8 space-y-6 font-sans antialiased pb-20">
       
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-6">
@@ -405,5 +408,7 @@ export default function OfficerCasesPage() {
         )}
       </div>
     </div>
+    </OfficerProtectedGuard>
   );
 }
+

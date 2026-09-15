@@ -1,7 +1,33 @@
 import { Request, Response } from 'express';
 import { gisService } from '../services/gisService.js';
+import { tngisWmsService } from '../services/tngisWmsService.js';
 
 export class GisController {
+  async getTngisStatus(req: Request, res: Response) {
+    res.json(await tngisWmsService.getStatus(req.query.refresh === 'true'));
+  }
+
+  async getTngisMap(req: Request, res: Response) {
+    try {
+      const map = await tngisWmsService.getMap(req.query);
+      res.setHeader('Content-Type', map.contentType);
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.send(map.body);
+    } catch (err: any) {
+      res.status(err.status || 502).json({ error: err.message || 'Failed to fetch the TNGIS map layer.' });
+    }
+  }
+
+  async getTngisFeatureInfo(req: Request, res: Response) {
+    try {
+      const info = await tngisWmsService.getFeatureInfo(req.query);
+      res.setHeader('Content-Type', info.contentType);
+      res.send(info.body);
+    } catch (err: any) {
+      res.status(err.status || 502).json({ error: err.message || 'Failed to fetch the TNGIS feature info.' });
+    }
+  }
+
   // 1. GET /api/gis/health
   async getHealth(req: Request, res: Response) {
     try {
@@ -56,6 +82,26 @@ export class GisController {
     } catch (err: any) {
       res.status(500).json({ error: 'Failed to retrieve available GIS layers.' });
     }
+  }
+
+  async getLayerMetadata(req: Request, res: Response) {
+    try { res.json(await gisService.getLayerMetadata(req.params.layerId)); }
+    catch (err: any) { res.status(err.status || 400).json({ error: err.message }); }
+  }
+
+  async getRegistryFeatures(req: Request, res: Response) {
+    try { res.json(await gisService.getRegistryFeatures((req.params.id || req.query.layer_id) as string, req.query.bbox as string)); }
+    catch (err: any) { res.status(err.status || 400).json({ error: err.message || 'Feature query failed.' }); }
+  }
+
+  async pointQuery(req: Request, res: Response) {
+    try { res.json(await gisService.pointQuery(req.body?.lat, req.body?.lng, req.body?.layers)); }
+    catch (err: any) { res.status(err.status || 400).json({ error: err.message || 'Point query failed.' }); }
+  }
+
+  async withinDistance(req: Request, res: Response) {
+    try { res.json(await gisService.withinDistance(req.body?.lat, req.body?.lng, req.body?.radius_meters, req.body?.layers)); }
+    catch (err: any) { res.status(err.status || 400).json({ error: err.message || 'Distance query failed.' }); }
   }
 
   // 5. GET /api/gis/layer/:layer
@@ -184,6 +230,113 @@ export class GisController {
       });
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Failed to trigger village ZIP importer.' });
+    }
+  }
+
+  // ─── TNGIS Phase 1: Multi-Layer Spatial Overlay ─────────────────
+
+  // 15. GET /api/gis/parcels/:ulpin/overlay?layers=a,b,c
+  async getParcelSpatialOverlay(req: Request, res: Response) {
+    try {
+      const { ulpin } = req.params;
+      const { layers } = req.query;
+      const result = await gisService.getParcelSpatialOverlay(ulpin, layers as string);
+      res.json(result);
+    } catch (err: any) {
+      res.status(err.status || 400).json({ error: err.message || 'Failed to compute spatial overlay.' });
+    }
+  }
+
+  // ─── TNGIS Phase 2: Generic Click-to-Query ──────────────────────
+
+  // 16. GET /api/gis/feature-info?layer=X&lat=Y&lng=Z
+  async getFeatureInfo(req: Request, res: Response) {
+    try {
+      const { layer, lat, lng } = req.query;
+      const result = await gisService.getFeatureInfo(layer as string, lat, lng);
+      res.json(result);
+    } catch (err: any) {
+      res.status(err.status || 400).json({ error: err.message || 'Failed to query feature info.' });
+    }
+  }
+
+  // ─── TNGIS Phase 5: Upload-and-Overlay Preview ──────────────────
+
+  // 17. POST /api/gis/overlay-preview
+  async getOverlayPreview(req: Request, res: Response) {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded. Send file in multipart field "file".' });
+      }
+      const result = await gisService.getOverlayPreview(file.buffer, file.originalname);
+      res.json({
+        message: `Overlay preview computed for ${file.originalname}`,
+        ...result,
+      });
+    } catch (err: any) {
+      res.status(err.status || 500).json({ error: err.message || 'Failed to process overlay preview.' });
+    }
+  }
+
+  // ─── Hierarchy Drill-Down Endpoints ─────────────────────────────
+
+  // 18. GET /api/gis/hierarchy/districts?state=Tamil+Nadu
+  async listDistricts(req: Request, res: Response) {
+    try {
+      const { state } = req.query;
+      const districts = await gisService.listDistricts(state as string);
+      res.json({ state, total: districts.length, districts });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ error: err.message || 'Failed to list districts.' });
+    }
+  }
+
+  // 19. GET /api/gis/hierarchy/taluks?state=...&district=...
+  async listTaluks(req: Request, res: Response) {
+    try {
+      const { state, district } = req.query;
+      const taluks = await gisService.listTaluks(state as string, district as string);
+      res.json({ state, district, total: taluks.length, taluks });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ error: err.message || 'Failed to list taluks.' });
+    }
+  }
+
+  // 20. GET /api/gis/hierarchy/villages?state=...&district=...&taluk=...
+  async listVillages(req: Request, res: Response) {
+    try {
+      const { state, district, taluk } = req.query;
+      const villages = await gisService.listVillages(state as string, district as string, taluk as string);
+      res.json({ state, district, taluk, total: villages.length, villages });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ error: err.message || 'Failed to list villages.' });
+    }
+  }
+
+  // 21. GET /api/gis/hierarchy/survey-numbers?state=...&district=...&taluk=...&village=...
+  async listSurveyNumbers(req: Request, res: Response) {
+    try {
+      const { state, district, taluk, village } = req.query;
+      const surveyNumbers = await gisService.listSurveyNumbers(state as string, district as string, taluk as string, village as string);
+      res.json({ state, district, taluk, village, total: surveyNumbers.length, surveyNumbers });
+    } catch (err: any) {
+      res.status(err.status || 400).json({ error: err.message || 'Failed to list survey numbers.' });
+    }
+  }
+
+  // 22. GET /api/gis/hierarchy/boundary?level=district&district=Kanchipuram
+  async getBoundaryGeometry(req: Request, res: Response) {
+    try {
+      const { level, ...filters } = req.query;
+      const cleanFilters: Record<string, string> = {};
+      for (const [k, v] of Object.entries(filters)) {
+        if (typeof v === 'string') cleanFilters[k] = v;
+      }
+      const boundary = await gisService.getBoundaryGeometry(level as string, cleanFilters);
+      res.json(boundary);
+    } catch (err: any) {
+      res.status(err.status || 400).json({ error: err.message || 'Failed to get boundary geometry.' });
     }
   }
 }

@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip, useMap, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import { Parcel } from "@/types";
 import { ClickedLocation, BasemapType } from "@/types/gis";
 import MapClickHandler from "./MapClickHandler";
 import MapControls from "./MapControls";
+import MeasureTool from "./MeasureTool";
 import { reverseGeocode } from "@/services/gisService";
-import { fetchLocationAnalysis } from "@/services/gisAnalysisService";
+import { fetchLocationAnalysis, fetchFeatureInfo } from "@/services/gisAnalysisService";
 import { resolveMasterPlanZone, resolveZoneWithBackendType, MasterPlanZoneConfig } from "@/utils/zoneResolver";
+import DynamicVectorLayer from "./DynamicVectorLayer";
+import FeatureDataTable from "./FeatureDataTable";
 
 // Fix missing marker icon issue in Leaflet + Next.js
 const defaultIcon = L.icon({
@@ -24,12 +27,25 @@ const defaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = defaultIcon;
 
+interface OverlayData {
+  uploadedGeojson: any;
+  overlappingParcels: any[];
+}
+
 interface GisMapInnerProps {
   parcels?: Parcel[];
   onSelectParcel?: (parcel: Parcel) => void;
   clickedLocation: ClickedLocation | null;
   setClickedLocation: (loc: ClickedLocation | null) => void;
   targetFlyTo: { lat: number; lng: number; zoom?: number } | null;
+  activeQueryLayer?: string;
+  overlayData?: OverlayData | null;
+  hierarchyBoundary?: any;
+  activeRegistryLayers: string[];
+  onLayerLoadStart?: (layerId: string) => void;
+  onLayerLoadSuccess?: (layerId: string, featureCount?: number, source?: string) => void;
+  onLayerLoadError?: (layerId: string, errorMsg: string) => void;
+  onLayerFeatureClick?: (properties: any, layerName: string) => void;
 }
 
 // Controller to fly map smoothly to target coordinates
@@ -61,10 +77,30 @@ export default function GisMapInner({
   clickedLocation,
   setClickedLocation,
   targetFlyTo,
+  activeQueryLayer,
+  overlayData,
+  hierarchyBoundary,
+  activeRegistryLayers,
+  onLayerLoadStart,
+  onLayerLoadSuccess,
+  onLayerLoadError,
+  onLayerFeatureClick,
 }: GisMapInnerProps) {
   const [basemap, setBasemap] = useState<BasemapType>("satellite");
   const [zoneData, setZoneData] = useState<MasterPlanZoneConfig | null>(null);
   const [analysisData, setAnalysisData] = useState<any>(null);
+
+  // Phase 3: Measurement tool state
+  const [measureMode, setMeasureMode] = useState<"off" | "distance" | "area">("off");
+  const [measureKey, setMeasureKey] = useState(0);
+
+  // Phase 2: Feature info popup for thematic layers
+  const [featureInfoPopup, setFeatureInfoPopup] = useState<{
+    lat: number;
+    lng: number;
+    layer: string;
+    attributes: Record<string, any>;
+  } | null>(null);
 
   const basemapUrls = {
     osm: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
@@ -120,6 +156,26 @@ export default function GisMapInner({
   }, [clickedLocation?.lat, clickedLocation?.lng, clickedLocation?.displayName]);
 
   const handleMapClick = async (lat: number, lng: number) => {
+    // Phase 3: Don't process normal clicks while measuring
+    if (measureMode !== "off") return;
+
+    // Phase 2: If a thematic layer is active (not parcels), do a feature-info query
+    const queryLayer = activeQueryLayer || 'parcels';
+    if (queryLayer !== 'parcels') {
+      setFeatureInfoPopup(null);
+      try {
+        const info = await fetchFeatureInfo(queryLayer, lat, lng);
+        if (info && info.found) {
+          setFeatureInfoPopup({ lat, lng, layer: queryLayer, attributes: info.attributes });
+        }
+      } catch (err) {
+        console.warn('Feature info query failed:', err);
+      }
+      return;
+    }
+
+    // Default parcel/location click behavior
+    setFeatureInfoPopup(null);
     setClickedLocation({
       lat,
       lng,
@@ -136,6 +192,10 @@ export default function GisMapInner({
       loading: false,
     });
   };
+
+  const handleClearMeasure = useCallback(() => {
+    setMeasureKey((k) => k + 1);
+  }, []);
 
   const survey = analysisData?.cadastralSurvey;
   const tax = analysisData?.propertyTax;
@@ -167,6 +227,18 @@ export default function GisMapInner({
           maxZoom={19}
         />
 
+        {/* Phase 5: Dynamic GIS Layers from Registry */}
+        {activeRegistryLayers.map((layerId) => (
+          <DynamicVectorLayer 
+            key={layerId} 
+            layerId={layerId} 
+            onLoadStart={() => onLayerLoadStart?.(layerId)}
+            onLoadSuccess={(count, src) => onLayerLoadSuccess?.(layerId, count, src)}
+            onLoadError={(msg) => onLayerLoadError?.(layerId, msg)}
+            onFeatureClick={(props, layerName) => onLayerFeatureClick?.(props, layerName)}
+          />
+        ))}
+
         {basemap === "satellite" && (
           <TileLayer
             key="satellite-labels"
@@ -182,7 +254,24 @@ export default function GisMapInner({
         <MapClickHandler onMapClick={handleMapClick} />
 
         {/* Custom Map Control Panel */}
-        <MapControls currentBasemap={basemap} onSelectBasemap={(b) => setBasemap(b)} />
+        <MapControls
+          currentBasemap={basemap}
+          onSelectBasemap={(b) => setBasemap(b)}
+          measureMode={measureMode}
+          onSetMeasureMode={setMeasureMode}
+          onClearMeasure={handleClearMeasure}
+          onGoToPoint={handleMapClick}
+        />
+
+        {/* Phase 5: Attribute Filter & Data Table */}
+        <FeatureDataTable activeLayers={activeRegistryLayers} />
+
+        {/* Phase 3: Measurement Tool */}
+        <MeasureTool
+          key={measureKey}
+          mode={measureMode === "off" ? "distance" : measureMode}
+          active={measureMode !== "off"}
+        />
 
         {/* Dynamic Zone Polygon Overlay when a Location is Clicked */}
         {clickedLocation && zoneData && (
@@ -336,29 +425,142 @@ export default function GisMapInner({
         )}
 
         {/* Render Parcel Polygons if available */}
-        {parcels.map((parcel) => (
-          <Polygon
-            key={parcel.ulpin}
-            positions={parcel.coordinates[0].map(([lng, lat]) => [lat, lng])}
-            pathOptions={{
-              color: parcel.verificationStatus === "Verified" ? "#059669" : "#d97706",
-              fillColor: parcel.verificationStatus === "Verified" ? "#10b981" : "#f59e0b",
-              fillOpacity: 0.25,
-              weight: 2,
-            }}
-            eventHandlers={{
-              click: () => onSelectParcel && onSelectParcel(parcel),
-            }}
-          >
-            <Popup>
-              <div className="p-1 text-xs">
-                <span className="font-mono font-bold text-blue-700 block">{parcel.ulpin}</span>
-                <span className="font-semibold text-slate-900">{parcel.currentUse}</span>
-                <span className="text-[10px] block text-slate-500">S.No {parcel.surveyNumber} ({parcel.areaAcres} Acres)</span>
+        {parcels.map((parcel) => {
+          if (!parcel?.coordinates || !Array.isArray(parcel.coordinates) || parcel.coordinates.length === 0) {
+            return null;
+          }
+
+          // Handle GeoJSON Polygon ring structure [[[lng, lat]...]] or simple ring [[lng, lat]...]
+          const firstElement = parcel.coordinates[0];
+          const rawRing = Array.isArray(firstElement?.[0]) ? firstElement : parcel.coordinates;
+
+          if (!Array.isArray(rawRing) || rawRing.length === 0) {
+            return null;
+          }
+
+          const positions = rawRing
+            .filter((pt): pt is [number, number] => Array.isArray(pt) && pt.length >= 2 && typeof pt[0] === 'number' && typeof pt[1] === 'number')
+            .map(([lng, lat]) => [lat, lng] as [number, number]);
+
+          if (positions.length < 3) return null;
+
+          return (
+            <Polygon
+              key={parcel.ulpin || parcel.id}
+              positions={positions}
+              pathOptions={{
+                color: parcel.verificationStatus === "Verified" ? "#059669" : "#d97706",
+                fillColor: parcel.verificationStatus === "Verified" ? "#10b981" : "#f59e0b",
+                fillOpacity: 0.25,
+                weight: 2,
+              }}
+              eventHandlers={{
+                click: () => onSelectParcel && onSelectParcel(parcel),
+              }}
+            >
+              <Popup>
+                <div className="p-1 text-xs">
+                  <span className="font-mono font-bold text-blue-700 block">{parcel.ulpin}</span>
+                  <span className="font-semibold text-slate-900">{parcel.currentUse}</span>
+                  <span className="text-[10px] block text-slate-500">S.No {parcel.surveyNumber} ({parcel.areaAcres} Acres)</span>
+                </div>
+              </Popup>
+            </Polygon>
+          );
+        })}
+
+        {/* Phase 2: Generic Feature Info Popup for Thematic Layers */}
+        {featureInfoPopup && (
+          <Marker position={[featureInfoPopup.lat, featureInfoPopup.lng]}>
+            <Popup className="text-xs font-sans max-w-xs">
+              <div className="p-1.5 space-y-1.5 min-w-[220px]">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                  <div className="flex items-center space-x-1">
+                    <span className="w-2 h-2 rounded-full bg-violet-500"></span>
+                    <span className="font-bold text-slate-900 text-[11px] uppercase">
+                      {featureInfoPopup.layer.replace(/_/g, " ")} Info
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {Object.entries(featureInfoPopup.attributes).map(([key, value]) => (
+                    <div key={key} className="flex justify-between text-[10px]">
+                      <span className="text-slate-500 font-semibold capitalize">{key.replace(/_/g, " ")}</span>
+                      <span className="text-slate-800 font-bold text-right ml-2">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[9px] text-slate-400 border-t border-slate-100 pt-1 font-mono">
+                  {featureInfoPopup.lat.toFixed(5)}, {featureInfoPopup.lng.toFixed(5)}
+                </div>
               </div>
             </Popup>
-          </Polygon>
-        ))}
+          </Marker>
+        )}
+
+        {/* Phase 5: Overlay — Uploaded Survey in Red */}
+        {overlayData?.uploadedGeojson?.features?.length > 0 && (
+          <GeoJSON
+            key={`overlay-uploaded-${JSON.stringify(overlayData!.uploadedGeojson).length}`}
+            data={overlayData!.uploadedGeojson}
+            style={{
+              color: "#dc2626",
+              fillColor: "#ef4444",
+              fillOpacity: 0.25,
+              weight: 3,
+            }}
+          >
+            <Tooltip permanent direction="top">
+              <span className="text-[10px] font-bold text-red-600">📤 Uploaded Survey</span>
+            </Tooltip>
+          </GeoJSON>
+        )}
+
+        {/* Phase 5: Overlay — Overlapping Existing Parcels in Blue */}
+        {overlayData?.overlappingParcels?.map((parcel: any, idx: number) => {
+          if (!parcel.geometry?.coordinates) return null;
+          const ring = parcel.geometry.coordinates[0] || [];
+          const positions = ring
+            .filter((pt: any) => Array.isArray(pt) && pt.length >= 2)
+            .map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+          if (positions.length < 3) return null;
+          return (
+            <Polygon
+              key={`overlay-existing-${parcel.ulpin || idx}`}
+              positions={positions}
+              pathOptions={{
+                color: "#2563eb",
+                fillColor: "#3b82f6",
+                fillOpacity: 0.2,
+                weight: 3,
+                dashArray: "6, 4",
+              }}
+            >
+              <Tooltip permanent direction="bottom">
+                <span className="text-[10px] font-bold text-blue-700">🏛️ {parcel.ulpin || 'Existing Parcel'}</span>
+              </Tooltip>
+            </Polygon>
+          );
+        })}
+
+        {/* Hierarchy Drill-Down: Boundary Highlight */}
+        {hierarchyBoundary && (
+          <GeoJSON
+            key={`hierarchy-boundary-${JSON.stringify(hierarchyBoundary).length}`}
+            data={hierarchyBoundary.type ? hierarchyBoundary : { type: 'Feature', geometry: hierarchyBoundary, properties: {} }}
+            style={{
+              color: "#6366f1",
+              fillColor: "#818cf8",
+              fillOpacity: 0.08,
+              weight: 3,
+              dashArray: "10, 6",
+            }}
+          >
+            <Tooltip permanent direction="center" className="custom-zone-tooltip">
+              <span className="text-[10px] font-bold text-indigo-700">📍 Selected Boundary</span>
+            </Tooltip>
+          </GeoJSON>
+        )}
       </MapContainer>
     </div>
   );

@@ -1,0 +1,98 @@
+[
+  {
+    "khasra_no": "143/2",
+    "khewat_no": "KHW-CH-2021-0143",
+    "owner_nm": "Gurpreet Singh Bhatia",
+    "extent_sqm": 3560,
+    "land_type": "Residential",
+    "mauza_name": "Sector 22",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_ADHR_9a3f...",
+    "encumbrance": "Clear",
+    "coordinates": [[[76.8102, 30.7410], [76.8114, 30.7410], [76.8114, 30.7419], [76.8102, 30.7419], [76.8102, 30.7410]]]
+  },
+  {
+    "khasra_no": "201/4A",
+    "khewat_no": "KHW-CH-2019-0201",
+    "owner_nm": "Harpreet Kaur & Sons",
+    "extent_sqm": 8200,
+    "land_type": "Agricultural",
+    "mauza_name": "Hallomajra",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_ADHR_7b2e...",
+    "encumbrance": "Mortgaged",
+    "coordinates": [[[76.8220, 30.7330], [76.8238, 30.7330], [76.8238, 30.7343], [76.8220, 30.7343], [76.8220, 30.7330]]]
+  },
+  {
+    "khasra_no": "78/1",
+    "khewat_no": "KHW-CH-2023-0078",
+    "owner_nm": "Punjab National Bank (Commercial Auction)",
+    "extent_sqm": 12450,
+    "land_type": "Commercial",
+    "mauza_name": "Industrial Area Phase 1",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_GOV_PNB_001",
+    "encumbrance": "Government Encroachment Watch",
+    "coordinates": [[[76.8005, 30.7065], [76.8025, 30.7065], [76.8025, 30.7080], [76.8005, 30.7080], [76.8005, 30.7065]]]
+  },
+  {
+    "khasra_no": "355/B",
+    "khewat_no": "KHW-CH-2020-0355",
+    "owner_nm": "Sukhwinder Mehta",
+    "extent_sqm": 4100,
+    "land_type": "Residential",
+    "mauza_name": "Sector 38",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_ADHR_3c1a...",
+    "encumbrance": "Clear",
+    "coordinates": [[[76.8312, 30.7240], [76.8324, 30.7240], [76.8324, 30.7249], [76.8312, 30.7249], [76.8312, 30.7240]]]
+  },
+  {
+    "khasra_no": "112/7C",
+    "khewat_no": "KHW-CH-2018-0112",
+    "owner_nm": "Chandigarh Housing Board",
+    "extent_sqm": 52000,
+    "land_type": "Government Residential",
+    "mauza_name": "Manimajra",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_GOV_CHB_001",
+    "encumbrance": "Clear",
+    "coordinates": [[[76.8460, 30.7150], [76.8490, 30.7150], [76.8490, 30.7175], [76.8460, 30.7175], [76.8460, 30.7150]]]
+  },
+  {
+    "khasra_no": "445/2B",
+    "khewat_no": "KHW-CH-2022-0445",
+    "owner_nm": "Ramesh Chand Verma",
+    "extent_sqm": 6800,
+    "land_type": "Agricultural",
+    "mauza_name": "Dhanas",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_ADHR_5f8d...",
+    "encumbrance": "Clear",
+    "coordinates": [[[76.7835, 30.7415], [76.7855, 30.7415], [76.7855, 30.7430], [76.7835, 30.7430], [76.7835, 30.7415]]]
+  },
+  {
+    "khasra_no": "289/3",
+    "khewat_no": "KHW-CH-2017-0289",
+    "owner_nm": "Deepak Kumar & Anita Devi",
+    "extent_sqm": 2800,
+    "land_type": "Residential",
+    "mauza_name": "Sector 45",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_ADHR_2b6c...",
+    "encumbrance": "Disputed",
+    "coordinates": [[[76.8180, 30.7180], [76.8190, 30.7180], [76.8190, 30.7188], [76.8180, 30.7188], [76.8180, 30.7180]]]
+  },
+  {
+    "khasra_no": "67/11A",
+    "khewat_no": "KHW-CH-2024-0067",
+    "owner_nm": "Tejinder Pal Singh",
+    "extent_sqm": 9300,
+    "land_type": "Industrial",
+    "mauza_name": "Industrial Area Phase 2",
+    "tehsil_nm": "Chandigarh",
+    "aadhaar_hash": "CH_ADHR_8e4f...",
+    "encumbrance": "Clear",
+    "coordinates": [[[76.7990, 30.7040], [76.8010, 30.7040], [76.8010, 30.7055], [76.7990, 30.7055], [76.7990, 30.7040]]]
+  }
+]

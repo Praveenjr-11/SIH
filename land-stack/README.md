@@ -58,3 +58,14 @@ npm run dev
 
 ## 🏛️ GSI Integration Disclaimer
 **GSI (Geological Survey of India)** data is provided purely as an external geoscientific, lithological, and geohazard advisory layer (`/api/v1/gsi/layers`) for land-use and infrastructure planning. Cadastral ownership, RoR, registration, and ULPIN records are managed under State Revenue Authority endpoints (`/api/v1/parcels`).
+
+## Live Tamil Nadu GIS (TNGIS) layers
+
+The map can render live, official TNGIS WMS tiles through the backend proxy. This keeps the public-portal session on the server and prevents browsers from receiving its cookie.
+
+1. Sign in to the public TNGIS portal using an account authorised for the required public layers.
+2. In `backend/.env`, set `TNGIS_SESSION_COOKIE` to the resulting session cookie. Never commit this value.
+3. Optionally set `TNGIS_WMS_LAYERS` to a comma-separated allow-list of WMS layer names. Leave it empty initially to inspect the layers exposed by the authorised session.
+4. Restart the backend. Check `GET /api/gis/tngis/status`; the map automatically renders the first permitted live layer.
+
+The connector uses `https://tngis.tn.gov.in/geoserver/wms` and only proxies WMS `GetMap` requests for layers returned to the configured session. It does not bypass TNGIS authentication or expose cadastral ownership information without authorisation.

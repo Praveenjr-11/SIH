@@ -46,7 +46,7 @@ export interface Parcel {
   registrationDocNo: string;
   registrationDate: string;
   encumbranceStatus: 'Clear' | 'Mortgaged' | 'Disputed' | 'Government Encroachment Watch';
-  verificationStatus: 'Verified' | 'Pending' | 'Disputed';
+  verificationStatus: 'UNVERIFIED' | 'FIELD_SURVEYED' | 'REGISTRAR_ENDORSED' | 'IMMUTABLE' | 'Verified' | 'Pending' | 'Disputed' | string;
   disputeReason?: string;
   coordinates: [number, number][][];
   center: [number, number];
@@ -117,13 +117,32 @@ export interface LandMutation {
   remarks: string;
 }
 
+export interface DistrictGovernanceAnalytics {
+  district: string;
+  casesCount: number;
+  parcelsCount: number;
+  totalAreaAcres: number;
+  totalValuationCrores: number;
+  highRiskCases: number;
+}
+
 export interface LandAnalytics {
   totalParcels: number;
   verifiedParcels: number;
   disputedParcels: number;
   pendingMutations: number;
   totalAreaAcres: number;
+  totalValuationCrores?: number;
+  avgGuidelineRatePerSqFt?: number;
   zoneDistribution: { zone: string; count: number; area: number }[];
   gsiHazardRiskBreakdown: { level: string; count: number }[];
+  districtDistribution?: DistrictGovernanceAnalytics[];
   recentMutationsCount: number;
+  provenanceMetadata?: {
+    administrativeBoundaries: string;
+    reginetGuidelineRates: string;
+    geologicalLayers: string;
+    litigantNames: string;
+  };
 }
+

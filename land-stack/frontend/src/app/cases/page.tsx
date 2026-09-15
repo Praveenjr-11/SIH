@@ -20,6 +20,7 @@ import {
   Scale
 } from "lucide-react";
 import { useOfficerAuth } from "@/context/OfficerAuthContext";
+import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 
 export default function LandCaseWorkspacePage() {
   const { officer } = useOfficerAuth();
@@ -27,6 +28,7 @@ export default function LandCaseWorkspacePage() {
   const [recommendation, setRecommendation] = useState<"APPROVE" | "REJECT" | "REQUEST_INSPECTION">("APPROVE");
   const [justification, setJustification] = useState("");
   const [reportGenerated, setReportGenerated] = useState(false);
+
 
   const sampleCase = {
     caseNo: "CASE-2026-815072",
@@ -57,7 +59,9 @@ export default function LandCaseWorkspacePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 sm:p-10 font-sans pb-20">
+    <OfficerProtectedGuard>
+      <div className="min-h-screen bg-slate-950 text-slate-100 p-6 sm:p-10 font-sans pb-20">
+
       <div className="max-w-7xl mx-auto space-y-6">
         {/* CASE WORKSPACE HEADER */}
         <div className="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
@@ -327,5 +331,7 @@ export default function LandCaseWorkspacePage() {
         )}
       </div>
     </div>
+    </OfficerProtectedGuard>
   );
 }
+

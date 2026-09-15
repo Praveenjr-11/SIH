@@ -1,6 +1,13 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
+function getAuthHeader(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('landstack_officer_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
 export async function fetchParcels(status?: string, search?: string) {
+
   try {
     const params = new URLSearchParams();
     if (status) params.append('status', status);
@@ -90,7 +97,10 @@ export async function fetchMutations() {
 
 export async function fetchAnalytics() {
   try {
-    const res = await fetch(`${API_BASE}/analytics/dashboard`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/analytics/dashboard`, { 
+      headers: getAuthHeader(),
+      cache: 'no-store' 
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return data.analytics;

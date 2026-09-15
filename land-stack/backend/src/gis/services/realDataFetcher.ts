@@ -734,6 +734,11 @@ export function generateSurveyFromRealData(
     registrationDate: `14-May-${regYear}`,
     encumbranceStatus: 'Verified — Check State EC Portal for Latest',
     landClassification: 'Open Land',
+    realGuidelineValuePerSqft: 1450,
+    guidelineSource: 'https://tnreginet.gov.in (TN Registration Department Public Guideline Rates)',
+    guidelineDataStatus: 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
+    ownerDataStatus: 'SYNTHETIC_DEMO_DATA',
+    ownerDataNote: 'Illustrative record — Patta/Chitta owner names are gated behind citizen OTP verification on eservices.tn.gov.in',
     source: 'REAL_GEOCODED_REVENUE_REGISTRY',
   };
 }

@@ -1,18 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
 import GisMapContainer from "@/components/gis/GisMapContainer";
 import ParcelInspector from "@/components/ParcelInspector";
 import { Parcel } from "@/types";
 import { fetchParcels } from "@/services/api";
-import { Layers, ArrowLeft, UserCheck, Search, Compass, MapPin } from "lucide-react";
-import { useOfficerAuth } from "@/context/OfficerAuthContext";
 
+// Public citizen-facing map view — no officer login required
 export default function PublicMapPage() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [selectedParcel, setSelectedParcel] = useState<Parcel | null>(null);
-  const { officer } = useOfficerAuth();
 
   useEffect(() => {
     async function loadParcels() {

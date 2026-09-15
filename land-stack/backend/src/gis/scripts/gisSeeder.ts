@@ -94,7 +94,9 @@ export async function runGisSeed() {
   const files = [
     { file: 'states.geojson', table: 'states' },
     { file: 'districts.geojson', table: 'districts' },
-    { file: 'villages.geojson', table: 'villages' },
+    // NOTE: villages boundary data should come from real LGD importer,
+    // NOT from mock seed data. Run `npm run gis:import-subdistricts` instead.
+    // { file: 'villages.geojson', table: 'villages' },
     { file: 'geology.geojson', table: 'geology' },
     { file: 'soil.geojson', table: 'soil' },
     { file: 'landuse.geojson', table: 'landuse' },

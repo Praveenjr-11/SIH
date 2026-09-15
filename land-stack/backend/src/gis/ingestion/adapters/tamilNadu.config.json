@@ -1,0 +1,14 @@
+{
+  "state": "Tamil Nadu",
+  "state_code": "TN",
+  "source_format": "tn_patta_csv",
+  "field_mapping": {
+    "survey_no": "survey_number",
+    "taluk_name": "taluk_name",
+    "village_name": "village_name",
+    "extent_acres": "area_acres",
+    "patta_holder": "owner_name",
+    "patta_no": "registration_doc_no",
+    "land_class": "land_classification"
+  }
+}
