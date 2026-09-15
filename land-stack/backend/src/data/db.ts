@@ -247,7 +247,7 @@ function generate500PlusLandCases() {
     const dInfo = tnDistrictsData[dIdx];
     const distCode = (dIdx + 1).toString().padStart(2, '0');
 
-    for (let cIdx = 0; cIdx < 15; cIdx++) {
+    for (let cIdx = 0; cIdx < 23; cIdx++) {
       const caseIdNum = currentId++;
       const caseNo = `CASE-2026-TN-${distCode}-${caseIdNum}`;
       const surveyNo = `${Math.floor(50 + Math.random() * 450)}/${Math.floor(1 + Math.random() * 9)}${String.fromCharCode(65 + (cIdx % 6))}`;
@@ -255,8 +255,8 @@ function generate500PlusLandCases() {
       const ulpin = `TN33${distCode}000${Math.floor(1000 + Math.random() * 8999)}`;
       const talukName = dInfo.taluks[cIdx % dInfo.taluks.length];
       const villageName = `${talukName} Village`;
-      const owner = ownersList[(dIdx * 15 + cIdx) % ownersList.length];
-      const cType = disputeCategoriesList[(dIdx * 15 + cIdx) % disputeCategoriesList.length];
+      const owner = ownersList[(dIdx * 20 + cIdx) % ownersList.length];
+      const cType = disputeCategoriesList[(dIdx * 20 + cIdx) % disputeCategoriesList.length];
       const forum = judicialForums[(dIdx + cIdx) % judicialForums.length];
       const docType = documentTypesList[(dIdx + cIdx) % documentTypesList.length];
       const status = statusOptions[(dIdx + cIdx) % statusOptions.length];
