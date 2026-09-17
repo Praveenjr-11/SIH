@@ -1,44 +1,246 @@
-/* Land Stack Main GIS Design Tokens & Tailwind CSS Imports */
+/* Land Stack - Tamil Nadu Digital Public Infrastructure (DPI) Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Official Tamil Nadu Land Stack Color Tokens - High Contrast Adaptive Palette */
+  --primary-navy: #102A43;
+  --primary-blue: #1D5FD1;
+  --primary-blue-hover: #154CB0;
+  --color-success: #166534;
+  --color-warning: #9A3412;
+  --color-danger: #991B1B;
+  --bg-main: #F7F9FC;
+  --card-bg: #FFFFFF;
+  --border-color: #CBD5E1;
+  --border-subtle: #E2E8F0;
+  --text-main: #0F172A;
+  --text-muted: #334E68;
+
+  /* Standard spacing tokens */
+  --page-padding: 28px;
+  --section-spacing: 24px;
+  --card-padding: 20px;
+  --table-row-height: 50px;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbars */
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--primary-navy);
+  letter-spacing: -0.015em;
+  font-weight: 700;
+}
+
+.text-gov-muted {
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   SIDEBAR STRICT HIGH-CONTRAST VISIBILITY (CRITICAL FIX #1)
+   ========================================================================== */
+aside {
+  background-color: #102A43 !important;
+}
+
+aside span,
+aside p,
+aside a,
+aside div,
+aside button,
+aside label {
+  color: #E7EEF7;
+}
+
+aside svg {
+  color: #D9E5F2;
+}
+
+/* Active navigation item: Solid Blue, White Icon, White Text */
+aside a.active-nav-item,
+aside a.active-nav-item span,
+aside a.active-nav-item svg,
+aside a[class*="bg-[#1D5FD1]"],
+aside a[class*="bg-[#1D5FD1]"] span,
+aside a[class*="bg-[#1D5FD1]"] svg {
+  background-color: #1D5FD1 !important;
+  color: #FFFFFF !important;
+}
+
+aside a:hover span,
+aside a:hover svg,
+aside button:hover span,
+aside button:hover svg {
+  color: #FFFFFF !important;
+}
+
+/* Adaptive Input & Placeholder Visibility */
+::placeholder {
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+/* Ensure secondary subtext is clearly legible on all monitors */
+.text-slate-400 {
+  color: #475569;
+}
+
+/* On dark navy surfaces, ensure subtext is bright and distinct */
+aside .text-slate-400,
+header.bg-\[\#102A43\] .text-slate-400,
+div.bg-\[\#102A43\] .text-slate-400 {
+  color: #CBD5E1;
+}
+
+/* Accessibility Focus Indicator (WCAG 2.1 AA) */
+:focus-visible {
+  outline: 2px solid #1D5FD1;
+  outline-offset: 2px;
+}
+
+/* High Contrast & Adaptive Media Queries (WCAG AAA) */
+@media (prefers-contrast: more) {
+  :root {
+    --text-main: #000000;
+    --text-muted: #1E293B;
+    --border-color: #64748B;
+  }
+}
+
+/* Custom Standard Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #F1F4F8;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #C4CDD5;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9AA8B7;
 }
 
 /* Leaflet Map Fixes */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background-color: #e2e8f0;
-  font-family: inherit;
+  background-color: #E3E8EF;
+  font-family: 'Inter', sans-serif;
 }
+
+.leaflet-popup-content-wrapper {
+  background: #FFFFFF !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(16, 42, 67, 0.12) !important;
+  padding: 4px !important;
+}
+
+.leaflet-popup-tip {
+  background: #FFFFFF !important;
+}
+
+/* Government Data Table Standards: Row height 48-54px */
+.gov-table th {
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #53627A;
+  background-color: #F1F4F8;
+  border-bottom: 1px solid #E3E8EF;
+}
+
+.gov-table td {
+  padding: 14px 16px;
+  font-size: 13px;
+  height: 50px;
+  vertical-align: middle;
+  border-bottom: 1px solid #E3E8EF;
+}
+
+.gov-table tr:hover td {
+  background-color: #F8FAFD;
+}
+
+/* Crisp Government Card Class */
+.gov-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E3E8EF;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(16, 42, 67, 0.05);
+}
+
+/* Crisp Government Button Utilities */
+.gov-btn-primary {
+  background-color: #1D5FD1;
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background-color 0.15s ease-in-out;
+}
+.gov-btn-primary:hover {
+  background-color: #154CB0;
+}
+
+.gov-btn-navy {
+  background-color: #102A43;
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background-color 0.15s ease-in-out;
+}
+.gov-btn-navy:hover {
+  background-color: #0B1F33;
+}
+
+.gov-btn-secondary {
+  background-color: #FFFFFF;
+  color: #102A43;
+  border: 1px solid #E3E8EF;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: background-color 0.15s ease-in-out;
+}
+.gov-btn-secondary:hover {
+  background-color: #F1F4F8;
+}
+
+/* Custom Leaflet Tooltips for Land Stack GIS */
+.custom-parcel-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.custom-parcel-tooltip::before {
+  display: none !important;
+}
+
+.district-boundary-tooltip {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid #C7D2FE !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  padding: 2px 6px !important;
+}
+

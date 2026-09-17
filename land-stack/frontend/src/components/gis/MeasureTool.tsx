@@ -89,7 +89,7 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
           radius={4}
           pathOptions={{
             color: "#ffffff",
-            fillColor: mode === "distance" ? "#2563eb" : "#dc2626",
+            fillColor: mode === "distance" ? "#1D5FD1" : "#D9363E",
             fillOpacity: 1,
             weight: 2,
           }}
@@ -101,7 +101,7 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
         <Polyline
           positions={points}
           pathOptions={{
-            color: "#2563eb",
+            color: "#1D5FD1",
             weight: 3,
             dashArray: isFinished ? undefined : "8, 6",
             opacity: 0.9,
@@ -114,8 +114,8 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
         <LeafletPolygon
           positions={points}
           pathOptions={{
-            color: "#dc2626",
-            fillColor: "#dc2626",
+            color: "#D9363E",
+            fillColor: "#D9363E",
             fillOpacity: 0.15,
             weight: 2,
             dashArray: isFinished ? undefined : "8, 6",
@@ -131,7 +131,7 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
           pathOptions={{ opacity: 0 }}
         >
           <Tooltip permanent direction="right" offset={[12, 0]} className="measure-tooltip">
-            <div className="bg-slate-900/90 text-white px-2.5 py-1 rounded-lg text-xs font-bold shadow-lg backdrop-blur-sm">
+            <div className="bg-[#102A43] text-white px-2.5 py-1 rounded-md text-xs font-semibold shadow-md border border-[#102A43]">
               {measurement}
               {!isFinished && (
                 <span className="block text-[9px] text-slate-300 font-normal mt-0.5">

@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { LandMutation } from "@/types";
 import { fetchMutations } from "@/services/api";
-import { Activity, ShieldCheck, AlertTriangle, FileCheck, CheckCircle2 } from "lucide-react";
+import { Activity, ShieldCheck, AlertTriangle, FileCheck, CheckCircle2, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 
 export default function MutationPage() {
   const [mutations, setMutations] = useState<LandMutation[]>([]);
@@ -20,72 +22,76 @@ export default function MutationPage() {
   }, []);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Land Mutation Audit Ledger</h1>
-          <p className="text-sm text-slate-500 font-medium">Automated Spatial Overlap Checks & GSI Geohazard Clearance</p>
+    <OfficerProtectedGuard>
+      <div className="max-w-7xl mx-auto px-6 py-7 sm:px-8 space-y-6 font-sans antialiased pb-20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E3E8EF] pb-5">
+          <div>
+            <h1 className="text-2xl font-bold text-[#102A43]">Land Mutation Audit Ledger</h1>
+            <p className="text-xs text-[#53627A] mt-0.5">Automated Spatial Overlap Checks, SRO Deed Linkage & GSI Geohazard Clearance</p>
+          </div>
+          <div className="px-3 py-1.5 bg-[#F1F5FB] border border-[#E3E8EF] text-[#1D5FD1] text-xs font-semibold rounded-md flex items-center space-x-2">
+            <Activity className="w-4 h-4 text-[#1D5FD1]" />
+            <span>Realtime Mutation Engine Active</span>
+          </div>
         </div>
-        <div className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded-xl flex items-center space-x-2 shadow-xs">
-          <Activity className="w-4 h-4 animate-pulse text-blue-600" />
-          <span>Realtime Backend Mutation Engine</span>
-        </div>
+
+        {loading ? (
+          <div className="py-16 text-center text-[#53627A] text-xs font-medium">
+            Loading mutation audit records from database...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {mutations.map((m) => (
+              <div key={m.id} className="bg-white border border-[#E3E8EF] p-5 rounded-lg shadow-xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E3E8EF] pb-3">
+                  <div className="flex items-center space-x-2.5">
+                    <span className="font-mono text-xs font-bold bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] px-2.5 py-1 rounded">
+                      {m.applicationId}
+                    </span>
+                    <span className="text-sm font-bold text-[#102A43]">ULPIN: {m.ulpin} (S.No {m.surveyNumber})</span>
+                  </div>
+                  <span className="text-xs text-[#53627A]">Applied Date: <strong className="text-[#14213D]">{m.appliedDate}</strong></span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Buyer / Transferee</span>
+                    <span className="text-[#102A43] font-bold text-xs">{m.buyerName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Seller / Transferor</span>
+                    <span className="text-[#102A43] font-bold text-xs">{m.sellerName}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Mutation Category</span>
+                    <span className="text-[#1D5FD1] font-bold text-xs">{m.mutationType}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 text-xs">
+                  <div className="flex items-center space-x-3">
+                    <span className="text-[#53627A] font-medium">Spatial Overlap Audit:</span>
+                    <span className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] border ${
+                      m.spatialAuditStatus === 'Passed'
+                        ? 'bg-[#EDF7F2] text-[#16845B] border-[#16845B]/30'
+                        : 'bg-[#FEF5E7] text-[#E99A16] border-[#E99A16]/30'
+                    }`}>
+                      {m.spatialAuditStatus}
+                    </span>
+
+                    <span className="text-[#53627A] font-medium ml-2">GSI Clearance:</span>
+                    <span className="px-2 py-0.5 rounded font-bold uppercase text-[10px] bg-[#EDF7F2] text-[#16845B] border border-[#16845B]/30">
+                      {m.gsiClearance}
+                    </span>
+                  </div>
+
+                  <div className="text-[#53627A] text-[11px]">{m.remarks}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-
-      {loading ? (
-        <div className="py-20 text-center text-slate-500 text-sm font-medium">Loading mutation audit ledger...</div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {mutations.map((m) => (
-            <div key={m.id} className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="font-mono text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 px-3 py-1 rounded-lg">
-                    {m.applicationId}
-                  </span>
-                  <span className="text-sm font-bold text-slate-900">ULPIN: {m.ulpin} (S.No {m.surveyNumber})</span>
-                </div>
-                <span className="text-xs text-slate-500 font-medium">Applied: {m.appliedDate}</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <div>
-                  <span className="text-slate-400 block font-medium">Buyer / Transferee</span>
-                  <span className="text-slate-900 font-bold">{m.buyerName}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block font-medium">Seller / Transferor</span>
-                  <span className="text-slate-900 font-bold">{m.sellerName}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block font-medium">Mutation Type</span>
-                  <span className="text-indigo-700 font-bold">{m.mutationType}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2 text-xs border-t border-slate-100">
-                <div className="flex items-center space-x-3">
-                  <span className="text-slate-500 font-medium">Spatial Audit:</span>
-                  <span className={`px-2.5 py-0.5 rounded-full font-bold uppercase text-[10px] ${
-                    m.spatialAuditStatus === 'Passed'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}>
-                    {m.spatialAuditStatus}
-                  </span>
-
-                  <span className="text-slate-500 font-medium ml-4">GSI Clearance:</span>
-                  <span className="px-2.5 py-0.5 rounded-full font-bold uppercase text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    {m.gsiClearance}
-                  </span>
-                </div>
-
-                <div className="text-slate-500 italic text-[11px] font-medium">{m.remarks}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    </OfficerProtectedGuard>
   );
 }

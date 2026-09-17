@@ -341,11 +341,13 @@ export class GisService {
   }
 
   async getBoundaryGeometry(level: string, filters: Record<string, string>) {
+    let normLevel = (level || '').toLowerCase().trim();
+    if (normLevel === 'taluk') normLevel = 'subdistrict';
     const validLevels = ['district', 'subdistrict', 'village'];
-    if (!level || !validLevels.includes(level.toLowerCase())) {
-      throw { status: 400, message: `level must be one of: ${validLevels.join(', ')}.` };
+    if (!normLevel || !validLevels.includes(normLevel)) {
+      throw { status: 400, message: `level must be one of: ${validLevels.join(', ')} (or taluk).` };
     }
-    return await gisRepository.getBoundaryGeometry(level.toLowerCase() as 'district' | 'subdistrict' | 'village', filters);
+    return await gisRepository.getBoundaryGeometry(normLevel as 'district' | 'subdistrict' | 'village', filters);
   }
 }
 

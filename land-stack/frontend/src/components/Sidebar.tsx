@@ -1,0 +1,379 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { 
+  LayoutDashboard, 
+  FolderKanban, 
+  FileText, 
+  Map, 
+  BarChart3, 
+  Settings, 
+  HelpCircle, 
+  LogOut,
+  X,
+  Building2,
+  ShieldCheck,
+  Phone,
+  Mail,
+  History,
+  Users
+} from "lucide-react";
+import { useOfficerAuth } from "@/context/OfficerAuthContext";
+
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { officer, logoutOfficer } = useOfficerAuth();
+
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [helpModalOpen, setHelpModalOpen] = useState(false);
+
+  const handleLogout = () => {
+    onClose();
+    logoutOfficer();
+    router.push("/");
+  };
+
+  // Route matchers
+  const isDashboardActive = pathname === "/" || pathname === "/officer/dashboard" || pathname === "/dashboard";
+  const isCasesActive = pathname.startsWith("/officer/cases") || pathname.startsWith("/cases");
+  const isRegistryActive = pathname === "/officer/registry" || pathname === "/registry";
+  const isMapActive = pathname === "/gis" || pathname === "/map";
+  const isAnalyticsActive = pathname === "/analytics";
+
+  const navItems = [
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: LayoutDashboard,
+      active: isDashboardActive,
+    },
+    {
+      name: "Land Cases",
+      href: "/officer/cases",
+      icon: FolderKanban,
+      active: isCasesActive,
+    },
+    {
+      name: "Land Registry",
+      href: "/officer/registry",
+      icon: FileText,
+      active: isRegistryActive,
+    },
+    {
+      name: "GIS Map",
+      href: "/gis",
+      icon: Map,
+      active: isMapActive,
+    },
+    {
+      name: "Reports & Analytics",
+      href: "/analytics",
+      icon: BarChart3,
+      active: isAnalyticsActive,
+    },
+  ];
+
+  return (
+    <>
+      {/* MOBILE & MAP BACKDROP OVERLAY */}
+      {isOpen && (
+        <div 
+          className={`fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity ${
+            pathname === "/map" || pathname === "/gis" ? "block" : "md:hidden"
+          }`}
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* FIXED DARK NAVY SIDEBAR (Width: 228px, within 225-230px) */}
+      <aside 
+        className={`fixed top-0 bottom-0 left-0 w-[228px] h-screen bg-[#102A43] border-r border-[#1C3D5D] z-50 flex flex-col justify-between transition-transform duration-300 ease-in-out font-sans antialiased ${
+          isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+        }`}
+      >
+        {/* ================================================================= */}
+        {/* TOP SECTION: OFFICIAL STATE EMBLEM & LAND STACK BRANDING          */}
+        {/* ================================================================= */}
+        <div className="shrink-0 border-b border-[#1C3D5D] relative p-4">
+          {/* Close Button (visible on mobile and on map) */}
+          <button
+            onClick={onClose}
+            className={`${pathname === "/map" || pathname === "/gis" ? "flex" : "md:hidden"} absolute top-3 right-3 p-1 text-[#D9E5F2] hover:text-white hover:bg-[#1A3858] rounded transition-colors focus:outline-none items-center justify-center`}
+            title="Close sidebar"
+            aria-label="Close sidebar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <Link 
+            href="/" 
+            onClick={onClose} 
+            className="flex flex-col items-center text-center group focus:outline-none w-full"
+            title="Tamil Nadu Land Stack - Official Government Portal"
+          >
+            {/* Official Tamil Nadu Government State Emblem */}
+            <div className="flex justify-center mb-2.5">
+              <img
+                src="/assets/images/tn_state_emblem.svg"
+                alt="Official Tamil Nadu Government Emblem"
+                className="w-[52px] h-auto max-h-[58px] object-contain drop-shadow-sm transition-transform group-hover:scale-105"
+                width={52}
+                height={56}
+              />
+            </div>
+
+            {/* Branding Hierarchy */}
+            <div className="flex flex-col items-center space-y-1">
+              <span className="text-[11.5px] font-semibold tracking-wide text-[#FFFFFF] leading-snug">
+                Government of Tamil Nadu
+              </span>
+
+              <div className="flex items-center justify-center space-x-1.5 pt-0.5">
+                <span className="font-extrabold text-[15px] tracking-wider text-white leading-none">
+                  LAND STACK
+                </span>
+                <span className="text-[8.5px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-[#1D5FD1] text-white leading-none shadow-2xs">
+                  DPI
+                </span>
+              </div>
+
+              <span className="text-[9.5px] text-[#D9E5F2] leading-tight pt-0.5 font-medium max-w-[190px]">
+                Integrated Land Governance Platform
+              </span>
+            </div>
+          </Link>
+        </div>
+
+        {/* ================================================================= */}
+        {/* NAVIGATION LINKS                                                  */}
+        {/* ================================================================= */}
+        <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-1">
+          {/* Primary Navigation Items */}
+          <div className="space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onClose}
+                  className={`flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold transition-colors ${
+                    item.active
+                      ? "bg-[#1D5FD1] text-white font-bold shadow-xs active-nav-item"
+                      : "text-[#E7EEF7] hover:text-white hover:bg-[#1A3858]"
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${item.active ? "text-white" : "text-[#D9E5F2]"}`} />
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Separator */}
+          <div className="py-1.5">
+            <div className="border-t border-[#1C3D5D]" />
+          </div>
+
+          {/* Secondary Navigation: Settings, Help & Support, Logout */}
+          <div className="space-y-1">
+            {/* Settings */}
+            <button
+              onClick={() => {
+                setSettingsModalOpen(true);
+              }}
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold text-[#E7EEF7] hover:text-white hover:bg-[#1A3858] transition-colors text-left"
+            >
+              <Settings className="w-4 h-4 text-[#D9E5F2] shrink-0" />
+              <span>Settings</span>
+            </button>
+
+            {/* Help & Support */}
+            <button
+              onClick={() => {
+                setHelpModalOpen(true);
+              }}
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold text-[#E7EEF7] hover:text-white hover:bg-[#1A3858] transition-colors text-left"
+            >
+              <HelpCircle className="w-4 h-4 text-[#D9E5F2] shrink-0" />
+              <span>Help & Support</span>
+            </button>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-semibold text-[#E7EEF7] hover:text-red-300 hover:bg-red-500/15 transition-colors text-left"
+            >
+              <LogOut className="w-4 h-4 text-[#D9E5F2] hover:text-red-400 shrink-0" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ================================================================= */}
+        {/* BOTTOM SECTION: TAMIL NADU MAP SILHOUETTE & BRANDING              */}
+        {/* ================================================================= */}
+        <div className="pt-4 pb-4 px-3 border-t border-[#1C3D5D] shrink-0 bg-[#0C2237]/80">
+          <div className="flex flex-col items-center justify-center text-center">
+            {/* Geographically accurate Tamil Nadu Map Silhouette */}
+            <div className="w-[62px] h-[84px] flex items-center justify-center">
+              <svg 
+                viewBox="0 0 73.59 100.00" 
+                className="w-full h-full object-contain"
+                fill="#A9C7E8"
+                stroke="#7EA5CE"
+                strokeWidth="0.75"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                xmlns="http://www.w3.org/2000/svg"
+                role="img"
+                aria-label="Tamil Nadu State Silhouette"
+              >
+                <path d="M 0.00,36.41 L 0.33,36.98 L 0.31,37.17 L 0.10,37.22 L 0.30,37.43 L 0.34,38.26 L 0.63,38.02 L 0.74,38.12 L 0.93,38.00 L 1.08,38.29 L 1.29,38.26 L 1.66,38.52 L 1.96,38.26 L 2.95,38.86 L 3.32,38.73 L 3.26,39.08 L 4.10,39.72 L 5.18,40.00 L 4.93,40.33 L 5.64,40.24 L 5.67,40.75 L 5.45,41.06 L 5.60,41.31 L 5.26,41.52 L 5.17,41.82 L 3.97,42.40 L 3.87,43.04 L 3.68,43.16 L 3.92,43.15 L 4.01,43.36 L 4.27,43.22 L 4.27,42.96 L 4.92,42.89 L 5.31,43.17 L 6.43,43.02 L 7.10,43.26 L 7.96,42.76 L 8.10,42.51 L 8.46,42.49 L 8.26,42.33 L 8.31,42.05 L 8.53,42.54 L 8.91,42.85 L 8.74,43.07 L 8.87,43.30 L 8.34,43.47 L 8.16,43.87 L 8.47,44.20 L 8.68,44.09 L 8.86,44.41 L 9.22,44.31 L 9.23,44.73 L 9.05,44.88 L 9.34,45.22 L 9.08,45.46 L 9.20,45.73 L 9.66,45.97 L 10.05,45.71 L 10.15,45.80 L 9.99,46.10 L 9.54,46.25 L 9.02,46.05 L 8.54,46.07 L 8.24,46.38 L 8.11,46.98 L 7.76,47.35 L 7.62,48.04 L 9.09,48.76 L 9.81,48.76 L 10.65,49.10 L 11.09,49.69 L 10.94,49.94 L 11.02,50.10 L 11.92,50.26 L 12.06,50.75 L 11.73,51.63 L 11.82,51.84 L 11.61,51.92 L 11.33,52.50 L 11.54,52.69 L 11.63,53.32 L 11.25,53.47 L 10.41,53.41 L 10.34,53.62 L 10.46,54.00 L 10.84,54.12 L 10.78,55.06 L 10.92,55.20 L 10.70,55.90 L 10.65,56.79 L 10.44,57.28 L 10.75,57.56 L 10.57,57.79 L 11.02,58.28 L 10.80,58.68 L 10.72,59.49 L 11.07,59.79 L 11.05,59.69 L 11.46,59.54 L 11.46,59.95 L 11.88,60.20 L 11.99,60.61 L 12.16,60.72 L 12.66,60.64 L 13.41,60.98 L 13.98,60.51 L 14.45,60.39 L 14.67,60.03 L 14.50,59.83 L 15.36,59.27 L 15.44,59.37 L 15.88,59.20 L 16.88,58.47 L 17.94,58.58 L 17.79,59.24 L 18.43,60.20 L 18.33,60.27 L 18.37,60.80 L 18.77,60.68 L 19.02,61.01 L 18.79,61.19 L 18.65,61.61 L 18.64,62.58 L 18.51,62.78 L 17.99,62.62 L 17.85,62.80 L 17.44,62.85 L 17.33,63.06 L 17.37,63.39 L 18.40,64.45 L 18.25,64.76 L 18.48,64.95 L 18.38,65.09 L 18.60,65.57 L 18.37,65.85 L 18.14,65.83 L 17.84,66.59 L 17.63,66.72 L 17.68,67.08 L 17.52,67.22 L 17.69,67.48 L 17.96,67.54 L 17.97,67.69 L 17.72,67.81 L 17.69,68.22 L 18.04,68.34 L 18.14,68.66 L 17.71,68.85 L 17.88,69.20 L 17.66,69.64 L 17.73,69.90 L 17.36,70.06 L 17.42,70.56 L 16.96,71.20 L 16.88,71.74 L 16.69,72.02 L 17.09,72.17 L 17.46,72.03 L 17.92,72.61 L 18.25,72.59 L 18.54,72.77 L 19.41,72.23 L 19.63,72.30 L 19.54,72.63 L 19.80,72.76 L 20.07,72.20 L 20.18,72.24 L 20.27,72.35 L 20.12,72.38 L 20.16,72.69 L 19.99,72.88 L 20.27,73.16 L 20.26,73.46 L 20.62,73.75 L 20.89,73.60 L 20.89,73.77 L 21.10,73.93 L 20.86,74.17 L 20.91,74.51 L 20.73,74.67 L 20.75,74.84 L 20.47,74.96 L 20.27,74.83 L 19.97,75.17 L 19.74,75.68 L 19.87,75.91 L 19.54,77.07 L 19.09,77.07 L 19.08,77.54 L 18.79,77.72 L 18.89,78.21 L 18.76,78.25 L 18.63,78.92 L 18.77,79.26 L 18.26,79.76 L 18.49,79.90 L 18.51,80.40 L 18.15,80.94 L 17.52,81.38 L 17.40,81.66 L 17.46,81.83 L 17.54,81.65 L 17.87,81.75 L 17.53,81.75 L 17.26,82.35 L 16.72,82.38 L 16.61,82.66 L 16.34,82.81 L 16.65,83.31 L 16.69,82.95 L 16.89,82.71 L 16.69,83.34 L 16.83,83.36 L 16.74,83.54 L 16.85,83.49 L 16.91,83.77 L 17.04,83.75 L 17.24,84.03 L 17.20,84.25 L 17.35,84.41 L 17.24,84.55 L 17.33,84.66 L 17.45,84.41 L 17.60,84.53 L 17.68,84.95 L 17.99,85.07 L 18.03,85.34 L 18.31,85.42 L 18.43,86.08 L 18.14,86.58 L 17.87,86.71 L 17.83,87.13 L 17.53,87.24 L 17.62,87.43 L 17.25,87.42 L 17.19,87.85 L 16.84,87.75 L 16.80,87.94 L 17.42,88.96 L 17.31,89.23 L 17.92,90.00 L 18.14,90.06 L 18.19,90.50 L 18.49,90.76 L 18.80,91.46 L 18.41,92.20 L 18.02,92.37 L 17.74,92.06 L 17.38,92.26 L 17.81,93.25 L 17.42,93.32 L 17.25,93.78 L 16.73,94.43 L 16.60,94.31 L 16.43,94.42 L 16.61,94.61 L 16.46,94.95 L 16.72,94.80 L 16.84,94.89 L 16.71,95.18 L 16.95,95.54 L 16.83,95.60 L 16.75,95.36 L 16.03,95.49 L 15.86,95.57 L 15.92,95.79 L 15.54,95.84 L 15.46,96.08 L 18.02,98.20 L 19.07,98.74 L 19.18,99.02 L 18.74,99.28 L 19.12,99.44 L 19.69,99.11 L 21.71,99.69 L 23.58,100.00 L 23.82,99.73 L 23.73,99.25 L 24.05,98.93 L 25.15,98.56 L 27.07,98.18 L 27.71,97.76 L 27.74,97.41 L 28.08,97.06 L 29.51,96.49 L 31.23,95.27 L 32.83,94.61 L 32.60,94.45 L 32.76,93.82 L 33.94,92.38 L 33.81,91.82 L 34.05,90.71 L 33.83,90.17 L 33.85,89.79 L 33.83,90.17 L 33.57,90.18 L 33.61,89.70 L 33.83,89.58 L 33.95,88.91 L 34.37,88.40 L 34.43,88.01 L 34.97,87.68 L 34.88,87.48 L 34.57,87.66 L 34.39,87.52 L 34.54,87.51 L 34.55,87.38 L 34.43,87.39 L 34.43,86.85 L 34.61,86.37 L 34.55,85.55 L 35.34,83.97 L 36.42,83.01 L 36.70,82.99 L 39.09,81.12 L 41.17,80.67 L 41.96,80.81 L 42.35,80.54 L 43.24,80.33 L 43.11,79.96 L 43.42,79.70 L 43.91,79.63 L 44.40,79.75 L 44.63,79.40 L 47.01,78.57 L 47.81,78.66 L 48.18,78.34 L 49.12,78.19 L 50.78,78.45 L 50.94,78.44 L 50.94,78.18 L 50.95,78.44 L 51.16,78.44 L 52.89,78.05 L 50.73,77.80 L 49.45,76.87 L 49.53,77.15 L 49.44,76.87 L 48.42,75.87 L 47.75,74.73 L 47.67,74.34 L 47.74,74.19 L 47.98,74.14 L 48.07,72.57 L 48.49,71.77 L 48.74,71.70 L 48.75,71.44 L 48.98,71.29 L 49.16,70.65 L 50.17,69.32 L 50.56,69.10 L 51.07,68.22 L 51.52,67.76 L 51.41,67.70 L 51.52,67.76 L 51.62,67.61 L 51.63,67.24 L 52.23,66.50 L 52.25,66.20 L 53.07,65.51 L 53.83,64.55 L 54.28,64.29 L 53.93,64.09 L 53.63,63.47 L 53.54,63.07 L 53.75,62.66 L 53.61,62.63 L 53.55,62.36 L 53.88,61.56 L 54.18,61.45 L 54.47,61.00 L 54.25,60.88 L 54.56,60.40 L 55.08,60.05 L 55.02,59.98 L 56.06,59.62 L 56.19,59.37 L 56.43,59.47 L 56.41,59.19 L 56.63,59.46 L 57.25,59.70 L 57.39,59.59 L 57.26,59.16 L 57.96,59.18 L 57.97,58.99 L 58.70,59.13 L 58.94,59.03 L 58.97,59.42 L 62.53,59.98 L 63.98,60.00 L 65.17,59.65 L 65.00,58.90 L 65.18,58.88 L 65.19,59.30 L 65.23,58.87 L 65.16,58.55 L 64.98,58.52 L 65.00,58.16 L 64.71,58.08 L 64.69,57.78 L 64.65,58.01 L 64.18,57.80 L 64.23,57.65 L 65.00,57.80 L 65.03,57.64 L 64.73,53.53 L 64.74,49.99 L 64.37,49.91 L 64.32,49.51 L 64.20,49.59 L 63.96,49.40 L 63.96,49.23 L 64.03,49.33 L 64.27,49.24 L 64.01,48.94 L 64.34,48.90 L 63.72,48.82 L 63.65,48.69 L 63.53,48.80 L 63.51,48.70 L 63.72,48.63 L 63.65,48.44 L 63.42,48.43 L 63.44,48.66 L 63.04,48.78 L 63.16,48.35 L 62.81,48.34 L 62.80,48.16 L 62.47,48.08 L 62.47,47.83 L 62.70,47.72 L 62.69,47.56 L 62.61,47.67 L 62.38,47.59 L 62.46,47.33 L 62.83,47.40 L 62.85,47.58 L 63.17,47.51 L 62.97,47.19 L 63.08,47.07 L 62.88,46.99 L 62.89,46.73 L 63.58,46.83 L 63.77,47.11 L 64.08,46.72 L 64.32,46.82 L 64.52,46.70 L 64.80,47.10 L 64.82,46.88 L 64.87,44.21 L 64.42,41.26 L 64.52,40.41 L 64.26,40.18 L 64.04,39.14 L 63.96,39.42 L 64.01,39.16 L 63.73,38.56 L 63.84,38.43 L 63.35,37.89 L 63.06,36.73 L 63.16,35.10 L 63.75,32.47 L 63.31,32.53 L 63.22,32.34 L 62.95,32.66 L 62.25,32.36 L 62.44,32.27 L 62.46,32.01 L 62.67,32.04 L 62.56,31.54 L 62.70,31.54 L 62.70,31.40 L 63.34,31.79 L 63.50,31.62 L 63.77,31.75 L 63.83,31.62 L 63.71,31.59 L 63.79,31.49 L 63.94,31.58 L 63.95,31.39 L 63.87,31.22 L 63.53,31.19 L 63.38,31.52 L 63.23,31.47 L 63.14,31.30 L 63.28,31.15 L 63.26,30.82 L 63.05,30.80 L 63.00,31.28 L 62.80,31.32 L 62.75,31.02 L 62.40,31.06 L 62.36,31.23 L 62.18,30.94 L 62.20,30.58 L 61.58,30.73 L 61.58,30.55 L 61.96,30.48 L 61.96,30.05 L 62.33,30.06 L 62.13,30.16 L 62.20,30.56 L 62.54,30.57 L 62.59,30.34 L 62.75,30.28 L 62.32,29.85 L 62.41,29.56 L 62.20,29.46 L 62.14,29.75 L 61.87,29.44 L 61.95,29.21 L 61.82,29.13 L 61.75,29.42 L 61.58,29.52 L 61.27,29.50 L 61.16,29.35 L 61.36,29.13 L 61.74,29.06 L 62.01,29.28 L 62.28,29.17 L 62.26,28.81 L 62.88,28.43 L 63.14,28.52 L 63.12,28.74 L 62.80,28.97 L 62.50,28.82 L 62.44,29.01 L 62.82,29.20 L 62.92,30.02 L 63.15,29.86 L 63.11,29.59 L 63.31,29.59 L 63.57,29.29 L 63.92,29.42 L 63.99,28.88 L 64.30,29.30 L 64.54,29.36 L 64.84,28.45 L 64.54,28.33 L 64.71,27.64 L 65.14,27.80 L 67.89,23.21 L 70.22,19.99 L 70.38,18.92 L 71.97,14.31 L 71.83,13.19 L 72.03,11.44 L 72.57,9.11 L 72.94,8.39 L 72.80,8.68 L 72.66,8.66 L 72.85,8.33 L 72.85,7.98 L 72.74,8.11 L 72.71,7.95 L 72.83,7.98 L 73.08,7.00 L 72.94,6.93 L 73.10,6.92 L 73.58,5.14 L 73.25,2.41 L 72.67,1.40 L 72.17,0.02 L 71.73,1.76 L 71.16,1.34 L 71.01,1.33 L 70.99,1.46 L 70.57,1.40 L 70.56,1.28 L 70.05,1.27 L 69.88,1.10 L 69.78,1.19 L 69.40,1.09 L 69.29,1.45 L 68.80,1.44 L 68.77,0.79 L 69.06,0.57 L 68.94,0.29 L 68.42,0.58 L 68.01,0.56 L 67.82,0.40 L 67.31,0.43 L 67.39,0.79 L 67.71,0.73 L 67.88,1.01 L 68.03,0.91 L 68.27,1.02 L 68.23,1.33 L 67.68,1.24 L 67.53,1.64 L 67.11,1.61 L 67.08,1.77 L 66.91,1.80 L 66.92,2.52 L 66.63,2.66 L 66.33,2.60 L 66.35,2.75 L 66.22,2.77 L 66.42,2.93 L 66.40,3.12 L 66.73,3.16 L 66.64,3.45 L 66.42,3.41 L 66.42,3.72 L 66.19,3.95 L 65.88,3.79 L 65.86,4.01 L 65.30,4.29 L 65.32,4.54 L 65.03,4.30 L 64.95,4.56 L 64.11,4.52 L 63.67,4.99 L 63.11,4.54 L 63.04,4.97 L 62.58,5.19 L 63.72,5.94 L 63.72,6.10 L 63.38,6.42 L 63.17,6.36 L 63.10,6.57 L 62.93,6.56 L 62.69,6.05 L 62.59,6.29 L 62.35,6.40 L 62.08,6.32 L 62.25,5.90 L 62.03,5.73 L 61.95,6.00 L 61.76,5.91 L 61.65,5.58 L 61.95,5.48 L 61.68,4.95 L 61.42,5.28 L 61.24,5.23 L 61.14,5.01 L 60.99,5.06 L 60.98,5.32 L 60.93,5.08 L 60.80,5.44 L 60.50,5.19 L 60.16,5.27 L 60.08,5.59 L 59.90,5.66 L 59.50,5.38 L 59.07,5.34 L 59.19,5.02 L 59.08,4.85 L 59.24,4.56 L 59.13,4.14 L 58.65,4.11 L 58.61,4.28 L 58.42,4.28 L 58.44,4.00 L 57.83,4.21 L 57.30,3.94 L 57.22,4.21 L 57.36,4.33 L 57.20,4.21 L 56.86,4.32 L 56.73,4.22 L 56.61,4.32 L 56.70,4.57 L 56.36,4.65 L 56.49,4.92 L 57.00,4.83 L 57.03,5.07 L 57.17,4.87 L 57.49,4.86 L 57.29,5.32 L 56.81,5.54 L 57.07,5.77 L 56.98,5.92 L 57.34,5.93 L 57.21,6.16 L 57.62,6.00 L 57.61,6.39 L 57.34,6.34 L 57.30,6.45 L 57.40,6.53 L 57.24,6.76 L 57.33,6.95 L 56.85,6.81 L 56.20,6.90 L 56.45,7.11 L 56.17,7.09 L 56.31,7.38 L 55.88,7.35 L 56.03,7.73 L 55.92,7.83 L 56.05,7.89 L 55.96,8.10 L 55.67,8.15 L 55.59,7.86 L 55.57,8.01 L 55.24,8.05 L 55.31,8.19 L 55.08,8.23 L 55.21,8.28 L 54.99,8.42 L 54.80,8.29 L 55.11,8.08 L 54.59,8.11 L 54.53,7.57 L 54.20,7.64 L 54.11,7.41 L 53.89,7.83 L 54.12,8.18 L 53.78,7.76 L 53.85,7.23 L 53.67,7.25 L 53.56,7.51 L 53.37,7.48 L 53.28,7.66 L 53.67,7.82 L 53.70,8.43 L 53.11,8.71 L 53.03,8.90 L 52.89,8.73 L 52.74,8.81 L 52.94,9.11 L 52.70,9.26 L 52.94,9.31 L 52.72,9.36 L 52.96,9.50 L 52.81,9.80 L 52.41,9.98 L 52.08,9.82 L 51.98,10.02 L 51.92,9.90 L 51.61,10.15 L 51.64,10.29 L 51.44,10.21 L 51.49,10.44 L 51.16,10.23 L 51.19,9.93 L 50.95,10.01 L 51.00,10.15 L 50.77,9.76 L 50.84,9.95 L 50.39,9.93 L 50.38,9.41 L 50.29,9.46 L 50.13,9.28 L 50.22,9.48 L 49.68,9.76 L 49.87,9.76 L 49.99,9.94 L 49.86,10.18 L 49.51,10.27 L 48.72,9.96 L 48.75,9.82 L 49.10,9.95 L 49.45,9.80 L 50.16,9.22 L 50.17,9.06 L 49.42,8.77 L 49.12,8.79 L 48.98,9.01 L 48.65,8.95 L 48.62,8.81 L 48.14,8.88 L 48.12,9.19 L 47.96,9.14 L 47.78,9.46 L 48.25,9.52 L 48.44,9.68 L 48.39,9.80 L 48.26,9.68 L 47.68,9.75 L 47.83,9.61 L 47.62,9.47 L 47.56,9.56 L 47.57,8.58 L 47.27,8.58 L 47.20,8.86 L 46.53,8.95 L 46.16,8.72 L 45.82,9.13 L 45.06,9.35 L 44.38,9.09 L 44.22,10.05 L 43.35,9.78 L 43.34,10.06 L 42.72,10.51 L 43.19,10.96 L 43.03,11.00 L 43.37,11.58 L 42.95,11.59 L 42.38,13.07 L 42.49,13.59 L 42.36,13.66 L 42.21,14.31 L 42.00,14.45 L 42.37,14.76 L 42.24,14.86 L 41.99,14.72 L 42.08,14.55 L 41.96,14.48 L 41.56,14.78 L 41.67,14.88 L 41.55,15.10 L 41.71,15.13 L 41.53,15.44 L 41.73,15.72 L 41.56,15.70 L 41.21,15.99 L 41.08,15.64 L 41.35,15.63 L 41.20,15.59 L 41.37,15.48 L 41.01,15.54 L 40.94,15.17 L 40.85,15.37 L 40.65,15.03 L 40.41,14.99 L 40.45,15.22 L 40.91,15.46 L 40.91,15.60 L 40.77,15.67 L 40.61,15.51 L 40.48,15.76 L 40.69,15.97 L 40.55,16.26 L 39.99,16.25 L 40.10,16.77 L 39.93,17.19 L 39.23,16.96 L 38.90,17.27 L 38.99,17.12 L 38.25,17.15 L 37.77,16.75 L 37.01,16.42 L 36.43,15.71 L 36.00,15.70 L 35.87,16.07 L 35.33,16.07 L 35.24,16.30 L 35.06,16.21 L 34.98,16.08 L 35.35,15.83 L 35.33,15.64 L 35.74,15.56 L 35.93,15.27 L 35.74,14.71 L 35.56,14.60 L 35.27,14.70 L 35.40,14.63 L 35.11,14.46 L 34.61,14.54 L 34.02,14.32 L 33.85,14.02 L 33.22,13.68 L 33.17,13.42 L 32.94,13.43 L 33.00,13.28 L 32.68,13.21 L 32.57,13.01 L 32.50,13.11 L 32.03,12.98 L 32.12,13.17 L 31.96,13.20 L 31.94,13.43 L 31.68,13.52 L 31.89,13.74 L 31.80,13.89 L 31.42,13.84 L 31.46,13.59 L 31.25,13.49 L 31.27,13.35 L 30.91,13.33 L 31.00,13.11 L 30.76,12.96 L 30.56,12.97 L 30.66,13.30 L 30.56,13.57 L 30.20,13.48 L 30.24,12.98 L 30.58,12.73 L 30.34,12.63 L 30.32,12.51 L 30.48,12.46 L 30.35,12.34 L 30.24,12.48 L 29.74,12.56 L 29.66,12.72 L 28.69,12.71 L 28.18,13.12 L 28.02,13.04 L 27.90,13.22 L 28.21,13.43 L 28.22,13.70 L 28.08,13.68 L 28.04,13.89 L 28.20,14.04 L 27.98,14.11 L 27.66,14.57 L 27.94,14.75 L 27.90,14.97 L 27.37,15.15 L 27.34,15.32 L 27.58,15.37 L 27.37,15.88 L 26.92,15.84 L 26.98,16.29 L 26.70,16.35 L 26.66,16.19 L 26.46,16.12 L 26.44,16.42 L 26.06,16.57 L 25.83,16.48 L 25.84,16.19 L 25.58,16.12 L 25.48,16.26 L 24.95,16.21 L 25.06,16.43 L 24.92,16.62 L 24.68,16.34 L 24.43,16.40 L 24.39,16.74 L 24.56,17.10 L 24.30,17.35 L 24.11,18.51 L 24.32,18.31 L 24.11,18.52 L 24.23,19.18 L 24.75,19.28 L 24.17,19.84 L 24.59,19.91 L 24.93,19.52 L 25.07,19.67 L 24.94,20.23 L 24.99,20.94 L 24.74,21.88 L 24.88,21.95 L 24.47,22.03 L 23.59,23.26 L 23.26,23.25 L 23.15,23.49 L 22.92,23.55 L 22.44,23.47 L 22.15,24.13 L 22.36,24.37 L 22.17,24.78 L 22.54,24.97 L 23.01,25.02 L 23.50,24.83 L 23.84,24.99 L 24.65,24.81 L 26.78,25.27 L 27.16,26.07 L 27.62,26.36 L 27.67,26.48 L 27.46,26.62 L 27.24,27.11 L 26.72,27.45 L 26.18,28.27 L 25.79,29.45 L 25.39,29.38 L 24.52,29.70 L 23.76,29.62 L 23.35,29.79 L 22.58,29.58 L 22.42,30.61 L 21.98,30.38 L 22.06,30.85 L 21.95,31.05 L 22.07,31.35 L 21.77,32.28 L 21.59,32.44 L 21.74,32.51 L 21.48,32.60 L 21.35,33.05 L 21.20,33.13 L 21.14,32.86 L 21.28,32.90 L 21.28,32.71 L 20.78,32.43 L 20.25,32.38 L 20.17,32.58 L 19.72,32.73 L 18.97,32.04 L 18.88,32.20 L 18.19,31.97 L 17.99,32.30 L 17.12,32.34 L 16.36,32.54 L 16.19,32.71 L 15.71,32.69 L 15.67,33.07 L 15.83,33.64 L 15.60,33.43 L 15.16,33.37 L 14.73,32.76 L 14.98,32.57 L 14.90,32.41 L 14.54,32.44 L 14.35,32.76 L 14.24,32.67 L 14.42,32.31 L 14.26,32.12 L 13.97,32.09 L 13.96,31.94 L 13.40,32.00 L 13.18,32.61 L 12.89,32.35 L 12.06,32.29 L 11.72,33.37 L 11.27,33.82 L 10.77,34.84 L 10.76,35.13 L 11.19,35.59 L 11.15,35.86 L 10.99,35.95 L 10.56,35.70 L 9.38,35.50 L 6.82,35.70 L 6.43,35.51 L 6.15,35.58 L 5.85,35.44 L 5.68,34.50 L 4.98,33.94 L 4.45,34.16 L 4.03,34.68 L 3.55,34.64 L 3.77,34.95 L 3.71,35.12 L 3.54,35.29 L 2.75,35.31 L 2.59,35.81 L 2.20,36.04 L 1.94,36.08 L 1.84,35.92 L 1.24,36.38 L 1.13,36.02 L 0.95,36.04 L 0.82,35.83 L 0.00,36.41 Z" />
+                <path d="M 53.17,78.21 L 53.42,78.27 L 53.45,78.53 L 54.02,78.45 L 55.02,78.76 L 57.36,80.24 L 55.39,78.55 L 55.12,78.07 L 55.49,77.54 L 55.17,77.26 L 54.83,77.34 L 54.80,77.50 L 54.83,77.34 L 54.70,77.39 L 54.31,77.85 L 53.46,77.90 L 53.17,78.21 Z" />
+              </svg>
+            </div>
+
+            {/* Tamil Nadu State Title (12–16px below map) */}
+            <div className="mt-3.5 text-white text-[12.5px] font-semibold uppercase tracking-[3.5px] leading-none text-center select-none pl-[3.5px]">
+              TAMIL NADU
+            </div>
+
+            {/* Tagline (6–8px below title) */}
+            <div className="mt-[7px] text-[11px] font-medium text-[#9FB3C8] leading-none text-center select-none tracking-wide">
+              People | Land | Progress
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ================================================================= */}
+      {/* STATUTORY SETTINGS MODAL */}
+      {/* ================================================================= */}
+      {settingsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs font-sans">
+          <div className="bg-white border border-[#E3E8EF] rounded-lg shadow-xl max-w-md w-full p-6 text-[#14213D] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-3">
+              <div className="flex items-center space-x-2">
+                <Settings className="w-5 h-5 text-[#1D5FD1]" />
+                <h3 className="font-bold text-base text-[#102A43]">Officer Portal Settings</h3>
+              </div>
+              <button 
+                onClick={() => setSettingsModalOpen(false)}
+                className="text-[#53627A] hover:text-[#102A43] p-1 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-semibold text-[#102A43] block mb-1">Active Officer Jurisdiction</label>
+                <div className="p-2.5 bg-[#F7F9FC] rounded border border-[#E3E8EF] space-y-1">
+                  <div className="font-bold text-[#102A43]">{officer?.name || "Thiru K. Muthusamy, IAS"}</div>
+                  <div className="text-[#53627A]">{officer?.title || "District Collector"} • {officer?.district || "Kanchipuram"} District</div>
+                  <div className="text-[#1D5FD1] font-mono text-[11px]">Badge: {officer?.badgeNo || "TN-IAS-2012-042"}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#102A43] block mb-1">Portal Language</label>
+                <select className="w-full p-2 border border-[#E3E8EF] rounded bg-white text-xs">
+                  <option>English (Official Government DPI Standard)</option>
+                  <option>தமிழ் (Tamil)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="font-semibold text-[#102A43] block mb-1">Cadastral Map Density</label>
+                <select className="w-full p-2 border border-[#E3E8EF] rounded bg-white text-xs">
+                  <option>High-Resolution Survey Boundaries (1:500 scale)</option>
+                  <option>Standard Revenue Boundary Overlay</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setSettingsModalOpen(false)}
+                className="px-4 py-2 bg-[#1D5FD1] hover:bg-[#154CB0] text-white text-xs font-semibold rounded transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================= */}
+      {/* STATUTORY HELP & SUPPORT MODAL */}
+      {/* ================================================================= */}
+      {helpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs font-sans">
+          <div className="bg-white border border-[#E3E8EF] rounded-lg shadow-xl max-w-md w-full p-6 text-[#14213D] space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-3">
+              <div className="flex items-center space-x-2">
+                <HelpCircle className="w-5 h-5 text-[#16845B]" />
+                <h3 className="font-bold text-base text-[#102A43]">Government Help & Support</h3>
+              </div>
+              <button 
+                onClick={() => setHelpModalOpen(false)}
+                className="text-[#53627A] hover:text-[#102A43] p-1 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="p-3 bg-[#EDF7F2] border border-emerald-200 rounded space-y-1.5">
+                <div className="font-bold text-[#16845B] flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Tamil Nadu Land Stack Operational Desk</span>
+                </div>
+                <p className="text-[11px] text-[#14213D]">
+                  For cadastral boundary verification disputes, ULPIN synchronization, or jurisdictional delegation issues:
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2.5 p-2 bg-[#F7F9FC] rounded border border-[#E3E8EF]">
+                  <Phone className="w-4 h-4 text-[#1D5FD1]" />
+                  <div>
+                    <div className="text-[10px] text-[#53627A]">Collectorate Control Room</div>
+                    <div className="font-mono font-bold text-[#102A43]">044-27237433 / 044-27237300</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2.5 p-2 bg-[#F7F9FC] rounded border border-[#E3E8EF]">
+                  <Mail className="w-4 h-4 text-[#1D5FD1]" />
+                  <div>
+                    <div className="text-[10px] text-[#53627A]">Official Portal Email</div>
+                    <div className="font-mono font-bold text-[#102A43]">landstack.support@tn.gov.in</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setHelpModalOpen(false)}
+                className="px-4 py-2 bg-[#102A43] hover:bg-[#1C3D5D] text-white text-xs font-semibold rounded transition-colors"
+              >
+                Close Support
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

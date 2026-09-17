@@ -68,49 +68,49 @@ export default function LayerOverlayPanel({ selectedUlpin }: LayerOverlayPanelPr
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="h-10 px-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xs flex items-center space-x-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors shrink-0"
+        className="h-9 px-3 bg-white border border-[#E3E8EF] rounded-md shadow-xs flex items-center space-x-2 text-xs font-semibold text-[#14213D] hover:bg-[#F7F9FC] transition-colors shrink-0"
       >
-        <Layers className="w-4 h-4 text-emerald-600" />
+        <Layers className="w-4 h-4 text-[#16845B]" />
         <span>Spatial Overlay</span>
         {selectedLayers.length > 0 && (
-          <span className="bg-emerald-100 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[9px] font-bold">
+          <span className="bg-emerald-50 text-[#16845B] border border-emerald-200 px-1.5 py-0.5 rounded text-[9px] font-bold">
             {selectedLayers.length}/{MAX_LAYERS}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-white/95 backdrop-blur-xl border border-slate-200 p-3 rounded-2xl shadow-xl z-50 space-y-3 animate-in fade-in slide-in-from-top-2">
+        <div className="absolute top-full left-0 mt-1.5 w-80 bg-white border border-[#E3E8EF] p-3 rounded-lg shadow-lg z-50 space-y-3">
           {/* Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="flex items-center justify-between pb-2 border-b border-[#E3E8EF]">
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                TNGIS-STYLE SPATIAL OVERLAY
+              <span className="text-[10px] font-bold text-[#102A43] uppercase tracking-wider block">
+                TNGIS SPATIAL OVERLAY
               </span>
-              <span className="text-[9px] text-slate-400">
+              <span className="text-[9px] text-[#53627A]">
                 Select up to {MAX_LAYERS} layers for intersection analysis
               </span>
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
-              <X className="w-3.5 h-3.5 text-slate-400" />
+            <button onClick={() => setIsOpen(false)} className="p-1 rounded-md text-[#53627A] hover:text-[#102A43] hover:bg-[#F7F9FC] transition-colors">
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {/* ULPIN Display */}
           {selectedUlpin ? (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5 text-[10px]">
-              <span className="text-blue-500 font-semibold">Target Parcel: </span>
-              <span className="text-blue-800 font-bold font-mono">{selectedUlpin}</span>
+            <div className="bg-[#F7F9FC] border border-[#E3E8EF] rounded-md px-2.5 py-1.5 text-[10px]">
+              <span className="text-[#53627A] font-semibold">Target Parcel: </span>
+              <span className="text-[#1D5FD1] font-bold font-mono">{selectedUlpin}</span>
             </div>
           ) : (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 flex items-center space-x-1.5 text-[10px]">
-              <AlertTriangle className="w-3 h-3 text-amber-500 flex-shrink-0" />
-              <span className="text-amber-700 font-semibold">Click a parcel on the map first to select a ULPIN</span>
+            <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-md px-2.5 py-1.5 flex items-center space-x-1.5 text-[10px]">
+              <AlertTriangle className="w-3 h-3 text-[#E99A16] flex-shrink-0" />
+              <span className="text-[#B45309] font-medium">Click a parcel on the map first to select a ULPIN</span>
             </div>
           )}
 
           {/* Layer Checkboxes */}
-          <div className="space-y-1 max-h-56 overflow-y-auto">
+          <div className="space-y-1 max-h-56 overflow-y-auto custom-scrollbar">
             {OVERLAY_LAYERS.map((layer) => {
               const isSelected = selectedLayers.includes(layer.id);
               const isDisabled = !isSelected && selectedLayers.length >= MAX_LAYERS;
@@ -118,12 +118,12 @@ export default function LayerOverlayPanel({ selectedUlpin }: LayerOverlayPanelPr
               return (
                 <label
                   key={layer.id}
-                  className={`flex items-center space-x-2.5 p-2 rounded-lg border cursor-pointer transition-all text-xs ${
+                  className={`flex items-center space-x-2.5 p-2 rounded-md border cursor-pointer transition-all text-xs ${
                     isSelected
-                      ? "bg-blue-50/80 border-blue-200"
+                      ? "bg-blue-50/50 border-[#1D5FD1] text-[#14213D]"
                       : isDisabled
-                        ? "bg-slate-50 border-slate-100 opacity-50 cursor-not-allowed"
-                        : "bg-white border-slate-200 hover:bg-slate-50"
+                        ? "bg-[#F7F9FC] border-[#E3E8EF] opacity-50 cursor-not-allowed text-[#53627A]"
+                        : "bg-white border-[#E3E8EF] hover:bg-[#F7F9FC] text-[#14213D]"
                   }`}
                 >
                   <input
@@ -131,13 +131,13 @@ export default function LayerOverlayPanel({ selectedUlpin }: LayerOverlayPanelPr
                     checked={isSelected}
                     disabled={isDisabled}
                     onChange={() => handleToggleLayer(layer.id)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                    className="rounded border-[#E3E8EF] text-[#1D5FD1] focus:ring-[#1D5FD1] w-3.5 h-3.5"
                   />
                   <div
                     className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: layer.color }}
                   />
-                  <span className="flex-1 font-semibold text-slate-700">
+                  <span className="flex-1 font-medium">
                     {layer.icon} {layer.label}
                   </span>
                 </label>
@@ -149,7 +149,7 @@ export default function LayerOverlayPanel({ selectedUlpin }: LayerOverlayPanelPr
           <button
             onClick={handleRunOverlay}
             disabled={!selectedUlpin || selectedLayers.length === 0 || loading}
-            className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-all shadow-sm"
+            className="w-full py-2 bg-[#16845B] hover:bg-[#13724e] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white rounded-md text-xs font-semibold flex items-center justify-center space-x-2 transition-all shadow-xs"
           >
             {loading ? (
               <>
@@ -166,24 +166,24 @@ export default function LayerOverlayPanel({ selectedUlpin }: LayerOverlayPanelPr
 
           {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5 text-[10px] text-red-700 font-semibold">
+            <div className="bg-red-50 border border-red-200 rounded-md px-2.5 py-1.5 text-[10px] text-[#D9363E] font-medium">
               {error}
             </div>
           )}
 
           {/* Results */}
           {result && showResults && (
-            <div className="space-y-2 border-t border-slate-100 pt-2">
+            <div className="space-y-2 border-t border-[#E3E8EF] pt-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[#102A43] uppercase tracking-wider">
                   Overlay Results
                 </span>
                 <div className="flex items-center space-x-1">
-                  <span className="text-[8px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-bold">
+                  <span className="text-[8px] px-1.5 py-0.5 rounded bg-[#F7F9FC] border border-[#E3E8EF] text-[#53627A] font-bold">
                     {result.source}
                   </span>
-                  <button onClick={handleClear} className="p-0.5 rounded hover:bg-slate-100">
-                    <X className="w-3 h-3 text-slate-400" />
+                  <button onClick={handleClear} className="p-0.5 rounded-md hover:bg-[#F7F9FC] text-[#53627A]">
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               </div>
@@ -193,30 +193,30 @@ export default function LayerOverlayPanel({ selectedUlpin }: LayerOverlayPanelPr
                 return (
                   <div
                     key={layerId}
-                    className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 space-y-1.5"
+                    className="bg-[#F7F9FC] border border-[#E3E8EF] rounded-md p-2.5 space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
                         <div
                           className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: layerMeta?.color || "#6b7280" }}
+                          style={{ backgroundColor: layerMeta?.color || "#53627A" }}
                         />
-                        <span className="text-[11px] font-bold text-slate-700">
+                        <span className="text-[11px] font-bold text-[#14213D]">
                           {layerMeta?.icon} {layerMeta?.label || layerId}
                         </span>
                       </div>
-                      <span className={`text-xs font-black ${data.count > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                      <span className={`text-xs font-bold ${data.count > 0 ? "text-[#16845B]" : "text-[#53627A]"}`}>
                         {data.count} {data.count === 1 ? "feature" : "features"}
                       </span>
                     </div>
 
                     {/* Count bar */}
-                    <div className="w-full bg-slate-200 rounded-full h-1.5">
+                    <div className="w-full bg-[#E3E8EF] rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="h-1.5 rounded-full transition-all duration-500"
+                        className="h-1.5 rounded-full transition-all duration-300"
                         style={{
                           width: `${Math.min(data.count * 20, 100)}%`,
-                          backgroundColor: layerMeta?.color || "#6b7280",
+                          backgroundColor: layerMeta?.color || "#1D5FD1",
                         }}
                       />
                     </div>
@@ -225,11 +225,11 @@ export default function LayerOverlayPanel({ selectedUlpin }: LayerOverlayPanelPr
                     {data.features.length > 0 && (
                       <div className="space-y-1 mt-1">
                         {data.features.slice(0, 3).map((feat: any, idx: number) => (
-                          <div key={idx} className="text-[9px] text-slate-500 bg-white rounded px-1.5 py-1 border border-slate-100">
+                          <div key={idx} className="text-[9px] text-[#53627A] bg-white rounded px-2 py-1 border border-[#E3E8EF]">
                             {Object.entries(feat).slice(0, 3).map(([k, v]) => (
                               <span key={k} className="inline-block mr-2">
-                                <span className="text-slate-400 font-semibold">{k.replace(/_/g, " ")}: </span>
-                                <span className="text-slate-700 font-medium">{String(v)}</span>
+                                <span className="text-[#53627A] font-medium">{k.replace(/_/g, " ")}: </span>
+                                <span className="text-[#14213D] font-semibold">{String(v)}</span>
                               </span>
                             ))}
                           </div>

@@ -14,21 +14,17 @@ import {
   Landmark, 
   ShieldCheck, 
   Activity, 
-  ArrowRight,
-  Sparkles,
-  Search,
-  Filter,
-  IndianRupee,
-  Layers,
-  Building2,
-  Trees,
-  Waves,
-  Receipt
+  ArrowRight, 
+  Search, 
+  IndianRupee, 
+  Layers, 
+  Building2 
 } from "lucide-react";
 import { useOfficerAuth } from "@/context/OfficerAuthContext";
 import { fetchCasesList } from "@/services/landCasesService";
 import { resolveDepartmentProfile } from "@/config/departmentDashboardConfig";
 import DepartmentTimeline from "@/components/DepartmentTimeline";
+import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 
 export default function OfficerDashboardPage() {
   const { officer } = useOfficerAuth();
@@ -55,6 +51,33 @@ export default function OfficerDashboardPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
   const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+
+  const [currentTime, setCurrentTime] = useState({
+    date: "Wednesday, 16 September 2026",
+    time: "12:25 PM"
+  });
+
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+      const timeStr = now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      });
+      setCurrentTime({ date: dateStr, time: timeStr });
+    };
+
+    updateDateTime();
+    const timer = setInterval(updateDateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -125,7 +148,6 @@ export default function OfficerDashboardPage() {
   };
 
   const filteredCases = casesList.filter((c) => {
-    // Apply GIS overlay filter strictly if required
     if (deptProfile.gisOverlayFilter?.requiredIntersection === 'forest') {
       const isForest = (c.landClassification || '').toLowerCase().includes('reserve') || (c.title || '').toLowerCase().includes('eco');
       if (!isForest) return false;
@@ -146,183 +168,195 @@ export default function OfficerDashboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 sm:p-10 font-sans">
-      {/* HEADER BAR */}
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
-          <div>
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-semibold mb-2">
-              <Landmark className="w-3.5 h-3.5" />
-              <span>Officer Decision-Support Command Center</span>
-            </div>
-            <h1 className="text-3xl font-extrabold text-white flex items-center gap-2">
-              Jurisdiction Governance Dashboard
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Active Jurisdiction: <strong className="text-slate-200">{officer ? `${officer.taluk} Taluk, ${officer.district}` : 'Statewide 38 Districts Jurisdiction'}</strong>
-            </p>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center space-x-3">
-              <UserCheck className="w-5 h-5 text-emerald-400" />
-              <div className="text-left text-xs">
-                <div className="font-bold text-white">{officer ? officer.name : 'Thiru K. Muthusamy, IAS'}</div>
-                <div className="text-slate-400">{officer ? officer.title : 'District Collector & Magistrate'}</div>
+    <OfficerProtectedGuard>
+      <div className="max-w-7xl mx-auto px-6 py-7 sm:px-8 space-y-6 font-sans antialiased pb-20">
+        {/* ================================================================= */}
+        {/* WELCOME / HEADER SECTION (LEFT: OFFICER DETAILS, RIGHT: STATUS)   */}
+        {/* ================================================================= */}
+        <section className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E3E8EF]">
+          {/* LEFT: GREETING, OFFICER DETAILS, POLICY MOTTO */}
+          <div className="flex flex-col justify-center space-y-2 max-w-2xl">
+            <div>
+              <span className="text-xs sm:text-sm font-semibold text-[#53627A] tracking-wide block">
+                Good Morning,
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-[#14213D] tracking-tight leading-tight pt-1">
+                {officer?.name || "Thiru K. Muthusamy, IAS"}
+              </h1>
+              <div className="text-xs sm:text-sm text-[#53627A] font-medium pt-1.5 leading-snug">
+                <div>{officer?.title || "District Collector & District Magistrate"}</div>
+                <div className="text-[#14213D] font-semibold pt-0.5">
+                  {officer?.district ? `${officer.district} District` : "Kanchipuram District"}
+                </div>
               </div>
             </div>
-            <Link
-              href="/"
-              className="px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow-md flex items-center space-x-2"
+
+            <div className="text-xs sm:text-[13px] text-[#53627A] font-medium leading-relaxed italic border-l-2 border-[#1D5FD1] pl-3">
+              &ldquo;Transparent land records. Stronger communities. A prosperous Tamil Nadu.&rdquo;
+            </div>
+          </div>
+
+          {/* RIGHT: OPERATIONAL INFORMATION (DATE, TIME, SYSTEM STATUS) */}
+          <div className="flex flex-col items-start sm:items-end justify-center space-y-1 sm:text-right shrink-0">
+            <div className="text-xs sm:text-sm font-semibold text-[#14213D]">
+              {currentTime.date}
+            </div>
+            <div className="text-2xl sm:text-3xl font-bold text-[#14213D] font-mono tracking-tight leading-none">
+              {currentTime.time}
+            </div>
+            <Link 
+              href="/integration"
+              title="View Connected Government Systems (DPI Interoperability)"
+              className="inline-flex items-center space-x-1.5 text-xs font-semibold text-[#16845B] hover:text-[#126b49] pt-0.5 group transition-colors"
             >
-              <span>Launch GIS Map</span>
-              <ArrowRight className="w-4 h-4" />
+              <span className="w-2 h-2 rounded-full bg-[#16845B] animate-pulse"></span>
+              <span className="group-hover:underline">System Operational</span>
             </Link>
           </div>
-        </div>
+        </section>
 
         {/* DEPARTMENT IDENTITY & GIS FILTER BANNER */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1">
+        <div className="bg-white border border-[#E3E8EF] p-4 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xs">
+          <div className="space-y-0.5">
             <div className="flex items-center space-x-2">
-              <span className={`px-2.5 py-0.5 rounded text-[10px] font-extrabold uppercase border ${deptProfile.badgeColor}`}>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF]">
                 {deptProfile.departmentCode}
               </span>
-              <h2 className="text-base font-bold text-white">{deptProfile.departmentName}</h2>
+              <h2 className="text-sm font-bold text-[#102A43]">{deptProfile.departmentName}</h2>
             </div>
-            <div className="text-xs text-slate-400">
-              Sub-Units: <span className="text-slate-300 font-medium">{deptProfile.subUnits.join(' • ')}</span>
+            <div className="text-xs text-[#53627A]">
+              Sub-Units: <span className="text-[#14213D] font-medium">{deptProfile.subUnits.join(' • ')}</span>
             </div>
-            <div className="text-[11px] text-blue-400 font-mono pt-1">
-              <span>Routing Rule: {deptProfile.gisOverlayFilter?.description}</span>
+            <div className="text-[11px] text-[#1D5FD1] font-mono pt-0.5">
+              Routing Rule: {deptProfile.gisOverlayFilter?.description}
             </div>
           </div>
 
           <div className="flex items-center space-x-2 text-xs">
-            <span className="text-slate-400">Officer Roles:</span>
-            <span className="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 font-mono font-bold text-emerald-400">
+            <span className="text-[#53627A]">Designated Role:</span>
+            <span className="bg-[#F7F9FC] px-2.5 py-1 rounded border border-[#E3E8EF] font-mono font-bold text-[#102A43]">
               {officer?.role || 'DISTRICT_COLLECTOR'}
             </span>
           </div>
         </div>
 
-        {/* FINANCIAL & SPATIAL SUMMARY BANNER */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-900/90 border border-slate-800 p-5 rounded-2xl">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400">
-              <FileText className="w-6 h-6" />
+        {/* FINANCIAL & SPATIAL SUMMARY KPI */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white border border-[#E3E8EF] p-4 rounded-lg flex items-center space-x-3 shadow-xs">
+            <div className="p-2.5 rounded bg-[#F1F5FB] border border-[#E3E8EF] text-[#1D5FD1]">
+              <FileText className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs text-slate-400 font-semibold">Total Jurisdiction Cases</div>
-              <div className="text-2xl font-extrabold text-white">{metrics.total || casesList.length} Files</div>
+              <div className="text-xs text-[#53627A] font-semibold">Total Jurisdiction Cases</div>
+              <div className="text-xl font-bold text-[#102A43]">{metrics.total || casesList.length} Files</div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-              <IndianRupee className="w-6 h-6" />
+          <div className="bg-white border border-[#E3E8EF] p-4 rounded-lg flex items-center space-x-3 shadow-xs">
+            <div className="p-2.5 rounded bg-[#EDF7F2] border border-[#16845B]/30 text-[#16845B]">
+              <IndianRupee className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs text-slate-400 font-semibold">Jurisdiction Market Valuation</div>
-              <div className="text-2xl font-extrabold text-emerald-400">₹ {(summary.totalValuationCrores || 1480.5).toLocaleString()} Cr</div>
+              <div className="text-xs text-[#53627A] font-semibold">Jurisdiction Valuation</div>
+              <div className="text-xl font-bold text-[#16845B]">₹ {(summary.totalValuationCrores || 1480.5).toLocaleString()} Cr</div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-              <Layers className="w-6 h-6" />
+          <div className="bg-white border border-[#E3E8EF] p-4 rounded-lg flex items-center space-x-3 shadow-xs">
+            <div className="p-2.5 rounded bg-[#FEF5E7] border border-[#E99A16]/30 text-[#E99A16]">
+              <Layers className="w-5 h-5" />
             </div>
             <div>
-              <div className="text-xs text-slate-400 font-semibold">Total Land Area</div>
-              <div className="text-2xl font-extrabold text-amber-400">{(summary.totalLandAreaAcres || 1250.4).toLocaleString()} Acres</div>
+              <div className="text-xs text-[#53627A] font-semibold">Total Land Extent</div>
+              <div className="text-xl font-bold text-[#102A43]">{(summary.totalLandAreaAcres || 1250.4).toLocaleString()} Acres</div>
             </div>
           </div>
         </div>
 
-        {/* METRICS CARDS GRID */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
-              <span>Total Cases</span>
-              <FileText className="w-4 h-4 text-blue-400" />
+        {/* METRICS ROW */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="p-3.5 rounded-lg bg-white border border-[#E3E8EF] space-y-1 shadow-xs">
+            <div className="text-xs text-[#53627A] font-semibold flex items-center justify-between">
+              <span>Total Files</span>
+              <FileText className="w-3.5 h-3.5 text-[#1D5FD1]" />
             </div>
-            <div className="text-3xl font-black text-white">{metrics.total || casesList.length}</div>
-            <div className="text-[10px] text-slate-500">In jurisdiction</div>
+            <div className="text-2xl font-bold text-[#102A43]">{metrics.total || casesList.length}</div>
+            <div className="text-[10px] text-[#53627A]">In jurisdiction</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+          <div className="p-3.5 rounded-lg bg-white border border-[#E3E8EF] space-y-1 shadow-xs">
+            <div className="text-xs text-[#53627A] font-semibold flex items-center justify-between">
               <span>Pending Review</span>
-              <Clock className="w-4 h-4 text-amber-400" />
+              <Clock className="w-3.5 h-3.5 text-[#E99A16]" />
             </div>
-            <div className="text-3xl font-black text-amber-400">{metrics.pending}</div>
-            <div className="text-[10px] text-amber-400/80">Action required</div>
+            <div className="text-2xl font-bold text-[#E99A16]">{metrics.pending}</div>
+            <div className="text-[10px] text-[#E99A16]">Action required</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+          <div className="p-3.5 rounded-lg bg-white border border-[#E3E8EF] space-y-1 shadow-xs">
+            <div className="text-xs text-[#53627A] font-semibold flex items-center justify-between">
               <span>GIS Verification</span>
-              <Activity className="w-4 h-4 text-cyan-400" />
+              <Activity className="w-3.5 h-3.5 text-[#1D5FD1]" />
             </div>
-            <div className="text-3xl font-black text-cyan-400">{metrics.underVerification}</div>
-            <div className="text-[10px] text-slate-500">Processing</div>
+            <div className="text-2xl font-bold text-[#1D5FD1]">{metrics.underVerification}</div>
+            <div className="text-[10px] text-[#53627A]">Processing</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+          <div className="p-3.5 rounded-lg bg-white border border-[#E3E8EF] space-y-1 shadow-xs">
+            <div className="text-xs text-[#53627A] font-semibold flex items-center justify-between">
               <span>Inspections</span>
-              <MapPin className="w-4 h-4 text-purple-400" />
+              <MapPin className="w-3.5 h-3.5 text-[#102A43]" />
             </div>
-            <div className="text-3xl font-black text-purple-400">{metrics.inspectionsPending}</div>
-            <div className="text-[10px] text-slate-500">Field visit pending</div>
+            <div className="text-2xl font-bold text-[#102A43]">{metrics.inspectionsPending}</div>
+            <div className="text-[10px] text-[#53627A]">Field visit pending</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+          <div className="p-3.5 rounded-lg bg-white border border-[#E3E8EF] space-y-1 shadow-xs">
+            <div className="text-xs text-[#53627A] font-semibold flex items-center justify-between">
               <span>Approved</span>
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#16845B]" />
             </div>
-            <div className="text-3xl font-black text-emerald-400">{metrics.approved}</div>
-            <div className="text-[10px] text-slate-500">NOC Issued</div>
+            <div className="text-2xl font-bold text-[#16845B]">{metrics.approved}</div>
+            <div className="text-[10px] text-[#16845B]">Clearance issued</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-            <div className="text-xs text-slate-400 font-semibold flex items-center justify-between">
+          <div className="p-3.5 rounded-lg bg-white border border-[#E3E8EF] space-y-1 shadow-xs">
+            <div className="text-xs text-[#53627A] font-semibold flex items-center justify-between">
               <span>Rejected</span>
-              <XCircle className="w-4 h-4 text-red-400" />
+              <XCircle className="w-3.5 h-3.5 text-[#D9363E]" />
             </div>
-            <div className="text-3xl font-black text-red-400">{metrics.rejected}</div>
-            <div className="text-[10px] text-slate-500">Non-compliant</div>
+            <div className="text-2xl font-bold text-[#D9363E]">{metrics.rejected}</div>
+            <div className="text-[10px] text-[#D9363E]">Non-compliant</div>
           </div>
         </div>
 
-        {/* RECENT CASES TABLE */}
-        <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        {/* RECENT CASES TABLE (48-54px row height) */}
+        <div className="bg-white border border-[#E3E8EF] rounded-lg p-5 space-y-4 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E3E8EF] pb-3">
             <div>
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-400" />
+              <h3 className="text-base font-bold text-[#102A43] flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#1D5FD1]" />
                 <span>Active Land Cases & Registry Entries ({filteredCases.length})</span>
               </h3>
-              <p className="text-xs text-slate-400">Real-time land conversion, NOC clearances, and survey demarcation files across Tamil Nadu</p>
+              <p className="text-xs text-[#53627A]">Real-time land conversion, NOC clearances, and survey demarcation files</p>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <Search className="w-4 h-4 text-[#53627A] absolute left-3 top-2.5" />
                 <input
                   type="text"
                   placeholder="Search case, S.No, village..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 sm:w-64"
+                  className="pl-9 pr-3 py-1.5 bg-[#F7F9FC] border border-[#E3E8EF] rounded text-xs text-[#14213D] placeholder-[#53627A] focus:outline-none focus:border-[#1D5FD1] w-48 sm:w-60"
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs text-slate-200 px-3 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-[#F7F9FC] border border-[#E3E8EF] text-xs text-[#14213D] px-2.5 py-1.5 rounded focus:outline-none focus:border-[#1D5FD1]"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="OFFICER_REVIEW">Officer Review</option>
@@ -332,7 +366,7 @@ export default function OfficerDashboardPage() {
                 <option value="REJECTED">Rejected</option>
               </select>
 
-              <Link href="/cases" className="text-xs text-blue-400 font-bold hover:underline flex items-center gap-1">
+              <Link href="/officer/cases" className="text-xs text-[#1D5FD1] font-semibold hover:underline flex items-center gap-1">
                 <span>View All</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
@@ -341,65 +375,67 @@ export default function OfficerDashboardPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950 text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-800">
+              <thead className="bg-[#F1F4F8] text-[#53627A] font-bold uppercase tracking-wider border-b border-[#E3E8EF]">
                 <tr>
-                  <th className="p-3">Case ID</th>
-                  <th className="p-3">Case Title & Type</th>
-                  <th className="p-3">District & Village</th>
-                  <th className="p-3">Land Area</th>
-                  <th className="p-3">Market Valuation</th>
-                  <th className="p-3">Priority</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3">Action</th>
+                  <th className="px-4 py-3">Case ID</th>
+                  <th className="px-4 py-3">Case Title & Type</th>
+                  <th className="px-4 py-3">District & Village</th>
+                  <th className="px-4 py-3">Land Area</th>
+                  <th className="px-4 py-3">Valuation</th>
+                  <th className="px-4 py-3">Priority</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[#E3E8EF] text-[#14213D]">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-400 font-medium">
+                    <td colSpan={8} className="px-4 py-8 text-center text-[#53627A]">
                       Loading real-time jurisdiction land cases...
                     </td>
                   </tr>
                 ) : filteredCases.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-400 font-medium">
+                    <td colSpan={8} className="px-4 py-8 text-center text-[#53627A]">
                       No cases found matching search filter.
                     </td>
                   </tr>
                 ) : (
                   filteredCases.slice(0, 15).map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-800/40 transition-colors">
-                      <td className="p-3 font-mono font-bold text-emerald-400">{c.caseNumber || c.caseNo}</td>
-                      <td className="p-3">
-                        <div className="font-semibold text-white">{c.title}</div>
-                        <div className="text-[10px] text-slate-400">{c.caseType || c.type}</div>
+                    <tr key={c.id} className="hover:bg-[#F8FAFD] transition-colors h-[50px]">
+                      <td className="px-4 py-3 font-mono font-bold text-[#1D5FD1]">{c.caseNumber || c.caseNo}</td>
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-[#102A43]">{c.title}</div>
+                        <div className="text-[10px] text-[#53627A]">{c.caseType || c.type}</div>
                       </td>
-                      <td className="p-3 text-slate-300">
-                        <div className="font-bold">{c.district}</div>
-                        <div className="text-[10px] text-slate-400">{c.village}</div>
+                      <td className="px-4 py-3 text-[#53627A]">
+                        <div className="font-semibold text-[#102A43]">{c.district}</div>
+                        <div className="text-[10px]">{c.village}</div>
                       </td>
-                      <td className="p-3 text-slate-300 font-mono">{c.areaAcres ? `${c.areaAcres} Acres` : c.area}</td>
-                      <td className="p-3 text-emerald-400 font-mono font-bold">
+                      <td className="px-4 py-3 text-[#14213D] font-mono">{c.areaAcres ? `${c.areaAcres} Acres` : c.area}</td>
+                      <td className="px-4 py-3 text-[#16845B] font-mono font-bold">
                         {c.estimatedMarketValue || c.valuation?.estimatedMarketValue || "₹ 2.40 Cr"}
                       </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          c.priority === 'URGENT' || c.priority === 'HIGH' || c.priority === 'CRITICAL' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-slate-800 text-slate-300'
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                          c.priority === 'URGENT' || c.priority === 'HIGH' || c.priority === 'CRITICAL' 
+                            ? 'bg-[#FDEDEE] text-[#D9363E] border-[#D9363E]/30' 
+                            : 'bg-[#F7F9FC] text-[#53627A] border-[#E3E8EF]'
                         }`}>
                           {c.priority}
                         </span>
                       </td>
-                      <td className="p-3">
-                        <span className="px-2.5 py-1 rounded text-[10px] font-extrabold bg-blue-950 text-blue-400 border border-blue-800">
+                      <td className="px-4 py-3">
+                        <span className="px-2.5 py-1 rounded text-[10px] font-bold bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] uppercase">
                           {c.status}
                         </span>
                       </td>
-                      <td className="p-3">
+                      <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => setSelectedCase(c)}
-                          className="px-3 py-1 rounded bg-blue-600 text-white font-bold hover:bg-emerald-600 transition-colors inline-block"
+                          className="px-3 py-1 rounded bg-[#1D5FD1] hover:bg-[#154CB0] text-white font-semibold text-xs transition-colors"
                         >
-                          Inspect Case & Timeline →
+                          Inspect Case →
                         </button>
                       </td>
                     </tr>
@@ -412,152 +448,101 @@ export default function OfficerDashboardPage() {
 
         {/* SELECTED CASE DEPARTMENTAL INSPECTION & UNIFIED TIMELINE */}
         {selectedCase && (
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-2xl animate-in fade-in duration-200">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div className="bg-white border border-[#E3E8EF] rounded-lg p-5 space-y-5 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E3E8EF] pb-3">
               <div>
                 <div className="flex items-center space-x-2 mb-1">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${deptProfile.badgeColor}`}>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF]">
                     {deptProfile.departmentCode} INSPECTION
                   </span>
-                  <span className="font-mono text-xs text-emerald-400 font-bold">{selectedCase.caseNumber || selectedCase.caseNo}</span>
+                  <span className="font-mono text-xs text-[#16845B] font-bold">{selectedCase.caseNumber || selectedCase.caseNo}</span>
                 </div>
-                <h3 className="text-lg font-bold text-white">{selectedCase.title}</h3>
-                <p className="text-xs text-slate-400">
-                  Location: <strong className="text-slate-200">{selectedCase.surveyNumber} ({selectedCase.village}, {selectedCase.taluk}, {selectedCase.district})</strong>
+                <h3 className="text-base font-bold text-[#102A43]">{selectedCase.title}</h3>
+                <p className="text-xs text-[#53627A]">
+                  Location: <strong className="text-[#102A43]">{selectedCase.surveyNumber} ({selectedCase.village}, {selectedCase.taluk}, {selectedCase.district})</strong>
                 </p>
               </div>
 
               {actionSuccessMsg && (
-                <div className="bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs px-3 py-2 rounded-xl flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <div className="bg-[#EDF7F2] border border-[#16845B] text-[#16845B] text-xs px-3 py-2 rounded-md flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#16845B] shrink-0" />
                   <span>{actionSuccessMsg}</span>
                 </div>
               )}
             </div>
 
-            {/* DEPARTMENT-SPECIFIC REVIEW FIELDS GRID */}
+            {/* DEPARTMENT-SPECIFIC AUDIT & REVIEW PARAMETERS */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center space-x-2">
-                <FileText className="w-4 h-4 text-blue-400" />
+              <h4 className="text-xs font-bold text-[#53627A] uppercase tracking-wider flex items-center space-x-1.5">
+                <FileText className="w-3.5 h-3.5 text-[#1D5FD1]" />
                 <span>{deptProfile.departmentName} — Audit & Review Parameters</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
                 {deptProfile.departmentCode === 'REVENUE' && (
                   <>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Patta Number</span>
-                      <span className="font-mono text-emerald-400 font-bold">{selectedCase.pattaNumber || 'PATTA-2026-TN-991'}</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">Patta Number</span>
+                      <span className="font-mono text-[#16845B] font-bold">{selectedCase.pattaNumber || 'PATTA-2026-TN-991'}</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Land Classification</span>
-                      <span className="font-bold text-white">{selectedCase.landClassification || 'Ryotwari Nanjai (Wet)'}</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">Land Classification</span>
+                      <span className="font-bold text-[#102A43]">{selectedCase.landClassification || 'Ryotwari Nanjai (Wet)'}</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">FMB Sketch Demarcation</span>
-                      <span className="font-bold text-emerald-400 font-mono">DGPS Verified (0.02m accuracy)</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">FMB Demarcation</span>
+                      <span className="font-bold text-[#16845B] font-mono">DGPS Verified (0.02m accuracy)</span>
                     </div>
                   </>
                 )}
 
                 {deptProfile.departmentCode === 'REGISTRATION' && (
                   <>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Encumbrance Status (13-Yr Ledger)</span>
-                      <span className="font-mono text-emerald-400 font-bold">Nil Encumbrance (Clean Title)</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">Encumbrance Status (13-Yr Ledger)</span>
+                      <span className="font-mono text-[#16845B] font-bold">Nil Encumbrance (Clean Title)</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">TN Reginet Guideline Value</span>
-                      <span className="font-bold text-blue-400 font-mono">{selectedCase.guidelineValue || '₹ 1,850 / sq.ft'}</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">TN Reginet Guideline Value</span>
+                      <span className="font-bold text-[#1D5FD1] font-mono">{selectedCase.guidelineValue || '₹ 1,850 / sq.ft'}</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Sub-Registrar Office</span>
-                      <span className="font-bold text-white">SRO {selectedCase.taluk}</span>
-                    </div>
-                  </>
-                )}
-
-                {deptProfile.departmentCode === 'TOWN_PLANNING' && (
-                  <>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Master Plan Zone Category</span>
-                      <span className="font-bold text-blue-400">{selectedCase.landClassification || 'Industrial SIPCOT Zone'}</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Permissible FSI Limit</span>
-                      <span className="font-mono text-emerald-400 font-bold">1.75 FSI (DTCP Approved)</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Max Permissible Height</span>
-                      <span className="font-mono text-white font-bold">18.0 Meters</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">Sub-Registrar Office</span>
+                      <span className="font-bold text-[#102A43]">SRO {selectedCase.taluk}</span>
                     </div>
                   </>
                 )}
 
-                {deptProfile.departmentCode === 'FOREST_ENVIRONMENT' && (
+                {deptProfile.departmentCode !== 'REVENUE' && deptProfile.departmentCode !== 'REGISTRATION' && (
                   <>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Forest Reserve Distance</span>
-                      <span className="font-mono text-amber-400 font-bold">Outside Reserve (4.5 km clear)</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">Master Plan Category</span>
+                      <span className="font-bold text-[#1D5FD1]">{selectedCase.landClassification || 'Industrial SIPCOT Zone'}</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Forest Rights Act (FRA) Tenure</span>
-                      <span className="font-bold text-emerald-400">Clear (Non-Tribal Revenue Land)</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">Permissible FSI Limit</span>
+                      <span className="font-mono text-[#16845B] font-bold">1.75 FSI (DTCP Approved)</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">TNPCB Air/Water NOC</span>
-                      <span className="font-bold text-blue-400">Consent to Establish (CTE) Active</span>
-                    </div>
-                  </>
-                )}
-
-                {deptProfile.departmentCode === 'WATER_RESOURCES' && (
-                  <>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Water Body Catchment Distance</span>
-                      <span className="font-mono text-cyan-400 font-bold">180m Offset (Buffer: 50m)</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Irrigation Channel Easement</span>
-                      <span className="font-bold text-emerald-400">Clear Easement Channel</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Flood Inundation Index</span>
-                      <span className="font-mono text-white font-bold">Low Flood Risk</span>
-                    </div>
-                  </>
-                )}
-
-                {deptProfile.departmentCode === 'MUNICIPAL_PANCAYAT' && (
-                  <>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Property Tax Ledger</span>
-                      <span className="font-mono text-emerald-400 font-bold">Paid (Clear Ledger)</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">Local Body Building Permit</span>
-                      <span className="font-bold text-blue-400">Panchayat Union Permit App</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[10px] text-slate-500 block">TNEB & Water Utility</span>
-                      <span className="font-bold text-white">Utility Access Sanctioned</span>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[10px] text-[#53627A] block font-semibold">Max Building Height</span>
+                      <span className="font-mono text-[#102A43] font-bold">18.0 Meters</span>
                     </div>
                   </>
                 )}
               </div>
             </div>
 
-            {/* DEPARTMENTAL ACTION BUTTONS */}
-            <div className="space-y-3 border-t border-slate-800 pt-4">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                {deptProfile.departmentName} — Permitted Verdict Actions
+            {/* DEPARTMENTAL VERDICT ACTION BUTTONS */}
+            <div className="space-y-2 border-t border-[#E3E8EF] pt-4">
+              <h4 className="text-xs font-bold text-[#102A43] uppercase tracking-wider">
+                {deptProfile.departmentName} — Statutory Verdict Actions
               </h4>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2.5">
                 {deptProfile.allowedActions.map((action) => (
                   <button
                     key={action.actionCode}
                     onClick={() => handleDepartmentAction(action.actionCode, action.label)}
-                    className={`px-4 py-2.5 rounded-xl text-white font-bold text-xs shadow-md transition-all ${action.style}`}
+                    className="px-4 py-2 rounded-md bg-[#1D5FD1] hover:bg-[#154CB0] text-white font-semibold text-xs transition-colors shadow-2xs"
                   >
                     {action.label}
                   </button>
@@ -566,14 +551,12 @@ export default function OfficerDashboardPage() {
             </div>
 
             {/* UNIFIED INTER-DEPARTMENTAL TIMELINE */}
-            <div className="border-t border-slate-800 pt-4">
+            <div className="border-t border-[#E3E8EF] pt-4">
               <DepartmentTimeline caseId={selectedCase.id} />
             </div>
           </div>
         )}
       </div>
-    </div>
+    </OfficerProtectedGuard>
   );
 }
-
-

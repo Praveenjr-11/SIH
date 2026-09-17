@@ -64,14 +64,6 @@ async function parseGeojsonl(filePath: string, stateFilter?: string) {
 
       if (!name) continue;
       
-      // Phase 1 filter: only ingest specific Phase 0 districts
-      if (stateFilter && stateFilter.toLowerCase() === 'tamil nadu') {
-        const lowerName = name.toLowerCase();
-        if (lowerName !== 'kanchipuram' && lowerName !== 'kancheepuram' && lowerName !== 'virudhunagar') {
-          continue;
-        }
-      }
-
       features.push({ name, state_name: stateName, lgd_code: lgdCode, geometry: geom });
     } catch { /* skip */ }
   }

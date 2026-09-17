@@ -134,8 +134,8 @@ export interface LandAnalytics {
   totalAreaAcres: number;
   totalValuationCrores?: number;
   avgGuidelineRatePerSqFt?: number;
-  zoneDistribution: { zone: string; count: number; area: number }[];
-  gsiHazardRiskBreakdown: { level: string; count: number }[];
+  zoneDistribution: { zone: string; count: number; area: number; percentage?: number; description?: string }[];
+  gsiHazardRiskBreakdown: { level: string; count: number; description?: string; criteria?: string }[];
   districtDistribution?: DistrictGovernanceAnalytics[];
   recentMutationsCount: number;
   provenanceMetadata?: {
@@ -144,5 +144,8 @@ export interface LandAnalytics {
     geologicalLayers: string;
     litigantNames: string;
   };
+  transactionTrends?: { month: string; deedsCount: number; valuationCrores: number; avgRate: number }[];
+  statutoryApplications?: { type: string; received: number; approved: number; pending: number; rejected: number }[];
+  caseStatusBreakdown?: { status: string; label: string; count: number; percentage: number; color: string }[];
 }
 

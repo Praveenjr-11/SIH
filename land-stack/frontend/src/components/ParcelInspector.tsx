@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Parcel } from "@/types";
 import {
   X,
@@ -19,6 +19,17 @@ import {
   Calendar,
   Lock,
   Shield,
+  User,
+  UserCheck,
+  FileCheck,
+  Zap,
+  Droplets,
+  Network,
+  Download,
+  Eye,
+  ExternalLink,
+  Printer,
+  FileSpreadsheet
 } from "lucide-react";
 
 interface ParcelInspectorProps {
@@ -26,489 +37,804 @@ interface ParcelInspectorProps {
   onClose: () => void;
 }
 
+type TabType =
+  | "overview"
+  | "ownership"
+  | "registration"
+  | "planning"
+  | "tax"
+  | "utilities"
+  | "disputes"
+  | "documents";
+
 export default function ParcelInspector({ parcel, onClose }: ParcelInspectorProps) {
-  const [activeTab, setActiveTab] = useState<"zoning" | "tax" | "court" | "survey" | "gsi">("zoning");
+  const [activeTab, setActiveTab] = useState<TabType>("overview");
+  const [activeDocModal, setActiveDocModal] = useState<string | null>(null);
 
   if (!parcel) return null;
 
+  // Defaults & fallbacks for rich real-world government attributes
   const zoning = parcel.zoningDetails || {
-    masterPlanAuthority: "DTCP / Local Planning Authority",
-    zoneCategory: parcel.landClassification === "Industrial SIPCOT" ? "Industrial Zone (Ind-2)" : "Mixed Use / Agricultural",
-    permissibleFSI: "2.00 FSI",
-    maxHeightMeters: 24,
-    setbacks: "Front: 5.0m, Rear: 3.5m, Side: 3.5m",
+    masterPlanAuthority: "DTCP / Chennai-Sriperumbudur Planning Authority",
+    zoneCategory: parcel.currentUse || "Residential Living Zone (R-2)",
+    permissibleFSI: "1.75 FSI (FAR)",
+    maxHeightMeters: 18,
+    setbacks: "Front: 5.0m, Rear: 3.5m, Side: 3.5m (15m Waterbody Buffer Enforced)",
   };
 
   const tax = parcel.propertyTaxDetails || {
-    taxAssessmentId: `PTAX-2026-${parcel.surveyNumber.replace("/", "")}`,
-    taxStatus: parcel.verificationStatus === "Verified" ? "Paid" : "Pending",
-    annualTaxAmount: "₹ 48,500",
-    guidelineValueSqFt: "₹ 3,450 / sq ft",
-    totalValuation: `₹ ${(parcel.areaAcres * 1.65).toFixed(2)} Crores`,
-    wardNo: "Revenue Ward 08",
+    taxAssessmentId: `PTAX-2026-TN-${parcel.surveyNumber?.replace(/[^a-zA-Z0-9]/g, "") || "4780"}`,
+    taxStatus: parcel.verificationStatus === "Verified" || parcel.verificationStatus === "IMMUTABLE" ? "Paid" : "Pending",
+    annualTaxAmount: "₹ 14,500 / annum",
+    guidelineValueSqFt: "₹ 2,450 / sq ft",
+    totalValuation: `₹ ${(parcel.areaAcres * 1.45).toFixed(2)} Crores`,
+    wardNo: "Revenue Ward 08 (Zone IV)",
   };
 
   const court = parcel.courtCaseDetails || {
     status: parcel.encumbranceStatus === "Disputed" ? "Stay Order Issued" : "Clear Title",
     caseId: parcel.encumbranceStatus === "Disputed" ? "O.S. 342 / 2024" : "None",
     courtName: parcel.encumbranceStatus === "Disputed" ? "District Civil Court, Chengalpattu" : "Madras High Court Verified",
-    caseType: parcel.encumbranceStatus === "Disputed" ? "Boundary Overlap & Title Partition Suit" : "No Litigation Found",
-    stayOrderDetails: parcel.encumbranceStatus === "Disputed" ? "Interim Injunction Order Restraining Alienation" : "Clear Title Certificate Issued",
+    caseType: parcel.encumbranceStatus === "Disputed" ? "Boundary Overlap & Title Partition Suit" : "No Boundary Overlap or Partition Suit Registered",
+    stayOrderDetails: parcel.encumbranceStatus === "Disputed" ? "Interim Injunction Order Restraining Alienation" : "Clear Title Certificate Issued (No Injunction)",
     hearingDate: parcel.encumbranceStatus === "Disputed" ? "2026-11-04" : undefined,
   };
 
-  const isDisputedOrStay = court.status === "Active Litigation" || court.status === "Stay Order Issued" || parcel.verificationStatus === "Disputed";
+  const isDisputedOrStay =
+    court.status === "Active Litigation" ||
+    court.status === "Stay Order Issued" ||
+    parcel.encumbranceStatus === "Disputed";
+
+  const centerLat = parcel.center ? parcel.center[0] : 12.9434;
+  const centerLng = parcel.center ? parcel.center[1] : 79.9687;
+
+  // Derive Patta number
+  const pattaNo = `PATTA-${parcel.surveyNumber?.replace(/[^a-zA-Z0-9]/g, "") || "4780"}-TN`;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] bg-slate-900 border-l border-slate-800 shadow-2xl z-50 flex flex-col text-slate-100 animate-in slide-in-from-right duration-200">
-      {/* Header */}
-      <div className="p-5 bg-gradient-to-r from-slate-900 via-slate-800/80 to-slate-900 border-b border-slate-800 flex items-center justify-between flex-shrink-0">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[580px] md:w-[620px] bg-white border-l border-[#E3E8EF] shadow-2xl z-50 flex flex-col font-sans text-[#14213D] animate-in slide-in-from-right duration-200">
+      {/* 1. TOP OFFICIAL HEADER */}
+      <div className="px-5 py-4 bg-[#102A43] text-white flex items-center justify-between shrink-0 border-b border-[#1C3D5D]">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shadow-inner">
-            <Layers className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-md bg-[#1C3D5D] border border-slate-600 flex items-center justify-center text-white shrink-0">
+            <Layers className="w-5 h-5 text-[#1D5FD1]" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">
-                PARCEL CADASTRAL INSPECTOR
-              </span>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+                Parcel Details
+              </h2>
               {isDisputedOrStay ? (
-                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold bg-red-500/20 text-red-400 border border-red-500/40">
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold bg-[#D9363E] text-white">
                   <AlertTriangle className="w-2.5 h-2.5" />
                   <span>COURT STAY</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-[9px] font-bold bg-[#16845B] text-white">
                   <CheckCircle2 className="w-2.5 h-2.5" />
                   <span>CLEAR TITLE</span>
                 </span>
               )}
             </div>
-            <h2 className="font-mono text-sm font-bold text-white mt-0.5 tracking-tight">{parcel.ulpin}</h2>
+            <p className="text-[10px] text-slate-300">
+              Government of Tamil Nadu • Land Stack DPI
+            </p>
           </div>
         </div>
+
         <button
           onClick={onClose}
-          className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
+          className="w-8 h-8 rounded-md bg-[#1C3D5D] hover:bg-[#254F75] text-slate-300 hover:text-white flex items-center justify-center transition-colors"
+          title="Close Details Panel"
+          aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Verification Status Badge Bar */}
-      {(() => {
-        const vs = parcel.verificationStatus;
-        const isImmutable = vs === 'IMMUTABLE';
-        const isEndorsed = vs === 'REGISTRAR_ENDORSED';
-        const isSurveyed = vs === 'FIELD_SURVEYED';
-        const isUnverified = vs === 'UNVERIFIED';
-        const badgeClass = isImmutable
-          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
-          : isEndorsed
-          ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-400'
-          : isSurveyed
-          ? 'bg-blue-500/15 border-blue-500/40 text-blue-400'
-          : isUnverified
-          ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
-          : 'bg-slate-700/50 border-slate-600 text-slate-400';
-        const BadgeIcon = isImmutable ? Lock : isEndorsed ? Shield : isSurveyed ? Compass : AlertTriangle;
-        const label = isImmutable ? 'IMMUTABLE' : isEndorsed ? 'REGISTRAR ENDORSED' : isSurveyed ? 'FIELD SURVEYED' : isUnverified ? 'UNVERIFIED' : vs;
-        return (
-          <div className={`mx-5 mt-3 px-3 py-2 rounded-xl border flex items-center justify-between ${badgeClass}`}>
-            <div className="flex items-center space-x-2">
-              <BadgeIcon className="w-3.5 h-3.5" />
-              <span className="text-[10px] font-bold uppercase tracking-widest">Verification Status</span>
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-wider">{label}</span>
+      {/* 2. SUMMARY HEADER CARD (ULPIN, Survey Number, Location, Area, Land Use, Status) */}
+      <div className="bg-[#F8FAFD] border-b border-[#E3E8EF] p-4 shrink-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+          {/* ULPIN */}
+          <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] shadow-2xs">
+            <span className="text-[#53627A] block text-[10px] font-semibold uppercase tracking-wider">
+              ULPIN
+            </span>
+            <span className="font-mono text-xs font-bold text-[#1D5FD1] block truncate mt-0.5">
+              {parcel.ulpin}
+            </span>
           </div>
-        );
-      })()}
 
-      {/* Audit Chain — only visible when IMMUTABLE */}
-      {(parcel.verificationStatus === 'IMMUTABLE' || (parcel as any).provenanceHash) && (
-        <div className="mx-5 mt-2 px-3 py-3 rounded-xl border border-emerald-500/40 bg-emerald-950/30">
-          <div className="flex items-center space-x-2 mb-2">
-            <Lock className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Audit Chain — Ledger Hash</span>
+          {/* Survey Number */}
+          <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] shadow-2xs">
+            <span className="text-[#53627A] block text-[10px] font-semibold uppercase tracking-wider">
+              Survey Number
+            </span>
+            <span className="font-mono text-xs font-bold text-[#102A43] block truncate mt-0.5">
+              S.No {parcel.surveyNumber}
+            </span>
           </div>
-          <code className="block text-[9px] font-mono text-emerald-300 break-all leading-relaxed bg-black/30 rounded-lg p-2">
-            {(parcel as any).provenanceHash || 'SHA-256 seal recorded on IMMUTABLE transition'}
-          </code>
-          <p className="text-[9px] text-emerald-500/70 mt-1.5">
-            SHA-256 cryptographic seal — parcel state is now immutable in the ledger.
-          </p>
+
+          {/* Location */}
+          <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] shadow-2xs">
+            <span className="text-[#53627A] block text-[10px] font-semibold uppercase tracking-wider">
+              Location
+            </span>
+            <span className="text-xs font-semibold text-[#102A43] block truncate mt-0.5" title={`${parcel.village}, ${parcel.district}`}>
+              {parcel.village}, {parcel.district}
+            </span>
+          </div>
+
+          {/* Area */}
+          <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] shadow-2xs">
+            <span className="text-[#53627A] block text-[10px] font-semibold uppercase tracking-wider">
+              Area
+            </span>
+            <span className="text-xs font-bold text-[#102A43] block truncate mt-0.5">
+              {parcel.areaAcres} Acres <span className="text-[10px] font-normal text-[#53627A]">({parcel.areaSqMeters?.toLocaleString() || Math.round(parcel.areaAcres * 4046.86).toLocaleString()} m²)</span>
+            </span>
+          </div>
+
+          {/* Land Use */}
+          <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] shadow-2xs">
+            <span className="text-[#53627A] block text-[10px] font-semibold uppercase tracking-wider">
+              Land Use
+            </span>
+            <span className="text-xs font-semibold text-[#102A43] block truncate mt-0.5">
+              {parcel.currentUse || "Residential Living"}
+            </span>
+          </div>
+
+          {/* Status */}
+          <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] shadow-2xs">
+            <span className="text-[#53627A] block text-[10px] font-semibold uppercase tracking-wider">
+              Status
+            </span>
+            <span className={`inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase mt-0.5 border ${
+              isDisputedOrStay
+                ? "bg-rose-50 text-[#D9363E] border-rose-200"
+                : "bg-emerald-50 text-[#16845B] border-emerald-200"
+            }`}>
+              {isDisputedOrStay ? "DISPUTED" : (parcel.verificationStatus || "VERIFIED")}
+            </span>
+          </div>
         </div>
-      )}
-
-      {/* Tabs Selector Bar */}
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-950/80 border-b border-slate-800 text-[11px] font-semibold overflow-x-auto custom-scrollbar flex-shrink-0">
-        <button
-          onClick={() => setActiveTab("zoning")}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === "zoning"
-              ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <Building2 className="w-3.5 h-3.5" />
-          <span>Zoning & Master Plan</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("tax")}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === "tax"
-              ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/20"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <Receipt className="w-3.5 h-3.5" />
-          <span>Tax & Valuation</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("court")}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === "court"
-              ? isDisputedOrStay
-                ? "bg-red-600 text-white shadow-md shadow-red-500/20"
-                : "bg-purple-600 text-white shadow-md shadow-purple-500/20"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <Scale className="w-3.5 h-3.5" />
-          <span>Court Case Status</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("survey")}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === "survey"
-              ? "bg-amber-600 text-white shadow-md shadow-amber-500/20"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <FileText className="w-3.5 h-3.5" />
-          <span>Survey Details</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("gsi")}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
-            activeTab === "gsi"
-              ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/20"
-              : "text-slate-400 hover:text-white hover:bg-slate-800"
-          }`}
-        >
-          <Cpu className="w-3.5 h-3.5" />
-          <span>GSI Advisory</span>
-        </button>
       </div>
 
-      {/* Tab Contents */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
-        {/* TAB 1: ZONING & MASTER PLAN */}
-        {activeTab === "zoning" && (
-          <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-950/40 via-slate-800/60 to-slate-900 border border-blue-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Building2 className="w-4 h-4 text-blue-400" />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
-                    Master Plan & Zoning Classification
-                  </span>
-                </div>
-                <span className="text-[10px] bg-blue-500/15 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded font-semibold">
-                  DTCP Master Plan
+      {/* 3. TABS SELECTOR (8 Required Tabs) */}
+      <div className="flex items-center px-3 bg-[#F1F5FB] border-b border-[#E3E8EF] text-xs font-semibold overflow-x-auto shrink-0 scrollbar-none gap-1 py-1.5">
+        {[
+          { id: "overview", label: "Overview", icon: Compass },
+          { id: "ownership", label: "Ownership / RoR", icon: UserCheck },
+          { id: "registration", label: "Registration", icon: FileCheck },
+          { id: "planning", label: "Planning", icon: Building2 },
+          { id: "tax", label: "Tax", icon: Receipt },
+          { id: "utilities", label: "Utilities", icon: Zap },
+          { id: "disputes", label: "Disputes", icon: Scale },
+          { id: "documents", label: "Documents", icon: FileText },
+        ].map((tab) => {
+          const TabIcon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as TabType)}
+              className={`flex items-center space-x-1.5 px-3 py-2 rounded-md transition-all whitespace-nowrap text-xs font-semibold ${
+                isActive
+                  ? "bg-[#1D5FD1] text-white shadow-2xs"
+                  : "text-[#53627A] hover:text-[#102A43] hover:bg-white"
+              }`}
+            >
+              <TabIcon className="w-3.5 h-3.5" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4. TAB CONTENTS AREA */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+        {/* ================================================================= */}
+        {/* TAB 1: OVERVIEW                                                   */}
+        {/* ================================================================= */}
+        {activeTab === "overview" && (
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  Administrative & Spatial Profile
+                </span>
+                <span className="text-[10px] font-mono text-[#53627A] bg-[#F7F9FC] border border-[#E3E8EF] px-2 py-0.5 rounded">
+                  ULPIN: {parcel.ulpin}
                 </span>
               </div>
 
-              <div className="space-y-2 pt-1 text-xs">
-                <div className="flex items-start justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Planning Authority:</span>
-                  <span className="text-white font-bold text-right max-w-[200px]">{zoning.masterPlanAuthority}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Village</span>
+                  <span className="font-bold text-[#102A43] text-sm">{parcel.village}</span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Zone Category:</span>
-                  <span className="text-blue-400 font-bold">{zoning.zoneCategory}</span>
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Taluk</span>
+                  <span className="font-bold text-[#102A43] text-sm">{parcel.taluk}</span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Permissible FSI / FAR:</span>
-                  <span className="text-emerald-400 font-mono font-bold">{zoning.permissibleFSI}</span>
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">District</span>
+                  <span className="font-bold text-[#102A43] text-sm">{parcel.district}</span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Max Building Height:</span>
-                  <span className="text-amber-400 font-bold">{zoning.maxHeightMeters} Meters</span>
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">State</span>
+                  <span className="font-bold text-[#102A43] text-sm">{parcel.state || "Tamil Nadu"}</span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Required Setback Norms:</span>
-                  <span className="text-slate-200 font-medium text-right text-[11px]">{zoning.setbacks}</span>
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Coordinates</span>
+                  <span className="font-mono font-bold text-[#102A43] text-xs">
+                    {centerLat.toFixed(6)}° N, {centerLng.toFixed(6)}° E
+                  </span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Property Type</span>
+                  <span className="font-bold text-[#102A43] text-xs">{parcel.landClassification || "Ryotwari Registered Land"}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Master Plan Zone</span>
+                  <span className="font-bold text-[#1D5FD1] text-xs">{zoning.zoneCategory}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Building Permission</span>
+                  <span className="font-bold text-[#16845B] text-xs">{zoning.permissibleFSI} · Max {zoning.maxHeightMeters}m</span>
+                </div>
+
+                <div className="sm:col-span-2 bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] flex items-center justify-between">
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Encumbrance</span>
+                    <span className="font-bold text-[#102A43] text-xs">{parcel.encumbranceStatus || "Clear Title"}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                    parcel.encumbranceStatus === "Disputed"
+                      ? "bg-rose-50 text-[#D9363E] border-rose-200"
+                      : "bg-emerald-50 text-[#16845B] border-emerald-200"
+                  }`}>
+                    {parcel.encumbranceStatus || "CLEAR TITLE"}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="p-3.5 bg-slate-800/40 border border-slate-700/60 rounded-xl text-xs space-y-1">
-              <span className="font-bold text-slate-200 block">Zoning Compliance Note</span>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Parcel classification is synced with State Master Plan & Municipal Building Permissions framework under ULPIN <span className="font-mono text-blue-300">{parcel.ulpin}</span>.
-              </p>
+            {/* Cryptographic Audit Hash if Immutable */}
+            {(parcel.verificationStatus === "IMMUTABLE" || parcel.provenanceHash) && (
+              <div className="p-3 bg-[#F1F5FB] border border-[#E3E8EF] rounded-lg text-xs space-y-1">
+                <span className="font-bold text-[#102A43] flex items-center space-x-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#16845B]" />
+                  <span>Immutable DPI Ledger Hash</span>
+                </span>
+                <code className="block text-[10px] font-mono text-[#1D5FD1] break-all bg-white p-2 rounded border border-[#E3E8EF]">
+                  {parcel.provenanceHash || "SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+                </code>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 2: OWNERSHIP / ROR                                            */}
+        {/* ================================================================= */}
+        {activeTab === "ownership" && (
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  Record of Rights (RoR) & Ownership Ledger
+                </span>
+                <span className="text-[10px] font-bold text-[#16845B] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Tamil Nilam Verified
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Owner (Pattadhar)</span>
+                  <span className="font-bold text-[#102A43] text-sm">{parcel.ownerName}</span>
+                  <span className="text-[10px] font-mono text-[#53627A] block mt-0.5">
+                    Aadhaar Hash: {parcel.ownerAadhaarHash || "XXXX-XXXX-8492"}
+                  </span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Co-owner</span>
+                  <span className="font-semibold text-[#102A43]">Nil / Sole Registered Pattadhar</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Patta Number</span>
+                  <span className="font-mono font-bold text-[#1D5FD1] text-xs">{pattaNo}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Ownership Type</span>
+                  <span className="font-semibold text-[#102A43]">Individual Freehold (Pattadhar Title)</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Mutation Status</span>
+                  <span className="font-bold text-[#16845B] flex items-center space-x-1 mt-0.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Sanctioned & Recorded in Tamil Nilam Ledger</span>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* TAB 2: PROPERTY TAX & VALUATION */}
+        {/* ================================================================= */}
+        {/* TAB 3: REGISTRATION                                               */}
+        {/* ================================================================= */}
+        {activeTab === "registration" && (
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  Sub-Registrar Office (SRO) Registration
+                </span>
+                <span className="text-[10px] font-mono text-[#53627A] bg-[#F7F9FC] border border-[#E3E8EF] px-2 py-0.5 rounded">
+                  tnreginet.gov.in
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Registration Number</span>
+                  <span className="font-mono font-bold text-[#102A43] text-sm">
+                    {parcel.registrationDocNo || `DOC-2023-TN-${parcel.id}`}
+                  </span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Registration Date</span>
+                  <span className="font-semibold text-[#102A43]">
+                    {parcel.registrationDate || "15 May 2023"}
+                  </span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Transaction Type</span>
+                  <span className="font-semibold text-[#102A43]">Registered Sale Deed (Conveyance Title)</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Previous Owner</span>
+                  <span className="font-semibold text-[#102A43]">Thiru R. Selvakumar, IRS & Predecessors</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">SRO Sub-District</span>
+                  <span className="font-semibold text-[#102A43]">{parcel.taluk} Sub-Registrar Office</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 4: PLANNING                                                   */}
+        {/* ================================================================= */}
+        {activeTab === "planning" && (
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  DTCP / CMDA Planning & Zoning
+                </span>
+                <span className="text-[10px] font-bold text-[#1D5FD1] bg-[#F1F5FB] px-2 py-0.5 rounded border border-[#E3E8EF]">
+                  Master Plan 2026
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Master Plan</span>
+                  <span className="font-bold text-[#102A43] text-xs">{zoning.masterPlanAuthority}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Zoning</span>
+                  <span className="font-bold text-[#1D5FD1] text-sm">{zoning.zoneCategory}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Land Use</span>
+                  <span className="font-semibold text-[#102A43]">{parcel.currentUse || "Mixed Residential & Commercial"}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Building Permission</span>
+                  <span className="font-semibold text-[#16845B]">
+                    {zoning.permissibleFSI} FSI · Max Height: {zoning.maxHeightMeters} Meters (G+5 Permissible)
+                  </span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Restrictions</span>
+                  <span className="font-medium text-[#102A43] text-[11px] leading-relaxed">
+                    {zoning.setbacks}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 5: TAX                                                        */}
+        {/* ================================================================= */}
         {activeTab === "tax" && (
-          <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/40 via-slate-800/60 to-slate-900 border border-emerald-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Receipt className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
-                    Property Tax & Revenue Valuation
-                  </span>
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase border ${
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  Municipal Property Tax & Fiscal Valuation
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
                   tax.taxStatus === "Paid"
-                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                    : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                    ? "bg-emerald-50 text-[#16845B] border-emerald-200"
+                    : "bg-amber-50 text-[#E99A16] border-amber-200"
                 }`}>
-                  {tax.taxStatus === "Paid" ? "✓ TAX PAID FY26" : "⚠️ TAX PENDING"}
+                  {tax.taxStatus === "Paid" ? "✓ Fully Paid FY26" : "⚠️ Payment Pending"}
                 </span>
               </div>
 
-              <div className="space-y-2 pt-1 text-xs">
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Tax Assessment ID:</span>
-                  <span className="text-white font-mono font-bold">{tax.taxAssessmentId}</span>
+              <div className="space-y-2.5 text-xs">
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Assessment Number</span>
+                  <span className="font-mono font-bold text-[#102A43] text-sm">{tax.taxAssessmentId}</span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Annual Tax Amount:</span>
-                  <span className="text-emerald-400 font-mono font-bold text-sm">{tax.annualTaxAmount}</span>
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Property Tax</span>
+                  <span className="font-mono font-bold text-[#16845B] text-sm">{tax.annualTaxAmount}</span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Guideline Value (Circle Rate):</span>
-                  <span className="text-amber-400 font-bold">{tax.guidelineValueSqFt}</span>
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Pending Dues</span>
+                  <span className="font-bold text-[#102A43]">₹ 0 (Nil Outstanding Dues for FY 2025-26)</span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Total Property Valuation:</span>
-                  <span className="text-white font-mono font-black text-sm">{tax.totalValuation}</span>
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Payment Status</span>
+                  <span className="font-bold text-[#16845B] flex items-center space-x-1.5 mt-0.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Fully Paid (Official Municipal Receipt Active)</span>
+                  </span>
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Tax Assessment Ward:</span>
-                  <span className="text-slate-200 font-medium">{tax.wardNo}</span>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Guideline Rate</span>
+                    <span className="font-bold text-[#1D5FD1]">{tax.guidelineValueSqFt}</span>
+                  </div>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Market Valuation</span>
+                    <span className="font-bold text-[#102A43]">{tax.totalValuation}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="p-3.5 bg-slate-800/40 border border-slate-700/60 rounded-xl text-xs space-y-1">
-              <span className="font-bold text-slate-200 block">Property Tax Sync</span>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Directly linked with Municipal Property Taxation Portal. Guidance value fetched from State Revenue Registration Department.
-              </p>
             </div>
           </div>
         )}
 
-        {/* TAB 3: COURT CASE & LEGAL LITIGATION STATUS */}
-        {activeTab === "court" && (
-          <div className="space-y-4 animate-in fade-in duration-150">
-            <div className={`p-4 rounded-2xl border space-y-3 ${
-              isDisputedOrStay
-                ? "bg-gradient-to-br from-red-950/50 via-slate-900 to-slate-900 border-red-500/40"
-                : "bg-gradient-to-br from-emerald-950/30 via-slate-900 to-slate-900 border-emerald-500/30"
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Scale className={`w-4 h-4 ${isDisputedOrStay ? "text-red-400" : "text-emerald-400"}`} />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
-                    Court Case & Legal Dispute Status
-                  </span>
+        {/* ================================================================= */}
+        {/* TAB 6: UTILITIES                                                  */}
+        {/* ================================================================= */}
+        {activeTab === "utilities" && (
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  Physical Infrastructure & Utility Right-of-Way
+                </span>
+                <span className="text-[10px] font-mono text-[#53627A] bg-[#F7F9FC] border border-[#E3E8EF] px-2 py-0.5 rounded">
+                  Connected
+                </span>
+              </div>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] flex items-start space-x-3">
+                  <div className="w-7 h-7 rounded-md bg-amber-50 border border-amber-200 text-[#E99A16] flex items-center justify-center shrink-0 mt-0.5">
+                    <Zap className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Electricity</span>
+                    <span className="font-bold text-[#102A43]">TANGEDCO 3-Phase Grid Connected</span>
+                    <span className="text-[10px] text-[#53627A] block mt-0.5">Consumer No: 09-214-0084 • Feeder: Sriperumbudur 110kV</span>
+                  </div>
                 </div>
-                <span className={`text-[10px] px-2.5 py-0.5 rounded font-bold uppercase border ${
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] flex items-start space-x-3">
+                  <div className="w-7 h-7 rounded-md bg-blue-50 border border-blue-200 text-[#1D5FD1] flex items-center justify-center shrink-0 mt-0.5">
+                    <Droplets className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Water</span>
+                    <span className="font-bold text-[#102A43]">TWAD Board Municipal Piped Connection</span>
+                    <span className="text-[10px] text-[#53627A] block mt-0.5">Groundwater depth: 8.5m • Safe Yield Zone</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] flex items-start space-x-3">
+                  <div className="w-7 h-7 rounded-md bg-emerald-50 border border-emerald-200 text-[#16845B] flex items-center justify-center shrink-0 mt-0.5">
+                    <Network className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Drainage</span>
+                    <span className="font-bold text-[#102A43]">Underground Stormwater Drainage (UGD) Linked</span>
+                    <span className="text-[10px] text-[#53627A] block mt-0.5">Municipal network clearance verified</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] flex items-start space-x-3">
+                  <div className="w-7 h-7 rounded-md bg-slate-100 border border-slate-300 text-[#102A43] flex items-center justify-center shrink-0 mt-0.5">
+                    <Compass className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Road Access</span>
+                    <span className="font-bold text-[#102A43]">12.0m PWD Bitumen Highway Access Road</span>
+                    <span className="text-[10px] text-[#53627A] block mt-0.5">Direct arterial road connectivity without easement disputes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* TAB 7: DISPUTES                                                   */}
+        {/* ================================================================= */}
+        {activeTab === "disputes" && (
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  Judicial Docket & Dispute Watch
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${
                   isDisputedOrStay
-                    ? "bg-red-500/20 text-red-300 border-red-500/50 animate-pulse"
-                    : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                    ? "bg-rose-50 text-[#D9363E] border-rose-200"
+                    : "bg-emerald-50 text-[#16845B] border-emerald-200"
                 }`}>
                   {court.status}
                 </span>
               </div>
 
-              <div className="space-y-2 pt-1 text-xs">
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Court Name:</span>
-                  <span className="text-white font-semibold text-right max-w-[210px]">{court.courtName}</span>
-                </div>
-
-                {court.caseId && court.caseId !== "None" && (
-                  <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                    <span className="text-slate-400 font-medium">Case Docket / ID:</span>
-                    <span className="text-red-400 font-mono font-bold">{court.caseId}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Cause of Action / Case Type:</span>
-                  <span className="text-slate-200 font-medium text-right max-w-[200px]">{court.caseType}</span>
-                </div>
-
-                <div className="flex items-start justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Stay / Injunction Order:</span>
-                  <span className={`font-semibold text-right max-w-[200px] text-[11px] ${
-                    isDisputedOrStay ? "text-red-300" : "text-emerald-400"
-                  }`}>
-                    {court.stayOrderDetails}
+              <div className="space-y-2.5 text-xs">
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Case Number</span>
+                  <span className={`font-mono font-bold text-sm ${isDisputedOrStay ? "text-[#D9363E]" : "text-[#102A43]"}`}>
+                    {court.caseId && court.caseId !== "None" ? court.caseId : "No Active Litigation (O.S. / W.P. None)"}
                   </span>
                 </div>
 
-                {court.hearingDate && (
-                  <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                    <span className="text-slate-400 font-medium">Next Court Hearing Date:</span>
-                    <span className="text-amber-400 font-mono font-bold flex items-center space-x-1">
-                      <Calendar className="w-3 h-3" />
-                      <span>{court.hearingDate}</span>
-                    </span>
-                  </div>
-                )}
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Dispute Type</span>
+                  <span className="font-semibold text-[#102A43]">{court.caseType}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Authority</span>
+                  <span className="font-semibold text-[#102A43]">{court.courtName}</span>
+                </div>
+
+                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Status</span>
+                  <span className={`font-bold ${isDisputedOrStay ? "text-[#D9363E]" : "text-[#16845B]"}`}>
+                    {court.stayOrderDetails || court.status}
+                  </span>
+                </div>
               </div>
             </div>
 
             {isDisputedOrStay && (
-              <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-xs text-red-200 space-y-1">
-                <span className="font-bold flex items-center space-x-1.5 text-red-400">
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-[#D9363E] space-y-1">
+                <span className="font-bold flex items-center space-x-1.5">
                   <Lock className="w-3.5 h-3.5" />
-                  <span>Sub-Registrar Lock Notice</span>
+                  <span>Sub-Registrar Alienation Lock Active</span>
                 </span>
-                <p className="text-[11px] text-red-300/80 leading-relaxed">
-                  Automatic SRO Deed Transfer Lock is ACTIVE due to court injunction. Mutation requests for ULPIN <span className="font-mono font-bold">{parcel.ulpin}</span> are frozen until disposal.
+                <p className="text-[11px] text-slate-700 leading-relaxed">
+                  Automatic SRO Deed Transfer Lock is enforced due to active court injunction. Mutations and property registration transfers are frozen until legal disposal.
                 </p>
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 4: CADASTRAL & SURVEY DETAILS */}
-        {activeTab === "survey" && (
-          <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-3">
-              <span className="text-xs font-bold text-white uppercase tracking-wider block">
-                Cadastral Survey & Ownership Attributes
-              </span>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Survey Number & Sub-division:</span>
-                  <span className="text-white font-mono font-bold text-sm">{parcel.surveyNumber}</span>
-                </div>
-
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Registered Owner Name:</span>
-                  <span className="text-emerald-400 font-bold">{parcel.ownerName}</span>
-                </div>
-
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Owner Aadhaar Hash:</span>
-                  <span className="text-slate-400 font-mono text-[10px]">{parcel.ownerAadhaarHash}</span>
-                </div>
-
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Land Classification:</span>
-                  <span className="text-blue-400 font-bold">{parcel.landClassification}</span>
-                </div>
-
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Land Extent Area:</span>
-                  <span className="text-white font-bold">{parcel.areaAcres} Acres ({parcel.areaSqMeters?.toLocaleString()} m²)</span>
-                </div>
-
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Registration Deed Reference:</span>
-                  <span className="text-slate-200 font-mono font-medium">{parcel.registrationDocNo} ({parcel.registrationDate})</span>
-                </div>
-
-                <div className="flex items-center justify-between bg-slate-900/80 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 font-medium">Encumbrance Status:</span>
-                  <span className="text-amber-400 font-bold">{parcel.encumbranceStatus}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: GSI GEOSCIENTIFIC ADVISORY */}
-        {activeTab === "gsi" && (
-          <div className="space-y-4 animate-in fade-in duration-150">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-950/40 via-slate-800/60 to-slate-900 border border-indigo-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Cpu className="w-4 h-4 text-indigo-400" />
-                  <span className="text-xs font-bold text-white uppercase tracking-wider">
-                    GSI Geoscientific Risk Advisory
-                  </span>
-                </div>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 px-2 py-0.5 rounded font-mono font-bold">
-                  {parcel.gsiGeology?.gsiReportId || "GSI-2026-SRIPERUMBUDUR"}
+        {/* ================================================================= */}
+        {/* TAB 8: DOCUMENTS                                                  */}
+        {/* ================================================================= */}
+        {activeTab === "documents" && (
+          <div className="space-y-4">
+            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                  Statutory Certified Documents
+                </span>
+                <span className="text-[10px] font-mono text-[#53627A] bg-[#F7F9FC] border border-[#E3E8EF] px-2 py-0.5 rounded">
+                  Digital Public Copy
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-                <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">Lithology</span>
-                  <span className="text-white font-bold">{parcel.gsiGeology?.lithology}</span>
-                </div>
-                <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">Bearing Capacity</span>
-                  <span className="text-emerald-400 font-mono font-bold">{parcel.gsiGeology?.soilBearingCapacityKPa} kPa</span>
-                </div>
-                <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">Geohazard Risk</span>
-                  <span className="text-amber-400 font-bold">{parcel.gsiGeology?.landslideRiskLevel} Risk</span>
-                </div>
-                <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 block text-[10px]">Groundwater Table</span>
-                  <span className="text-blue-400 font-bold">{parcel.gsiGeology?.groundwaterDepthMeters} m Depth</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 10 Facets Overview */}
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
-                10 Interoperable DPI Facets
-              </span>
-              <div className="space-y-1.5 text-[11px]">
-                {Object.entries(parcel.digitalFacets || {}).map(([key, val]) => (
-                  <div key={key} className="bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                    <span className="text-slate-400 font-mono text-[10px] uppercase font-bold">{key}</span>
-                    <span className="text-slate-200 font-medium truncate max-w-[240px] text-right">{val}</span>
+              <div className="space-y-3 text-xs">
+                {/* 1. RoR */}
+                <div className="p-3.5 bg-[#F8FAFD] rounded-lg border border-[#E3E8EF] flex items-center justify-between hover:border-[#1D5FD1] transition-colors">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-8 h-8 rounded-md bg-[#EDF7F2] text-[#16845B] flex items-center justify-center shrink-0 border border-emerald-200">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-bold text-[#102A43] block text-xs truncate">
+                        Record of Rights (RoR) / Patta Chitta
+                      </span>
+                      <span className="text-[10px] text-[#53627A] font-mono block">
+                        TN-ROR-2026-{parcel.surveyNumber?.replace(/[^a-zA-Z0-9]/g, "-")}.pdf
+                      </span>
+                    </div>
                   </div>
-                ))}
+                  <button
+                    onClick={() => setActiveDocModal("RoR (Record of Rights)")}
+                    className="px-2.5 py-1 bg-white hover:bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] hover:border-[#1D5FD1] font-semibold text-xs rounded transition-colors flex items-center space-x-1 shrink-0"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View</span>
+                  </button>
+                </div>
+
+                {/* 2. Registration Document */}
+                <div className="p-3.5 bg-[#F8FAFD] rounded-lg border border-[#E3E8EF] flex items-center justify-between hover:border-[#1D5FD1] transition-colors">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-8 h-8 rounded-md bg-[#F1F5FB] text-[#1D5FD1] flex items-center justify-center shrink-0 border border-[#E3E8EF]">
+                      <FileCheck className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-bold text-[#102A43] block text-xs truncate">
+                        Registration Document (SRO Deed)
+                      </span>
+                      <span className="text-[10px] text-[#53627A] font-mono block">
+                        {parcel.registrationDocNo || "DOC-2023-4182"}.pdf
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveDocModal("Certified Registration Deed")}
+                    className="px-2.5 py-1 bg-white hover:bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] hover:border-[#1D5FD1] font-semibold text-xs rounded transition-colors flex items-center space-x-1 shrink-0"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View</span>
+                  </button>
+                </div>
+
+                {/* 3. Encumbrance Certificate */}
+                <div className="p-3.5 bg-[#F8FAFD] rounded-lg border border-[#E3E8EF] flex items-center justify-between hover:border-[#1D5FD1] transition-colors">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-8 h-8 rounded-md bg-[#FEF5E7] text-[#E99A16] flex items-center justify-center shrink-0 border border-amber-200">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-bold text-[#102A43] block text-xs truncate">
+                        Encumbrance Certificate (13-Year EC)
+                      </span>
+                      <span className="text-[10px] text-[#53627A] font-mono block">
+                        EC-2026-TN-99018.pdf
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveDocModal("13-Year Encumbrance Certificate")}
+                    className="px-2.5 py-1 bg-white hover:bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] hover:border-[#1D5FD1] font-semibold text-xs rounded transition-colors flex items-center space-x-1 shrink-0"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View</span>
+                  </button>
+                </div>
+
+                {/* 4. Tax Document */}
+                <div className="p-3.5 bg-[#F8FAFD] rounded-lg border border-[#E3E8EF] flex items-center justify-between hover:border-[#1D5FD1] transition-colors">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="w-8 h-8 rounded-md bg-emerald-50 text-[#16845B] flex items-center justify-center shrink-0 border border-emerald-200">
+                      <Receipt className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-bold text-[#102A43] block text-xs truncate">
+                        Property Tax Document & Challan
+                      </span>
+                      <span className="text-[10px] text-[#53627A] font-mono block">
+                        {tax.taxAssessmentId}-REC.pdf
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveDocModal("Property Tax Challan & Assessment")}
+                    className="px-2.5 py-1 bg-white hover:bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] hover:border-[#1D5FD1] font-semibold text-xs rounded transition-colors flex items-center space-x-1 shrink-0"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>View</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer */}
-      <div className="p-4 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-        <span className="flex items-center space-x-1.5">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>ULPIN Verified Spatial Record</span>
+      {/* 5. OFFICIAL FOOTER */}
+      <div className="p-4 bg-[#F8FAFD] border-t border-[#E3E8EF] flex items-center justify-between text-xs text-[#53627A] shrink-0">
+        <span className="flex items-center space-x-1.5 font-medium">
+          <ShieldCheck className="w-4 h-4 text-[#16845B]" />
+          <span>SIH26014 DPI Certified • ULPIN Authenticated</span>
         </span>
         <button
           onClick={onClose}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors shadow-lg shadow-blue-600/20"
+          className="px-4 py-2 bg-[#102A43] hover:bg-[#0B1F33] text-white font-semibold rounded-md transition-colors shadow-xs"
         >
           Close Inspector
         </button>
       </div>
+
+      {/* DOCUMENT VIEW MODAL */}
+      {activeDocModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl border border-[#E3E8EF] max-w-lg w-full overflow-hidden">
+            <div className="p-4 bg-[#102A43] text-white flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <FileText className="w-4 h-4 text-[#1D5FD1]" />
+                <span className="font-bold text-xs uppercase tracking-wider">{activeDocModal}</span>
+              </div>
+              <button
+                onClick={() => setActiveDocModal(null)}
+                className="text-slate-300 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3 text-xs text-[#14213D]">
+              <div className="p-3 bg-[#F7F9FC] rounded-lg border border-[#E3E8EF] space-y-1 font-mono text-[11px]">
+                <div>Document: <strong>{activeDocModal}</strong></div>
+                <div>ULPIN Key: <strong>{parcel.ulpin}</strong></div>
+                <div>Survey Number: <strong>S.No {parcel.surveyNumber}</strong></div>
+                <div>Registered Owner: <strong>{parcel.ownerName}</strong></div>
+                <div>Jurisdiction: <strong>{parcel.village} Village, {parcel.district}</strong></div>
+                <div>Verification Seal: <strong className="text-[#16845B]">TNeGA Digitally Signed</strong></div>
+              </div>
+              <p className="text-[#53627A] text-[11px] leading-relaxed">
+                This certified digital copy is issued under the Tamil Nadu Digital Public Infrastructure for Land Governance (SIH26014). Valid for statutory revenue, registration, and banking clearance.
+              </p>
+            </div>
+            <div className="p-4 bg-[#F8FAFD] border-t border-[#E3E8EF] flex items-center justify-end space-x-2">
+              <button
+                onClick={() => setActiveDocModal(null)}
+                className="px-3.5 py-1.5 rounded-md border border-[#E3E8EF] bg-white hover:bg-slate-50 text-xs font-semibold text-[#102A43]"
+              >
+                Done
+              </button>
+              <button
+                onClick={() => {
+                  alert(`Downloading certified copy of ${activeDocModal}...`);
+                  setActiveDocModal(null);
+                }}
+                className="px-3.5 py-1.5 rounded-md bg-[#1D5FD1] hover:bg-[#154CB0] text-white text-xs font-semibold flex items-center space-x-1"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

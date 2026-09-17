@@ -71,20 +71,20 @@ export default function LocationSearch({ onSelectLocation }: LocationSearchProps
   return (
     <div ref={dropdownRef} className="relative w-full sm:w-72 md:w-80 lg:w-96 flex-1 sm:flex-initial">
       {/* Search Input Box */}
-      <div className="relative flex items-center h-10 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xs px-3 transition-all focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500">
-        <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
+      <div className="relative flex items-center h-9 bg-white border border-[#E3E8EF] rounded-md shadow-xs px-3 transition-all focus-within:border-[#1D5FD1]">
+        <Search className="w-3.5 h-3.5 text-[#53627A] mr-2 shrink-0" />
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search location across India..."
-          className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
+          className="w-full bg-transparent text-xs text-[#14213D] placeholder:text-[#53627A] focus:outline-none font-medium"
         />
-        {loading && <Loader2 className="w-4 h-4 text-blue-600 animate-spin ml-2 shrink-0" />}
+        {loading && <Loader2 className="w-3.5 h-3.5 text-[#1D5FD1] animate-spin ml-2 shrink-0" />}
         {query && !loading && (
           <button
             onClick={handleClear}
-            className="p-1 text-slate-400 hover:text-slate-600 rounded-full transition-colors ml-1 shrink-0"
+            className="p-1 text-[#53627A] hover:text-[#102A43] rounded transition-colors ml-1 shrink-0"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -93,23 +93,23 @@ export default function LocationSearch({ onSelectLocation }: LocationSearchProps
 
       {/* Autocomplete Dropdown List */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 max-h-72 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#E3E8EF] rounded-md shadow-lg overflow-hidden z-50 max-h-72 overflow-y-auto custom-scrollbar">
           {results.length === 0 ? (
-            <div className="p-4 text-center text-xs text-slate-500">No matching locations found in India.</div>
+            <div className="p-3 text-center text-xs text-[#53627A]">No matching locations found in India.</div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-[#E3E8EF]">
               {results.map((item) => (
                 <div
                   key={item.place_id}
                   onClick={() => handleSelect(item)}
-                  className="p-3 hover:bg-slate-50 cursor-pointer transition-colors flex items-start space-x-3 text-left"
+                  className="p-2.5 hover:bg-[#F7F9FC] cursor-pointer transition-colors flex items-start space-x-2.5 text-left"
                 >
-                  <MapPin className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-[#1D5FD1] mt-0.5 flex-shrink-0" />
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                    <h4 className="text-xs font-semibold text-[#14213D] leading-tight">
                       {item.display_name.split(",")[0]}
                     </h4>
-                    <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                    <p className="text-[11px] text-[#53627A] line-clamp-1 mt-0.5">
                       {item.display_name}
                     </p>
                   </div>

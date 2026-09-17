@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Parcel } from "@/types";
 import { ClickedLocation } from "@/types/gis";
 import LocationInspector from "./LocationInspector";
-import LayerManager from "./LayerManager";
-import AILandIntelligencePanel from "./AILandIntelligencePanel";
+import GisLayerPanel from "./GisLayerPanel";
+import GisSearch from "./GisSearch";
 import HierarchyNavigator from "./HierarchyNavigator";
+import AILandIntelligencePanel from "./AILandIntelligencePanel";
 
 // Dynamic import for Leaflet map component without SSR
 const GisMapInner = dynamic(() => import("./GisMapInner"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+    <div className="w-full h-full bg-[#F7F9FC] flex items-center justify-center">
       <div className="flex flex-col items-center space-y-3">
-        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-slate-600 text-xs font-semibold">Initializing Interactive GIS Map of India...</p>
+        <div className="w-8 h-8 border-3 border-[#1D5FD1] border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-[#53627A] text-xs font-semibold">Initializing Tamil Nadu Cadastral GIS Platform...</p>
       </div>
     </div>
   ),
@@ -28,84 +29,75 @@ interface GisMapContainerProps {
 }
 
 export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMapContainerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Active layers state: default has "cadastral_parcels" and "satellite_imagery" enabled for live satellite view
+  const [activeLayers, setActiveLayers] = useState<Set<string>>(new Set(["cadastral_parcels", "satellite_imagery"]));
+  const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const [clickedLocation, setClickedLocation] = useState<ClickedLocation | null>(null);
   const [targetFlyTo, setTargetFlyTo] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
-  // Layers are opt-in: detailed datasets load only after a user enables them.
-  const [activeLayers, setActiveLayers] = useState<string[]>([]);
-  const [layerStates, setLayerStates] = useState<Record<string, { status: "idle" | "loading" | "loaded" | "error"; errorMsg?: string; featureCount?: number; source?: string }>>({});
   const [showAIPanel, setShowAIPanel] = useState(false);
-
-  // Phase 1: Selected parcel ULPIN for overlay analysis
-  const [selectedUlpin, setSelectedUlpin] = useState<string | null>(null);
-
-  // Phase 2: Active query layer for click-to-query
-  const [activeQueryLayer, setActiveQueryLayer] = useState<string>("parcels");
 
   // Hierarchy drill-down: boundary GeoJSON for highlighting on map
   const [hierarchyBoundary, setHierarchyBoundary] = useState<any>(null);
 
+  // Toggle individual layer
   const handleToggleLayer = (layerId: string) => {
-    if (activeLayers.includes(layerId)) {
-      setActiveLayers(activeLayers.filter((id) => id !== layerId));
-      setLayerStates((prev) => {
-        const next = { ...prev };
-        delete next[layerId];
-        return next;
+    setActiveLayers((prev) => {
+      const next = new Set(prev);
+      if (next.has(layerId)) {
+        next.delete(layerId);
+      } else {
+        next.add(layerId);
+      }
+      return next;
+    });
+  };
+
+  // Reset to defaults: Cadastral Parcels and Satellite Imagery active
+  const handleResetToDefaults = () => {
+    setActiveLayers(new Set(["cadastral_parcels", "satellite_imagery"]));
+  };
+
+  // Fullscreen toggle handler
+  const handleToggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch((err) => {
+        console.warn("Fullscreen request error:", err);
       });
     } else {
-      setActiveLayers([...activeLayers, layerId]);
-      setLayerStates((prev) => ({ ...prev, [layerId]: { status: "idle" } }));
-    }
-
-    // Map layer toggles to query layer names
-    const cleanId = layerId.toLowerCase().replace("layer-", "").replace("gsi-", "").replace("geo", "geology").replace("hazard", "risk_zones");
-    if (["geology", "soil", "landuse", "waterbodies", "roads", "elevation", "risk_zones"].includes(cleanId)) {
-      setActiveQueryLayer(cleanId);
-    } else {
-      setActiveQueryLayer("parcels");
-    }
-  };
-
-  const handleLayerLoadStart = (layerId: string) => {
-    setLayerStates((prev) => ({ ...prev, [layerId]: { status: "loading" } }));
-  };
-
-  const handleLayerLoadSuccess = (layerId: string, featureCount?: number, source?: string) => {
-    setLayerStates((prev) => ({ ...prev, [layerId]: { status: "loaded", featureCount, source } }));
-  };
-
-  const handleLayerLoadError = (layerId: string, errorMsg: string) => {
-    setLayerStates((prev) => ({ ...prev, [layerId]: { status: "error", errorMsg } }));
-  };
-
-  const handleLayerFeatureClick = (properties: any, layerName: string) => {
-    // Show standard clicked location panel with the feature properties
-    setClickedLocation({
-      lat: 0, // Fallback if no specific lat/lng
-      lng: 0,
-      displayName: properties.name || properties.district_name || layerName,
-      addressDetails: properties,
-    } as any);
-    setShowAIPanel(false); // Can open AI panel later if wanted
-  };
-
-  const handleLocationClickedOnMap = (loc: ClickedLocation | null) => {
-    setClickedLocation(loc);
-    if (loc) {
-      setShowAIPanel(true);
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch((err) => {
+        console.warn("Exit fullscreen error:", err);
+      });
     }
   };
 
   const handleSelectParcel = (parcel: Parcel) => {
-    setSelectedUlpin(parcel.ulpin);
+    if (parcel.center && Array.isArray(parcel.center) && parcel.center.length >= 2) {
+      setTargetFlyTo({ lat: parcel.center[0], lng: parcel.center[1], zoom: 17 });
+    }
     if (onSelectParcel) {
       onSelectParcel(parcel);
     }
   };
 
+  const handleSelectLocation = (lat: number, lng: number, displayName: string, addressDetails?: any, geojson?: any) => {
+    setTargetFlyTo({ lat, lng, zoom: 14 });
+    setClickedLocation({
+      lat,
+      lng,
+      displayName,
+      addressDetails,
+      geojson,
+      loading: false,
+    });
+  };
+
   // Hierarchy drill-down callbacks
   const handleHierarchyFlyToBounds = (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => {
-    // Compute center from bounds and appropriate zoom
     const lat = (bounds.minLat + bounds.maxLat) / 2;
     const lng = (bounds.minLng + bounds.maxLng) / 2;
     const latSpan = bounds.maxLat - bounds.minLat;
@@ -114,26 +106,24 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
   };
 
   const handleHierarchySelectUlpin = (ulpin: string) => {
-    setSelectedUlpin(ulpin);
-    // Find parcel from existing data and select it
     const parcel = parcels.find((p) => p.ulpin === ulpin);
     if (parcel) {
       handleSelectParcel(parcel);
-      if (parcel.center) {
-        setTargetFlyTo({ lat: parcel.center[0], lng: parcel.center[1], zoom: 17 });
-      }
     }
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden">
-      {/* Top Floating GIS Control Bar */}
-      <div className="absolute top-3 left-3 sm:left-4 z-[2000] flex flex-wrap items-start gap-2 max-w-[calc(100vw-2rem)]">
-        <LayerManager 
-          activeLayers={activeLayers} 
-          layerStates={layerStates}
-          onToggleLayer={handleToggleLayer} 
+    <div ref={containerRef} className="relative w-full h-full min-h-[calc(100vh-64px)] overflow-hidden bg-[#F7F9FC]">
+      {/* FLOATING TOP TOOLBAR (Search & Administrative Hierarchy Navigator) */}
+      <div className="absolute top-3 left-3 sm:left-4 z-[2000] flex flex-wrap items-center gap-2.5 max-w-[calc(100vw-120px)] sm:max-w-none">
+        {/* Unified Search: ULPIN, Survey Number, Owner Name, Village, Taluk, District, Address */}
+        <GisSearch
+          parcels={parcels}
+          onSelectParcel={handleSelectParcel}
+          onSelectLocation={handleSelectLocation}
         />
+
+        {/* Administrative Hierarchy Drill-Down (District -> Taluk -> Village -> Survey No) */}
         <HierarchyNavigator
           onFlyToBounds={handleHierarchyFlyToBounds}
           onSelectParcelUlpin={handleHierarchySelectUlpin}
@@ -141,24 +131,32 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
         />
       </div>
 
-      {/* Core Leaflet GIS Map */}
+      {/* FLOATING GIS LAYER PANEL (6 Categories, 23 Layers) */}
+      <GisLayerPanel
+        isOpen={isLayerPanelOpen}
+        onClose={() => setIsLayerPanelOpen(false)}
+        activeLayers={activeLayers}
+        onToggleLayer={handleToggleLayer}
+        onResetToDefaults={handleResetToDefaults}
+      />
+
+      {/* CORE LEAFLET MAP */}
       <GisMapInner
         parcels={parcels}
         onSelectParcel={handleSelectParcel}
         clickedLocation={clickedLocation}
-        setClickedLocation={handleLocationClickedOnMap}
+        setClickedLocation={setClickedLocation}
         targetFlyTo={targetFlyTo}
-        activeQueryLayer={activeQueryLayer}
-        overlayData={null}
+        activeLayers={activeLayers}
+        onToggleLayer={handleToggleLayer}
+        isLayerPanelOpen={isLayerPanelOpen}
+        onToggleLayerPanel={() => setIsLayerPanelOpen(!isLayerPanelOpen)}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={handleToggleFullscreen}
         hierarchyBoundary={hierarchyBoundary}
-        activeRegistryLayers={activeLayers}
-        onLayerLoadStart={handleLayerLoadStart}
-        onLayerLoadSuccess={handleLayerLoadSuccess}
-        onLayerLoadError={handleLayerLoadError}
-        onLayerFeatureClick={handleLayerFeatureClick}
       />
 
-      {/* Bottom Left Clicked Location Inspector Drawer */}
+      {/* BOTTOM LEFT LOCATION INSPECTOR DRAWER (When arbitrary map point is clicked) */}
       <LocationInspector
         location={clickedLocation}
         onClear={() => {
@@ -167,7 +165,7 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
         }}
       />
 
-      {/* Right AI Land Intelligence Drawer */}
+      {/* RIGHT AI LAND INTELLIGENCE DRAWER */}
       {showAIPanel && clickedLocation && (
         <AILandIntelligencePanel
           lat={clickedLocation.lat}

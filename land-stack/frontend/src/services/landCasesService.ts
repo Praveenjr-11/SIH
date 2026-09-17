@@ -320,6 +320,11 @@ function generate100PlusFallbackCases(): LandCaseItem[] {
       const riskScore = Math.floor(10 + Math.random() * 80);
       const riskLevel = riskScore > 65 ? "HIGH" : riskScore > 35 ? "MODERATE" : "LOW";
 
+      const dayOffset = (cIdx * 2 + dIdx) % 45;
+      const caseDate = new Date(2026, 8, 15);
+      caseDate.setDate(caseDate.getDate() - dayOffset);
+      const createdStr = caseDate.toISOString().split("T")[0];
+
       cases.push({
         id: caseIdNum,
         caseNumber: caseNo,
@@ -339,7 +344,8 @@ function generate100PlusFallbackCases(): LandCaseItem[] {
         guidelineValue: `₹ ${guidelineVal.toLocaleString()} / sq ft`,
         estimatedMarketValue: `₹ ${marketCrores} Crores`,
         riskScore: riskScore,
-        riskLevel: riskLevel
+        riskLevel: riskLevel,
+        created_at: createdStr
       });
     }
   }

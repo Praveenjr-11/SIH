@@ -73,14 +73,6 @@ async function parseGeojsonl(filePath: string, stateFilter?: string): Promise<Vi
       const stateName = (props.stname || props.STNAME || props.state_name || props.STATE_NAME || props.st_name || props.State || props.STATE || props.state || '').toString().trim();
       const districtName = (props.dtname || props.DTNAME || props.district_name || props.DISTRICT_NAME || props.dt_name || props.District || props.DISTRICT || '').toString().trim();
       
-      if (stateFilter && stateFilter.toLowerCase() === 'tamil nadu') {
-        const lowerDistrict = districtName.toLowerCase();
-        if (lowerDistrict !== 'kanchipuram' && lowerDistrict !== 'kancheepuram' && lowerDistrict !== 'virudhunagar') {
-          skippedNonMatch++;
-          continue;
-        }
-      }
-
       const name = (props.vilname || props.VILNAME || props.village_name || props.VILLAGE_NAME || props.village || props.Village || props.name || props.NAME || '').toString().trim();
       const subdistrict = (props.sdtname || props.SDTNAME || props.subdistrict_name || props.SUBDISTRICT_NAME || props.sd_name || props.Sub_dist || props.SUB_DIST || props.subdistrict || props.Taluk || '').toString().trim();
       const lgdCode = (props.vil_lgd || props.vilcode11 || props.village_lgd_code || props.v_lgd_code || props.lgd_code || props.Vill_LGD || '').toString().trim();

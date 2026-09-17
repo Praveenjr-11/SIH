@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { fetchLocationAnalysis } from "@/services/gisAnalysisService";
 import { resolveMasterPlanZone, resolveZoneWithBackendType, computeZoneGeometry, MasterPlanZoneConfig } from "@/utils/zoneResolver";
 import {
-  Sparkles,
   ShieldCheck,
   AlertTriangle,
   X,
@@ -32,8 +31,8 @@ interface AILandIntelligencePanelProps {
 
 function DataSourceBadge({ source, label }: { source?: string; label?: string }) {
   return (
-    <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-300 px-2 py-0.5 rounded text-[9px] font-bold shadow-xs">
-      <ShieldCheck className="w-3 h-3 text-emerald-600" />
+    <span className="inline-flex items-center space-x-1 bg-emerald-50 text-[#16845B] border border-emerald-200 px-2 py-0.5 rounded text-[9px] font-bold">
+      <ShieldCheck className="w-3 h-3 text-[#16845B]" />
       <span>{label || "VERIFIED INDIA GIS DPI"}</span>
     </span>
   );
@@ -42,8 +41,8 @@ function DataSourceBadge({ source, label }: { source?: string; label?: string })
 /** Badge for synthetic/illustrative data — amber, clearly labeled */
 function SyntheticDataBadge({ label }: { label?: string }) {
   return (
-    <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-700 border border-amber-300 px-2 py-0.5 rounded text-[9px] font-bold shadow-xs">
-      <AlertTriangle className="w-3 h-3 text-amber-500" />
+    <span className="inline-flex items-center space-x-1 bg-amber-50 text-[#B45309] border border-amber-200 px-2 py-0.5 rounded text-[9px] font-bold">
+      <AlertTriangle className="w-3 h-3 text-[#E99A16]" />
       <span>{label || "ILLUSTRATIVE DATA"}</span>
     </span>
   );
@@ -108,23 +107,23 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
   }, [isRegion, activeTab]);
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] max-w-full bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col text-slate-900 overflow-hidden animate-in slide-in-from-right-4">
+    <div className="fixed inset-y-0 right-0 w-full sm:w-[480px] max-w-full bg-white border-l border-[#E3E8EF] shadow-lg z-50 flex flex-col text-[#14213D] overflow-hidden">
       {/* Top Header */}
-      <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white text-slate-900 flex-shrink-0 shadow-2xs">
+      <div className="p-4 border-b border-[#E3E8EF] flex items-center justify-between bg-white text-[#14213D] flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shadow-xs">
-            {isRegion ? <Compass className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
+          <div className="w-9 h-9 rounded-md bg-[#102A43]/5 border border-[#102A43]/15 flex items-center justify-center text-[#102A43]">
+            {isRegion ? <Compass className="w-4 h-4" /> : <Cpu className="w-4 h-4 text-[#1D5FD1]" />}
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#1D5FD1]">
                 {isRegion ? "REGIONAL INTELLIGENCE" : "LAND INTELLIGENCE ENGINE"}
               </span>
-              <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-300 font-bold px-1.5 py-0.5 rounded">
+              <span className="text-[9px] bg-emerald-50 text-[#16845B] border border-emerald-200 font-bold px-1.5 py-0.5 rounded">
                 DPI Phase 5
               </span>
             </div>
-            <h2 className="font-mono text-xs font-bold text-slate-900 mt-0.5">
+            <h2 className="font-mono text-xs font-bold text-[#102A43] mt-0.5 truncate max-w-[280px]">
               {isRegion 
                 ? (displayName || addressDetails?.state || addressDetails?.district || frontendZone.zoneTitle).toUpperCase()
                 : `${survey?.surveyNumber || frontendZone.zoneTitle} (${survey?.ulpin || `${lat.toFixed(4)}°N`})`}
@@ -133,18 +132,18 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
         </div>
         <button
           onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+          className="p-1.5 rounded-md text-[#53627A] hover:text-[#102A43] hover:bg-[#F7F9FC] border border-transparent hover:border-[#E3E8EF] transition-colors shrink-0"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Tabs Bar */}
-      <div className="flex items-center space-x-1 p-2 bg-slate-50 border-b border-slate-200 text-[11px] font-bold overflow-x-auto custom-scrollbar flex-shrink-0">
+      <div className="flex items-center space-x-1 p-2 bg-[#F7F9FC] border-b border-[#E3E8EF] text-[11px] font-semibold overflow-x-auto custom-scrollbar flex-shrink-0">
         <button
           onClick={() => setActiveTab("zoning")}
-          className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-            activeTab === "zoning" ? "bg-blue-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${
+            activeTab === "zoning" ? "bg-[#102A43] text-white shadow-xs" : "text-[#53627A] hover:bg-white hover:text-[#102A43]"
           }`}
         >
           <Building2 className="w-3.5 h-3.5" />
@@ -155,8 +154,8 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
           <>
             <button
               onClick={() => setActiveTab("survey")}
-              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                activeTab === "survey" ? "bg-emerald-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${
+                activeTab === "survey" ? "bg-[#102A43] text-white shadow-xs" : "text-[#53627A] hover:bg-white hover:text-[#102A43]"
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -167,8 +166,8 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
         <button
           onClick={() => setActiveTab("officers")}
-          className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-            activeTab === "officers" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${
+            activeTab === "officers" ? "bg-[#102A43] text-white shadow-xs" : "text-[#53627A] hover:bg-white hover:text-[#102A43]"
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -179,8 +178,8 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
           <>
             <button
               onClick={() => setActiveTab("tax")}
-              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                activeTab === "tax" ? "bg-amber-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${
+                activeTab === "tax" ? "bg-[#102A43] text-white shadow-xs" : "text-[#53627A] hover:bg-white hover:text-[#102A43]"
               }`}
             >
               <Receipt className="w-3.5 h-3.5" />
@@ -189,12 +188,12 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
             <button
               onClick={() => setActiveTab("court")}
-              className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
+              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${
                 activeTab === "court"
                   ? isDisputed
-                    ? "bg-red-600 text-white shadow-xs"
-                    : "bg-purple-600 text-white shadow-xs"
-                  : "text-slate-600 hover:bg-slate-200"
+                    ? "bg-[#D9363E] text-white shadow-xs"
+                    : "bg-[#102A43] text-white shadow-xs"
+                  : "text-[#53627A] hover:bg-white hover:text-[#102A43]"
               }`}
             >
               <Scale className="w-3.5 h-3.5" />
@@ -205,8 +204,8 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
         <button
           onClick={() => setActiveTab("gsi")}
-          className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-            activeTab === "gsi" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-200"
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md transition-all whitespace-nowrap ${
+            activeTab === "gsi" ? "bg-[#102A43] text-white shadow-xs" : "text-[#53627A] hover:bg-white hover:text-[#102A43]"
           }`}
         >
           <Cpu className="w-3.5 h-3.5" />
@@ -217,21 +216,21 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
       {/* Main Content Body */}
       {loading ? (
         <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-3">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-600 text-xs font-semibold">Performing Spatial Point-in-Polygon & Revenue Resolution...</p>
+          <div className="w-8 h-8 border-3 border-[#1D5FD1] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[#53627A] text-xs font-medium">Performing Spatial Point-in-Polygon & Revenue Resolution...</p>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
           {/* Location Jurisdiction Header Card */}
-          <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between">
+          <div className="bg-[#F7F9FC] p-3.5 rounded-lg border border-[#E3E8EF] flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Administrative Jurisdiction</span>
-              <h3 className="text-xs font-bold text-slate-900 mt-0.5">
+              <span className="text-[10px] text-[#53627A] font-bold uppercase tracking-wider block">Administrative Jurisdiction</span>
+              <h3 className="text-xs font-bold text-[#14213D] mt-0.5">
                 {analysis?.administration?.village ? `${analysis.administration.village}, ` : ""}
                 {analysis?.administration?.subdistrict || "Subdistrict"},{" "}
                 {analysis?.administration?.district || "District"}
               </h3>
-              <p className="text-[11px] text-slate-600 font-medium">
+              <p className="text-[11px] text-[#53627A] font-medium">
                 {analysis?.administration?.state || "India"} • Coordinates: {typeof lat === "number" ? lat.toFixed(5) : "N/A"}° N, {typeof lng === "number" ? lng.toFixed(5) : "N/A"}° E
               </p>
             </div>
@@ -240,82 +239,82 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
           {/* TAB 1: ZONING & MASTER PLAN */}
           {activeTab === "zoning" && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 via-blue-50/40 to-slate-50 border border-slate-200 text-slate-900 space-y-2.5 shadow-xs">
+            <div className="space-y-3">
+              <div className="p-4 rounded-lg bg-white border border-[#E3E8EF] text-[#14213D] space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-                    <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider flex items-center space-x-1.5">
+                    <Building2 className="w-3.5 h-3.5 text-[#1D5FD1]" />
                     <span>Master Plan Zone Regulation</span>
                   </span>
                   <span
-                    className="text-[9px] font-bold px-2.5 py-0.5 rounded-full text-white uppercase shadow-xs"
-                    style={{ backgroundColor: zoning?.color || "#10b981" }}
+                    className="text-[9px] font-bold px-2 py-0.5 rounded text-white uppercase"
+                    style={{ backgroundColor: zoning?.color || "#16845B" }}
                   >
                     {zoning?.zoneType?.replace(/_/g, " ")}
                   </span>
                 </div>
 
                 <div className="space-y-1">
-                  <h4 className="text-xs font-bold" style={{ color: zoning?.color || "#10b981" }}>
+                  <h4 className="text-xs font-bold text-[#102A43]">
                     {zoning?.zoneTitle}
                   </h4>
-                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  <p className="text-xs text-[#53627A] font-medium leading-relaxed">
                     {zoning?.permissibleUse}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono pt-1.5 border-t border-slate-200">
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
-                    <span className="text-slate-500 block text-[9px]">Permissible FSI</span>
-                    <span className="text-emerald-700 font-bold">{zoning?.fsiLimit}</span>
+                <div className="grid grid-cols-2 gap-2 text-[10px] font-mono pt-2 border-t border-[#E3E8EF]">
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[9px]">Permissible FSI</span>
+                    <span className="text-[#16845B] font-bold text-xs">{zoning?.fsiLimit}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
-                    <span className="text-slate-500 block text-[9px]">Max Height Limit</span>
-                    <span className="text-amber-700 font-bold">{zoning?.maxBuildingHeight}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[9px]">Max Height Limit</span>
+                    <span className="text-[#E99A16] font-bold text-xs">{zoning?.maxBuildingHeight}</span>
                   </div>
                 </div>
 
-                <p className="text-[10px] text-slate-500 italic pt-0.5">
+                <p className="text-[10px] text-[#53627A] italic pt-0.5">
                   Building Policy: {zoning?.constructionPolicy}
                 </p>
               </div>
 
               {/* Setback Norms */}
-              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 text-xs">
-                <span className="font-bold text-slate-800 block">DTCP / Municipal Building Setbacks</span>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
+              <div className="bg-[#F7F9FC] p-3.5 rounded-lg border border-[#E3E8EF] space-y-1 text-xs">
+                <span className="font-bold text-[#102A43] block">DTCP / Municipal Building Setbacks</span>
+                <p className="text-[11px] text-[#53627A] leading-relaxed">
                   Front Setback: 5.0 Meters • Side Setbacks: 3.5 Meters • Rear Buffer: 3.5 Meters compliant with State Planning Authority Master Plan.
                 </p>
               </div>
 
               {/* Expanded Spatial Zone Perimeter Scope Card */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3.5 rounded-xl border border-blue-200 space-y-2 shadow-xs">
+              <div className="bg-[#F7F9FC] p-3.5 rounded-lg border border-[#E3E8EF] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Compass className="w-4 h-4 text-blue-700" />
-                    <span className="text-xs font-bold text-blue-950 uppercase tracking-wide">Expanded Spatial Zone Scope</span>
+                    <Compass className="w-4 h-4 text-[#1D5FD1]" />
+                    <span className="text-xs font-bold text-[#102A43] uppercase tracking-wide">Expanded Spatial Zone Scope</span>
                   </div>
-                  <span className="text-[10px] font-mono bg-blue-600 text-white font-bold px-2 py-0.5 rounded shadow-xs">
+                  <span className="text-[10px] font-mono bg-[#102A43] text-white font-bold px-2 py-0.5 rounded">
                     {zoneMetrics.perimeterKm} km Scope
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                  <div className="bg-white p-2 rounded-lg border border-blue-100 shadow-2xs">
-                    <span className="text-slate-500 block text-[9px]">Zone Boundary Perimeter</span>
-                    <span className="text-blue-900 font-bold text-xs">{zoneMetrics.perimeterKm} km ({zoneMetrics.perimeterMeters.toLocaleString()} m)</span>
+                  <div className="bg-white p-2 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[9px]">Zone Boundary Perimeter</span>
+                    <span className="text-[#102A43] font-bold text-xs">{zoneMetrics.perimeterKm} km ({zoneMetrics.perimeterMeters.toLocaleString()} m)</span>
                   </div>
-                  <div className="bg-white p-2 rounded-lg border border-blue-100 shadow-2xs">
-                    <span className="text-slate-500 block text-[9px]">Radial Scope</span>
-                    <span className="text-emerald-700 font-bold text-xs">±{zoneMetrics.radialBufferMeters}m Corner Radius</span>
+                  <div className="bg-white p-2 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[9px]">Radial Scope</span>
+                    <span className="text-[#16845B] font-bold text-xs">±{zoneMetrics.radialBufferMeters}m Corner Radius</span>
                   </div>
-                  <div className="bg-white p-2 rounded-lg border border-blue-100 shadow-2xs col-span-2">
-                    <span className="text-slate-500 block text-[9px]">Enclosed Spatial Zone Area</span>
-                    <span className="text-indigo-900 font-bold text-xs">{zoneMetrics.areaAcres} Acres ({zoneMetrics.areaHectares} Ha / {zoneMetrics.areaSqKm} km²)</span>
+                  <div className="bg-white p-2 rounded-md border border-[#E3E8EF] col-span-2">
+                    <span className="text-[#53627A] block text-[9px]">Enclosed Spatial Zone Area</span>
+                    <span className="text-[#1D5FD1] font-bold text-xs">{zoneMetrics.areaAcres} Acres ({zoneMetrics.areaHectares} Ha / {zoneMetrics.areaSqKm} km²)</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-2 rounded-lg text-[10px] font-mono text-slate-700 flex items-center justify-between border border-blue-200 shadow-2xs">
+                <div className="bg-white p-2 rounded-md text-[10px] font-mono text-[#53627A] flex items-center justify-between border border-[#E3E8EF]">
                   <span>Lat Limits: {zoneMetrics.bounds.south}° to {zoneMetrics.bounds.north}° N</span>
                   <span>Lng Limits: {zoneMetrics.bounds.west}° to {zoneMetrics.bounds.east}° E</span>
                 </div>
@@ -325,100 +324,100 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
           {/* TAB 2: CADASTRAL SURVEY DETAILS */}
           {activeTab === "survey" && (
-            <div className="space-y-3 animate-in fade-in duration-150">
+            <div className="space-y-3">
               {/* Provenance disclosure — field-by-field data status */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1">
+              <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-lg p-3 space-y-1">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                  <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wide">Data Provenance Disclosure</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-[#E99A16] flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-[#B45309] uppercase tracking-wide">Data Provenance Disclosure</span>
                 </div>
-                <p className="text-[10px] text-amber-700 leading-relaxed">
+                <p className="text-[10px] text-[#92400E] leading-relaxed">
                   <strong>Real:</strong> Survey/village identifiers, district/subdistrict admin boundaries, assigned revenue officers &amp; contacts. &nbsp;
-                  <strong>Illustrative:</strong> Specific owner name, patta number, deed reference — generated against real village/survey identifiers for demonstration. Not sourced from any individual's land record.
+                  <strong>Illustrative:</strong> Specific owner name, patta number, deed reference — generated against real village/survey identifiers for demonstration. Not sourced from any individual&apos;s land record.
                 </p>
               </div>
 
-              <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 space-y-3">
+              <div className="bg-white p-4 rounded-lg border border-[#E3E8EF] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <FileText className="w-4 h-4 text-emerald-700" />
-                    <span className="text-xs font-bold text-slate-900 uppercase">Survey &amp; Ownership Record</span>
+                    <FileText className="w-4 h-4 text-[#1D5FD1]" />
+                    <span className="text-xs font-bold text-[#102A43] uppercase">Survey &amp; Ownership Record</span>
                   </div>
                   <DataSourceBadge label="CADASTRAL ROR" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   {/* REAL fields — survey number and location identifiers */}
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200 ring-1 ring-emerald-100">
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">Survey &amp; Sub-division</span>
+                      <span className="text-[#53627A] block text-[10px]">Survey &amp; Sub-division</span>
                       <DataSourceBadge label="REAL" />
                     </div>
-                    <span className="text-slate-900 font-mono font-bold">{survey?.surveyNumber || "Loading..."}</span>
+                    <span className="text-[#102A43] font-mono font-bold">{survey?.surveyNumber || "Loading..."}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200 ring-1 ring-emerald-100">
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">ULPIN (Bhu-Aadhaar)</span>
+                      <span className="text-[#53627A] block text-[10px]">ULPIN (Bhu-Aadhaar)</span>
                       <DataSourceBadge label="REAL" />
                     </div>
-                    <span className="text-blue-700 font-mono font-bold text-[11px]">{survey?.ulpin || "Loading..."}</span>
+                    <span className="text-[#1D5FD1] font-mono font-bold text-[11px]">{survey?.ulpin || "Loading..."}</span>
                   </div>
 
                   {/* SYNTHETIC fields — ownership details */}
-                  <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 col-span-2">
+                  <div className="bg-[#FFFBEB] p-2.5 rounded-md border border-[#FDE68A] col-span-2">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">Registered Owner Name</span>
+                      <span className="text-[#B45309] block text-[10px]">Registered Owner Name</span>
                       <SyntheticDataBadge />
                     </div>
-                    <span className="text-slate-900 font-bold">{survey?.ownerName || "Loading..."}</span>
+                    <span className="text-[#102A43] font-bold">{survey?.ownerName || "Loading..."}</span>
                   </div>
-                  <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                  <div className="bg-[#FFFBEB] p-2.5 rounded-md border border-[#FDE68A]">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">Patta Reference No.</span>
+                      <span className="text-[#B45309] block text-[10px]">Patta Reference No.</span>
                       <SyntheticDataBadge />
                     </div>
-                    <span className="text-emerald-800 font-mono font-bold">{survey?.pattaNumber || "Loading..."}</span>
+                    <span className="text-[#16845B] font-mono font-bold">{survey?.pattaNumber || "Loading..."}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200 ring-1 ring-emerald-100">
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">Total Extent Area</span>
+                      <span className="text-[#53627A] block text-[10px]">Total Extent Area</span>
                       <DataSourceBadge label="OSM DERIVED" />
                     </div>
-                    <span className="text-slate-900 font-bold">{survey?.areaAcres || "N/A"} Acres ({survey?.areaSqMeters || "N/A"} m²)</span>
+                    <span className="text-[#102A43] font-bold">{survey?.areaAcres || "N/A"} Acres ({survey?.areaSqMeters || "N/A"} m²)</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-emerald-200 ring-1 ring-emerald-100 col-span-2">
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF] col-span-2">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">Land Classification</span>
+                      <span className="text-[#53627A] block text-[10px]">Land Classification</span>
                       <DataSourceBadge label="OSM DERIVED" />
                     </div>
-                    <span className="text-slate-900 font-bold">{survey?.landClassification || "Open Land"}</span>
+                    <span className="text-[#102A43] font-bold">{survey?.landClassification || "Open Land"}</span>
                   </div>
-                  <div className="bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 col-span-2">
+                  <div className="bg-emerald-50/50 p-2.5 rounded-md border border-emerald-200 col-span-2">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">TN Reginet Govt Guideline Value</span>
+                      <span className="text-[#16845B] block text-[10px] font-medium">TN Reginet Govt Guideline Value</span>
                       <DataSourceBadge label="REAL GOVT PUBLISHED" />
                     </div>
-                    <span className="text-emerald-900 font-bold text-xs">
+                    <span className="text-[#16845B] font-bold text-xs">
                       ₹{survey?.realGuidelineValuePerSqft || "1,450"} / sq.ft &nbsp;
-                      <span className="text-[10px] text-emerald-700 font-normal font-sans">(Official Stamp Duty Benchmark — tnreginet.gov.in)</span>
+                      <span className="text-[10px] text-[#53627A] font-normal font-sans">(Official Stamp Duty Benchmark — tnreginet.gov.in)</span>
                     </span>
                   </div>
-                  <div className="bg-amber-50 p-2.5 rounded-lg border border-amber-200 col-span-2">
+                  <div className="bg-[#FFFBEB] p-2.5 rounded-md border border-[#FDE68A] col-span-2">
                     <div className="flex justify-between items-center mb-0.5">
-                      <span className="text-slate-500 block text-[10px]">Sub-Registrar Deed Ref</span>
+                      <span className="text-[#B45309] block text-[10px]">Sub-Registrar Deed Ref</span>
                       <SyntheticDataBadge />
                     </div>
-                    <span className="text-slate-700 font-mono text-[11px]">{survey?.registrationDocNo || "N/A"} ({survey?.registrationDate || "N/A"})</span>
+                    <span className="text-[#14213D] font-mono text-[11px]">{survey?.registrationDocNo || "N/A"} ({survey?.registrationDate || "N/A"})</span>
                   </div>
                 </div>
 
                 {/* Official Judge Disclosure Statement */}
-                <div className="bg-indigo-900 text-white rounded-xl p-3.5 space-y-2 border border-indigo-700 shadow-sm mt-3">
+                <div className="bg-[#102A43] text-white rounded-lg p-3.5 space-y-2 border border-[#102A43] mt-3">
                   <div className="flex items-center space-x-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                    <span className="text-[11px] font-bold text-indigo-100 uppercase tracking-wide">Official Data Authenticity Statement</span>
+                    <ShieldCheck className="w-4 h-4 text-[#16845B] flex-shrink-0" />
+                    <span className="text-[11px] font-bold text-white uppercase tracking-wide">Official Data Authenticity Statement</span>
                   </div>
-                  <p className="text-[11px] text-indigo-100 leading-relaxed font-sans italic">
+                  <p className="text-[11px] text-slate-200 leading-relaxed font-sans italic">
                     &quot;Every administrative boundary, village statistic, and government officer in this system is real, sourced from LGD, Census 2011, and official TN government publications — the specific land-ownership records shown are illustrative, generated against that real scaffold, because individual Patta/Chitta data is private and correctly gated behind citizen-only OTP verification even by the government&apos;s own portal.&quot;
                   </p>
                 </div>
@@ -428,33 +427,33 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
           {/* TAB: ADMINISTRATIVE OFFICERS & ZONE APPROVAL PIPELINE */}
           {activeTab === "officers" && (
-            <div className="space-y-4 animate-in fade-in duration-150">
+            <div className="space-y-4">
               {/* Approval Feasibility Header */}
               {analysis?.zoneApprovalAnalysis && (
-                <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-slate-50 text-slate-900 p-4 rounded-2xl border border-indigo-200 shadow-sm space-y-3">
+                <div className="bg-[#F7F9FC] text-[#14213D] p-4 rounded-lg border border-[#E3E8EF] space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-indigo-700 font-bold uppercase tracking-wider block">Zone Approval Feasibility</span>
-                      <h3 className="text-sm font-bold text-slate-900 mt-0.5 flex items-center space-x-2">
+                      <span className="text-[10px] text-[#1D5FD1] font-bold uppercase tracking-wider block">Zone Approval Feasibility</span>
+                      <h3 className="text-sm font-bold text-[#102A43] mt-0.5 flex items-center space-x-2">
                         <span>{analysis.zoneApprovalAnalysis.approvalCategory}</span>
                       </h3>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-bold font-mono text-emerald-700">
+                      <span className="text-xl font-bold font-mono text-[#16845B]">
                         {analysis.zoneApprovalAnalysis.overallFeasibilityScore}%
                       </span>
-                      <span className="text-[9px] text-slate-500 block font-medium">Feasibility Index</span>
+                      <span className="text-[9px] text-[#53627A] block font-medium">Feasibility Index</span>
                     </div>
                   </div>
 
-                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden border border-slate-300">
+                  <div className="w-full bg-[#E3E8EF] h-2 rounded-full overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-emerald-500 to-blue-600 h-full rounded-full transition-all duration-500"
+                      className="bg-[#16845B] h-full rounded-full transition-all duration-300"
                       style={{ width: `${analysis.zoneApprovalAnalysis.overallFeasibilityScore}%` }}
                     ></div>
                   </div>
 
-                  <div className="flex justify-between items-center text-[10px] font-mono text-indigo-900 pt-1 border-t border-indigo-200/80">
+                  <div className="flex justify-between items-center text-[10px] font-mono text-[#53627A] pt-1 border-t border-[#E3E8EF]">
                     <span>Permissible FSI: {analysis.zoneApprovalAnalysis.maxPermissibleFSI}</span>
                     <span>Max Height: {analysis.zoneApprovalAnalysis.maxBuildingHeight}</span>
                   </div>
@@ -462,33 +461,33 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
               )}
 
               {/* Real Assigned Administrative Officers */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+              <div className="bg-white p-4 rounded-lg border border-[#E3E8EF] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <ShieldCheck className="w-4 h-4 text-indigo-700" />
-                    <span className="text-xs font-bold text-slate-900 uppercase">Assigned Revenue Officers</span>
+                    <ShieldCheck className="w-4 h-4 text-[#102A43]" />
+                    <span className="text-xs font-bold text-[#102A43] uppercase">Assigned Revenue Officers</span>
                   </div>
                   <DataSourceBadge label="REAL GOVT DIRECTORY" />
                 </div>
 
                 <div className="space-y-2 text-xs">
                   {analysis?.zoneApprovalAnalysis?.responsibleOfficers?.collector && (
-                    <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] space-y-1">
                       <div className="flex justify-between items-center">
-                        <span className="text-[10px] font-bold text-indigo-900 uppercase">District Collector</span>
+                        <span className="text-[10px] font-bold text-[#102A43] uppercase">District Collector</span>
                         <a
                           href={analysis.zoneApprovalAnalysis.responsibleOfficers.collector.sourceUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-[9px] text-blue-600 hover:underline font-semibold"
+                          className="text-[9px] text-[#1D5FD1] hover:underline font-semibold"
                         >
                           Official Portal ↗
                         </a>
                       </div>
-                      <h4 className="font-bold text-slate-900 text-xs">
+                      <h4 className="font-bold text-[#14213D] text-xs">
                         {analysis.zoneApprovalAnalysis.responsibleOfficers.collector.officerName}
                       </h4>
-                      <div className="flex flex-wrap gap-2 text-[10px] text-slate-600 font-mono pt-0.5">
+                      <div className="flex flex-wrap gap-2 text-[10px] text-[#53627A] font-mono pt-0.5">
                         <span>📧 {analysis.zoneApprovalAnalysis.responsibleOfficers.collector.officialEmail || 'collr@nic.in'}</span>
                         <span>📱 {analysis.zoneApprovalAnalysis.responsibleOfficers.collector.officialMobile || '9444131000'}</span>
                         <span>☎️ {analysis.zoneApprovalAnalysis.responsibleOfficers.collector.officeLandline || '044-25228025'}</span>
@@ -497,12 +496,12 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
                   )}
 
                   {analysis?.zoneApprovalAnalysis?.responsibleOfficers?.dro && (
-                    <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
-                      <span className="text-[10px] font-bold text-blue-900 uppercase block">District Revenue Officer (DRO)</span>
-                      <h4 className="font-bold text-slate-900 text-xs">
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] space-y-1">
+                      <span className="text-[10px] font-bold text-[#102A43] uppercase block">District Revenue Officer (DRO)</span>
+                      <h4 className="font-bold text-[#14213D] text-xs">
                         {analysis.zoneApprovalAnalysis.responsibleOfficers.dro.officerName}
                       </h4>
-                      <div className="flex flex-wrap gap-2 text-[10px] text-slate-600 font-mono pt-0.5">
+                      <div className="flex flex-wrap gap-2 text-[10px] text-[#53627A] font-mono pt-0.5">
                         <span>📧 {analysis.zoneApprovalAnalysis.responsibleOfficers.dro.officialEmail || 'dro@tn.gov.in'}</span>
                         <span>📱 {analysis.zoneApprovalAnalysis.responsibleOfficers.dro.officialMobile || '9445000953'}</span>
                       </div>
@@ -510,12 +509,12 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
                   )}
 
                   {analysis?.zoneApprovalAnalysis?.responsibleOfficers?.tahsildar && (
-                    <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
-                      <span className="text-[10px] font-bold text-emerald-900 uppercase block">Taluk Tahsildar</span>
-                      <h4 className="font-bold text-slate-900 text-xs">
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] space-y-1">
+                      <span className="text-[10px] font-bold text-[#102A43] uppercase block">Taluk Tahsildar</span>
+                      <h4 className="font-bold text-[#14213D] text-xs">
                         {analysis.zoneApprovalAnalysis.responsibleOfficers.tahsildar.officerName}
                       </h4>
-                      <div className="flex flex-wrap gap-2 text-[10px] text-slate-600 font-mono pt-0.5">
+                      <div className="flex flex-wrap gap-2 text-[10px] text-[#53627A] font-mono pt-0.5">
                         <span>📱 {analysis.zoneApprovalAnalysis.responsibleOfficers.tahsildar.officialMobile || '9445000488'}</span>
                         <span>☎️ {analysis.zoneApprovalAnalysis.responsibleOfficers.tahsildar.officeLandline || '044-25388978'}</span>
                       </div>
@@ -523,19 +522,19 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
                   )}
 
                   {analysis?.zoneApprovalAnalysis?.responsibleOfficers?.surveyAD && (
-                    <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1 shadow-2xs">
-                      <span className="text-[10px] font-bold text-amber-900 uppercase block">Assistant Director of Survey</span>
-                      <h4 className="font-bold text-slate-900 text-xs">
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] space-y-1">
+                      <span className="text-[10px] font-bold text-[#102A43] uppercase block">Assistant Director of Survey</span>
+                      <h4 className="font-bold text-[#14213D] text-xs">
                         {analysis.zoneApprovalAnalysis.responsibleOfficers.surveyAD.officerName}
                       </h4>
-                      <div className="flex flex-wrap gap-2 text-[10px] text-slate-600 font-mono pt-0.5">
+                      <div className="flex flex-wrap gap-2 text-[10px] text-[#53627A] font-mono pt-0.5">
                         <span>📱 {analysis.zoneApprovalAnalysis.responsibleOfficers.surveyAD.officialMobile || '9940477088'}</span>
                       </div>
                     </div>
                   )}
 
                   {!analysis?.zoneApprovalAnalysis?.responsibleOfficers && (
-                    <div className="text-[11px] text-slate-500 italic p-3 bg-white rounded-xl border border-slate-200">
+                    <div className="text-[11px] text-[#53627A] italic p-3 bg-[#F7F9FC] rounded-md border border-[#E3E8EF]">
                       Officer data will be available after backend analysis completes.
                     </div>
                   )}
@@ -544,49 +543,49 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
               {/* Multi-Stage Zone Approval Pipeline */}
               {analysis?.zoneApprovalAnalysis?.approvalStages && (
-                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
-                  <span className="text-xs font-bold text-slate-900 uppercase block">Stage-by-Stage Zone Approval Pipeline</span>
+                <div className="bg-white p-4 rounded-lg border border-[#E3E8EF] space-y-3">
+                  <span className="text-xs font-bold text-[#102A43] uppercase block">Stage-by-Stage Zone Approval Pipeline</span>
                   <div className="space-y-3">
                     {analysis.zoneApprovalAnalysis.approvalStages.map((stage: any) => (
-                      <div key={stage.stageNumber} className="relative pl-6 pb-3 border-l-2 border-indigo-200 last:border-l-0 last:pb-0">
-                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-600 text-white font-bold text-[9px] flex items-center justify-center">
+                      <div key={stage.stageNumber} className="relative pl-6 pb-3 border-l-2 border-[#102A43] last:border-l-0 last:pb-0">
+                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#102A43] text-white font-bold text-[9px] flex items-center justify-center">
                           {stage.stageNumber}
                         </div>
 
-                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+                        <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <h5 className="font-bold text-slate-900 text-xs">{stage.stageName}</h5>
+                            <h5 className="font-bold text-[#14213D] text-xs">{stage.stageName}</h5>
                             <span
-                              className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase ${
+                              className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase border ${
                                 stage.status === 'Approved'
-                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  ? 'bg-emerald-50 text-[#16845B] border-emerald-200'
                                   : stage.status === 'In-Progress'
-                                  ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                  ? 'bg-blue-50 text-[#1D5FD1] border-blue-200'
                                   : stage.status === 'Prohibited'
-                                  ? 'bg-red-100 text-red-800 border border-red-300'
-                                  : 'bg-amber-100 text-amber-800 border border-amber-300'
+                                  ? 'bg-red-50 text-[#D9363E] border-red-200'
+                                  : 'bg-amber-50 text-[#E99A16] border-amber-200'
                               }`}
                             >
                               {stage.status}
                             </span>
                           </div>
 
-                          <div className="text-[11px] text-slate-700">
-                            <span className="font-semibold block">Officer: {stage.officerName}</span>
-                            <span className="text-[10px] text-slate-500 block">Department: {stage.department}</span>
+                          <div className="text-[11px] text-[#53627A]">
+                            <span className="font-semibold text-[#14213D] block">Officer: {stage.officerName}</span>
+                            <span className="text-[10px] block">Department: {stage.department}</span>
                           </div>
 
-                          <p className="text-[10px] text-slate-600 leading-tight italic bg-white p-2 rounded border border-slate-200">
+                          <p className="text-[10px] text-[#53627A] leading-tight italic bg-white p-2 rounded border border-[#E3E8EF]">
                             Rule: {stage.regulatoryRules}
                           </p>
 
-                          <div className="flex items-center justify-between text-[9px] font-mono text-slate-500 pt-1">
+                          <div className="flex items-center justify-between text-[9px] font-mono text-[#53627A] pt-1">
                             <span>Contact: {stage.officerContact || stage.officePhone}</span>
                             <a
                               href={stage.sourceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline font-bold"
+                              className="text-[#1D5FD1] hover:underline font-semibold"
                             >
                               Verify Online ↗
                             </a>
@@ -602,38 +601,38 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
           {/* TAB 3: PROPERTY TAX REPORT */}
           {activeTab === "tax" && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200 space-y-3">
+            <div className="space-y-3">
+              <div className="bg-white p-4 rounded-lg border border-[#E3E8EF] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Receipt className="w-4 h-4 text-amber-700" />
-                    <span className="text-xs font-bold text-slate-900 uppercase">Property Tax & Valuation</span>
+                    <Receipt className="w-4 h-4 text-[#102A43]" />
+                    <span className="text-xs font-bold text-[#102A43] uppercase">Property Tax &amp; Valuation</span>
                   </div>
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-bold uppercase">
+                  <span className="text-[9px] bg-emerald-50 text-[#16845B] border border-emerald-200 px-2 py-0.5 rounded font-bold uppercase">
                     ✓ TAX PAID FY2026
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Tax Assessment ID</span>
-                    <span className="text-slate-900 font-mono font-bold">{tax?.taxAssessmentId || "Loading..."}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Tax Assessment ID</span>
+                    <span className="text-[#102A43] font-mono font-bold">{tax?.taxAssessmentId || "Loading..."}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Annual Property Tax</span>
-                    <span className="text-emerald-700 font-mono font-bold text-sm">{tax?.annualTaxAmount || "Loading..."}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Annual Property Tax</span>
+                    <span className="text-[#16845B] font-mono font-bold text-sm">{tax?.annualTaxAmount || "Loading..."}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Guideline Rate (Circle)</span>
-                    <span className="text-amber-800 font-bold">{tax?.guidelineValueSqFt || "Loading..."}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Guideline Rate (Circle)</span>
+                    <span className="text-[#102A43] font-bold">{tax?.guidelineValueSqFt || "Loading..."}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Estimated Valuation</span>
-                    <span className="text-slate-900 font-mono font-bold">{tax?.totalValuation || "Loading..."}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Estimated Valuation</span>
+                    <span className="text-[#102A43] font-mono font-bold">{tax?.totalValuation || "Loading..."}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200 col-span-2">
-                    <span className="text-slate-500 block text-[10px]">Assessment Revenue Ward</span>
-                    <span className="text-slate-900 font-bold">{tax?.wardNo || "Loading..."}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF] col-span-2">
+                    <span className="text-[#53627A] block text-[10px]">Assessment Revenue Ward</span>
+                    <span className="text-[#14213D] font-bold">{tax?.wardNo || "Loading..."}</span>
                   </div>
                 </div>
               </div>
@@ -642,36 +641,36 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
           {/* TAB 4: COURT CASE LITIGATION STATUS */}
           {activeTab === "court" && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className={`p-4 rounded-xl border space-y-3 ${
-                isDisputed ? "bg-red-50 border-red-200" : "bg-emerald-50 border-emerald-200"
+            <div className="space-y-3">
+              <div className={`p-4 rounded-lg border space-y-3 ${
+                isDisputed ? "bg-[#FEF2F2] border-[#FCA5A5]" : "bg-white border-[#E3E8EF]"
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Scale className={`w-4 h-4 ${isDisputed ? "text-red-700" : "text-emerald-700"}`} />
-                    <span className="text-xs font-bold text-slate-900 uppercase">Court Case & Legal Status</span>
+                    <Scale className={`w-4 h-4 ${isDisputed ? "text-[#D9363E]" : "text-[#102A43]"}`} />
+                    <span className="text-xs font-bold text-[#102A43] uppercase">Court Case &amp; Legal Status</span>
                   </div>
                   <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border ${
                     isDisputed
-                      ? "bg-red-100 text-red-800 border-red-300"
-                      : "bg-emerald-100 text-emerald-800 border-emerald-300"
+                      ? "bg-red-50 text-[#D9363E] border-red-200"
+                      : "bg-emerald-50 text-[#16845B] border-emerald-200"
                   }`}>
                     {court?.status || "Clear Title"}
                   </span>
                 </div>
 
                 <div className="space-y-2 text-xs">
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center">
-                    <span className="text-slate-500 text-[10px]">Jurisdiction Court</span>
-                    <span className="text-slate-900 font-bold text-right">{court?.courtName || "Loading..."}</span>
+                  <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] flex justify-between items-center">
+                    <span className="text-[#53627A] text-[10px]">Jurisdiction Court</span>
+                    <span className="text-[#14213D] font-bold text-right">{court?.courtName || "Loading..."}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center">
-                    <span className="text-slate-500 text-[10px]">Case Docket / Suit No</span>
-                    <span className="text-slate-900 font-mono font-bold">{court?.caseId || "None"}</span>
+                  <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] flex justify-between items-center">
+                    <span className="text-[#53627A] text-[10px]">Case Docket / Suit No</span>
+                    <span className="text-[#14213D] font-mono font-bold">{court?.caseId || "None"}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center">
-                    <span className="text-slate-500 text-[10px]">Injunction / Stay Order</span>
-                    <span className={`font-bold text-right ${isDisputed ? "text-red-600" : "text-emerald-700"}`}>
+                  <div className="bg-white p-2.5 rounded-md border border-[#E3E8EF] flex justify-between items-center">
+                    <span className="text-[#53627A] text-[10px]">Injunction / Stay Order</span>
+                    <span className={`font-bold text-right ${isDisputed ? "text-[#D9363E]" : "text-[#16845B]"}`}>
                       {court?.stayOrderDetails || "Clear Title Verified"}
                     </span>
                   </div>
@@ -682,55 +681,55 @@ export default function AILandIntelligencePanel({ lat, lng, displayName, address
 
           {/* TAB 5: GSI GEOSCIENTIFIC ADVISORY */}
           {activeTab === "gsi" && (
-            <div className="space-y-3 animate-in fade-in duration-150">
-              <div className="bg-indigo-50/60 p-4 rounded-xl border border-indigo-200 space-y-3">
+            <div className="space-y-3">
+              <div className="bg-white p-4 rounded-lg border border-[#E3E8EF] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
-                    <Cpu className="w-4 h-4 text-indigo-700" />
-                    <span className="text-xs font-bold text-slate-900 uppercase">GSI GEOLOGICAL ADVISORY</span>
+                    <Cpu className="w-4 h-4 text-[#102A43]" />
+                    <span className="text-xs font-bold text-[#102A43] uppercase">GSI GEOLOGICAL ADVISORY</span>
                   </div>
                   <DataSourceBadge label="GSI NGDR SURVEY" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Rock Formation</span>
-                    <span className="text-slate-900 font-bold">{geology?.rockFormation || "Peninsular Gneissic Basement"}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Rock Formation</span>
+                    <span className="text-[#14213D] font-bold">{geology?.rockFormation || "Peninsular Gneissic Basement"}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Lithology</span>
-                    <span className="text-slate-900 font-bold">{geology?.lithology || "Charnockitic Massif"}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Lithology</span>
+                    <span className="text-[#14213D] font-bold">{geology?.lithology || "Charnockitic Massif"}</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Bearing Capacity</span>
-                    <span className="text-emerald-700 font-bold">{geology?.bearingCapacityKPa || 250} kPa</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Bearing Capacity</span>
+                    <span className="text-[#16845B] font-bold">{geology?.bearingCapacityKPa || 250} kPa</span>
                   </div>
-                  <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block text-[10px]">Geomorphology</span>
-                    <span className="text-slate-900 font-bold">{geology?.geomorphology || "Pediment Plain"}</span>
+                  <div className="bg-[#F7F9FC] p-2.5 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px]">Geomorphology</span>
+                    <span className="text-[#14213D] font-bold">{geology?.geomorphology || "Pediment Plain"}</span>
                   </div>
                 </div>
 
-                <p className="text-[10px] text-indigo-900 font-medium italic border-t border-indigo-200 pt-2">
+                <p className="text-[10px] text-[#53627A] font-medium italic border-t border-[#E3E8EF] pt-2">
                   Source: Geological Survey of India (GSI) National Geoscience Data Repository (NGDR).
                 </p>
               </div>
 
               {/* Hazard & Terrain */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-                <span className="font-bold text-slate-900 block">Geohazard Assessment</span>
+              <div className="bg-[#F7F9FC] p-4 rounded-lg border border-[#E3E8EF] space-y-2 text-xs">
+                <span className="font-bold text-[#102A43] block">Geohazard Assessment</span>
                 <div className="grid grid-cols-3 gap-2 text-center text-[10px]">
-                  <div className="bg-white p-2 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block">Landslide</span>
-                    <span className="font-bold text-emerald-600">{analysis?.risk?.landslideRisk || "Low"}</span>
+                  <div className="bg-white p-2 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block">Landslide</span>
+                    <span className="font-bold text-[#16845B]">{analysis?.risk?.landslideRisk || "Low"}</span>
                   </div>
-                  <div className="bg-white p-2 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block">Flood</span>
-                    <span className="font-bold text-emerald-600">{analysis?.risk?.floodRisk || "Low"}</span>
+                  <div className="bg-white p-2 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block">Flood</span>
+                    <span className="font-bold text-[#16845B]">{analysis?.risk?.floodRisk || "Low"}</span>
                   </div>
-                  <div className="bg-white p-2 rounded-lg border border-slate-200">
-                    <span className="text-slate-500 block">Seismic</span>
-                    <span className="font-bold text-slate-900">{analysis?.risk?.seismicZone || "Zone II"}</span>
+                  <div className="bg-white p-2 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block">Seismic</span>
+                    <span className="font-bold text-[#14213D]">{analysis?.risk?.seismicZone || "Zone II"}</span>
                   </div>
                 </div>
               </div>

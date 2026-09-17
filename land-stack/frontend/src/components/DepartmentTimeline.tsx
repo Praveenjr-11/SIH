@@ -49,7 +49,7 @@ export default function DepartmentTimeline({ caseId }: DepartmentTimelineProps) 
 
   if (loading) {
     return (
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-center text-xs text-slate-400">
+      <div className="p-4 bg-[#F7F9FC] border border-[#E3E8EF] rounded-md text-center text-xs text-[#53627A]">
         Loading inter-departmental review timeline...
       </div>
     );
@@ -57,22 +57,22 @@ export default function DepartmentTimeline({ caseId }: DepartmentTimelineProps) 
 
   if (timeline.length === 0) {
     return (
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-center text-xs text-slate-400">
+      <div className="p-4 bg-[#F7F9FC] border border-[#E3E8EF] rounded-md text-center text-xs text-[#53627A]">
         No department reviews recorded for case #{caseId}.
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 font-sans text-slate-200">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+    <div className="bg-white border border-[#E3E8EF] rounded-lg p-5 space-y-4 font-sans text-[#14213D] shadow-xs">
+      <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-3">
         <div className="flex items-center space-x-2">
-          <Shield className="w-4 h-4 text-blue-400" />
-          <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+          <Shield className="w-4 h-4 text-[#1D5FD1]" />
+          <h4 className="text-xs font-bold text-[#102A43] uppercase tracking-wider">
             Unified Inter-Departmental Clearance Audit Timeline
           </h4>
         </div>
-        <span className="text-[10px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded font-semibold">
+        <span className="text-[10px] font-mono bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] px-2 py-0.5 rounded font-semibold">
           6 DEPARTMENTS AUDITED
         </span>
       </div>
@@ -82,51 +82,43 @@ export default function DepartmentTimeline({ caseId }: DepartmentTimelineProps) 
           const isApproved = item.status === 'APPROVED';
           const isRejected = item.status === 'REJECTED';
           const isConditional = item.status === 'CONDITIONAL';
-          const isNotApplicable = item.status === 'NOT_APPLICABLE';
 
           return (
-            <div key={item.departmentCode || idx} className="relative pl-6 pb-3 border-l-2 border-slate-800 last:border-l-0 last:pb-0">
+            <div key={item.departmentCode || idx} className="relative pl-6 pb-3 border-l-2 border-[#E3E8EF] last:border-l-0 last:pb-0">
               {/* Status Circle */}
-              <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                isApproved ? 'bg-emerald-500 text-slate-950' :
-                isRejected ? 'bg-red-500 text-white' :
-                isConditional ? 'bg-amber-500 text-slate-950' :
-                'bg-slate-700 text-slate-300'
+              <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white ${
+                isApproved ? 'bg-[#16845B]' :
+                isRejected ? 'bg-[#D9363E]' :
+                isConditional ? 'bg-[#E99A16]' :
+                'bg-[#53627A]'
               }`}>
                 {idx + 1}
               </div>
 
-              <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2">
+              <div className="bg-[#F7F9FC] p-3.5 rounded-md border border-[#E3E8EF] space-y-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>{item.displayName}</span>
-                  </span>
-                  <span className={`inline-flex items-center space-x-1 text-[9px] font-extrabold px-2 py-0.5 rounded uppercase tracking-wide border ${
-                    isApproved ? 'bg-emerald-950 text-emerald-400 border-emerald-800' :
-                    isRejected ? 'bg-red-950 text-red-400 border-red-800' :
-                    isConditional ? 'bg-amber-950 text-amber-400 border-amber-800' :
-                    'bg-slate-900 text-slate-400 border-slate-800'
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-bold text-[#102A43]">{item.displayName}</span>
+                    <span className="text-[10px] text-[#53627A] font-mono">({item.departmentCode})</span>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border self-start sm:self-auto ${
+                    isApproved ? 'bg-[#EDF7F2] text-[#16845B] border-[#16845B]/30' :
+                    isRejected ? 'bg-[#FDEDEE] text-[#D9363E] border-[#D9363E]/30' :
+                    isConditional ? 'bg-[#FEF5E7] text-[#E99A16] border-[#E99A16]/30' :
+                    'bg-white text-[#53627A] border-[#E3E8EF]'
                   }`}>
-                    {isApproved && <CheckCircle2 className="w-3 h-3 text-emerald-400" />}
-                    {isRejected && <XCircle className="w-3 h-3 text-red-400" />}
-                    {isConditional && <AlertTriangle className="w-3 h-3 text-amber-400" />}
-                    {isNotApplicable && <Info className="w-3 h-3 text-slate-400" />}
-                    <span>{isNotApplicable ? 'NOT APPLICABLE (NO OVERLAP)' : item.status}</span>
+                    {item.status.replace(/_/g, ' ')}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400 font-mono">
-                  <span>Officer: <strong className="text-slate-200 font-sans">{item.officerName}</strong> ({item.officerTitle})</span>
+                <p className="text-xs text-[#53627A] leading-relaxed">{item.remarks}</p>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-[#53627A] pt-1 border-t border-[#E3E8EF]">
+                  <span>Reviewing Officer: <strong className="text-[#14213D]">{item.officerName}</strong> ({item.officerTitle})</span>
                   {item.reviewedAt && (
-                    <span className="text-[10px] text-slate-500">{new Date(item.reviewedAt).toLocaleDateString()}</span>
+                    <span className="font-mono text-[#53627A]">Timestamp: {item.reviewedAt}</span>
                   )}
                 </div>
-
-                <p className={`text-[11px] leading-relaxed p-2 rounded border italic ${
-                  isNotApplicable ? 'bg-slate-900/60 text-slate-400 border-slate-800 font-sans' : 'bg-slate-900 text-slate-300 border-slate-800 font-sans'
-                }`}>
-                  &quot;{item.remarks}&quot;
-                </p>
               </div>
             </div>
           );

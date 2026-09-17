@@ -78,69 +78,69 @@ export default function OfficerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center p-6 font-sans antialiased">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-screen bg-[#F7F9FC] text-[#14213D] flex items-center justify-center p-4 sm:p-6 font-sans antialiased">
+      <div className="w-full max-w-md space-y-4">
         {/* Top Back Link */}
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center space-x-2 text-xs font-semibold text-slate-600 hover:text-blue-700 transition-colors"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-[#53627A] hover:text-[#102A43] transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 text-blue-600" />
-            <span>Back to Home</span>
+            <ArrowLeft className="w-3.5 h-3.5 text-[#1D5FD1]" />
+            <span>Back to Dashboard</span>
           </Link>
-          <span className="text-[11px] font-mono text-slate-500">e-Governance Unified Auth</span>
+          <span className="text-[10px] font-mono text-[#53627A]">e-Governance SSO Gateway</span>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-xl space-y-6">
+        <div className="bg-white border border-[#E3E8EF] rounded-lg p-6 sm:p-8 shadow-xs space-y-5">
           <div className="text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 mx-auto shadow-xs">
+            <div className="w-12 h-12 rounded-lg bg-[#F1F5FB] border border-[#E3E8EF] flex items-center justify-center text-[#1D5FD1] mx-auto">
               <Landmark className="w-6 h-6" />
             </div>
-            <h1 className="text-2xl font-black text-slate-900">Government Officer Login</h1>
-            <p className="text-xs text-slate-600">
-              Access jurisdiction-specific land records & spatial approval workflows
+            <h1 className="text-xl font-bold text-[#102A43]">Government Officer Portal Login</h1>
+            <p className="text-xs text-[#53627A]">
+              Tamil Nadu Land Stack — Statutory Revenue & Geospatial Access
             </p>
           </div>
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+            <div className="p-3 rounded-md bg-[#FDEDEE] border border-[#D9363E] text-[#D9363E] text-xs font-semibold flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-[#D9363E]" />
               <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Official Email / Officer ID</label>
+              <label className="block text-xs font-semibold text-[#102A43] mb-1.5">Official Email / Officer ID</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Mail className="w-4 h-4 text-[#53627A] absolute left-3 top-2.5" />
                 <input
                   type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="officer@tn.gov.in"
-                  className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  className="w-full pl-9 pr-3 py-2 bg-white border border-[#E3E8EF] rounded-md text-xs text-[#14213D] placeholder-[#53627A] focus:outline-none focus:border-[#1D5FD1]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Security Password</label>
+              <label className="block text-xs font-semibold text-[#102A43] mb-1.5">Security Password</label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                <Lock className="w-4 h-4 text-[#53627A] absolute left-3 top-2.5" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+                  className="w-full pl-9 pr-9 py-2 bg-white border border-[#E3E8EF] rounded-md text-xs text-[#14213D] placeholder-[#53627A] focus:outline-none focus:border-[#1D5FD1]"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-700"
+                  className="absolute right-3 top-2.5 text-[#53627A] hover:text-[#102A43]"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -150,29 +150,29 @@ export default function OfficerLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full py-2.5 rounded-md bg-[#1D5FD1] hover:bg-[#154CB0] text-white font-semibold text-xs transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50 shadow-xs"
             >
               {loading ? (
-                <span>Authenticating...</span>
+                <span>Verifying Credentials...</span>
               ) : (
                 <>
                   <ShieldCheck className="w-4 h-4" />
-                  <span>Authenticate & Enter Dashboard</span>
+                  <span>Authenticate & Enter Workspace</span>
                 </>
               )}
             </button>
           </form>
 
-          {/* Preset Selector */}
-          <div className="pt-4 border-t border-slate-100 text-center space-y-2">
-            <span className="text-[11px] text-slate-500 font-semibold">Select Test Officer Role:</span>
-            <div className="flex flex-wrap justify-center gap-1.5 text-[10.5px]">
+          {/* Test Officer Role Quick Select */}
+          <div className="pt-4 border-t border-[#E3E8EF] text-center space-y-2">
+            <span className="text-[11px] text-[#53627A] font-semibold">Select Test Officer Role:</span>
+            <div className="flex flex-wrap justify-center gap-1.5 text-[10px]">
               {PRESET_OFFICERS.slice(0, 4).map((p, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => { setEmail(p.email); setPassword("GovPass2026!"); }}
-                  className="px-2.5 py-1 rounded bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 font-mono font-semibold border border-slate-200"
+                  className="px-2 py-1 rounded bg-[#F7F9FC] hover:bg-[#F1F5FB] text-[#102A43] hover:text-[#1D5FD1] font-mono font-semibold border border-[#E3E8EF] transition-colors"
                 >
                   {p.role}
                 </button>

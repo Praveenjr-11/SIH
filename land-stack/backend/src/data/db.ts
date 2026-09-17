@@ -154,7 +154,7 @@ export const tnDistrictsData = [
   { district: 'Chengalpattu', taluks: ['Tambaram', 'Vandalur', 'Chengalpattu Town', 'Mahabalipuram', 'Guduvancheri'], lat: 12.6821, lng: 79.9865 },
   { district: 'Thiruvallur', taluks: ['Avadi', 'Ponneri', 'Gummidipoondi', 'Tiruttani', 'Thiruvallur Town'], lat: 13.1432, lng: 79.9085 },
   { district: 'Chennai', taluks: ['Ambattur', 'Guindy', 'Velachery', 'T. Nagar', 'Perambur'], lat: 13.0827, lng: 80.2707 },
-  { district: 'Coimbatore', taluks: ['Singanallur', 'Peelamedu', 'Thudiyalur', 'Pollachi', 'Annur'], lat: 11.0168, lng: 76.9558 },
+  { district: 'Coimbatore', taluks: ['Coimbatore North', 'Coimbatore South', 'Pollachi', 'Sulur', 'Mettupalayam', 'Annur', 'Perur', 'Madukkarai', 'Kinathukadavu', 'Anaimalai', 'Valparai', 'Singanallur', 'Peelamedu', 'Thudiyalur'], lat: 11.0168, lng: 76.9558 },
   { district: 'Madurai', taluks: ['Thiruparankundram', 'Melur', 'Usilampatti', 'Vadipatti', 'Madurai North'], lat: 9.9252, lng: 78.1198 },
   { district: 'Salem', taluks: ['Attur', 'Mettur', 'Omalur', 'Sankari', 'Salem South'], lat: 11.6643, lng: 78.1460 },
   { district: 'Tiruchirappalli', taluks: ['Srirangam', 'Lalgudi', 'Manapparai', 'Thottiyam', 'Trichy Town'], lat: 10.7905, lng: 78.7047 },

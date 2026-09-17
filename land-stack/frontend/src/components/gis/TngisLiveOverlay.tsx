@@ -115,43 +115,43 @@ export default function TngisLiveOverlay() {
   const panel = (
     <aside
       ref={panelRef}
-      className="absolute left-3 top-3 z-[1000] w-[295px] max-h-[calc(100%-24px)] overflow-hidden rounded-lg border border-cyan-400/50 bg-[#08243e]/95 text-white shadow-2xl backdrop-blur"
+      className="absolute left-3 top-3 z-[1000] w-[295px] max-h-[calc(100%-24px)] overflow-hidden rounded-lg border border-[#E3E8EF] bg-white text-[#14213D] shadow-lg"
       aria-label="Official TNGIS live layer browser"
     >
-      <div className="flex items-center gap-2 border-b border-cyan-400/30 bg-[#075f65] px-3 py-2">
-        <Layers className="h-4 w-4 text-cyan-100" />
-        <span className="text-sm font-bold tracking-wide">TNGIS LIVE LAYERS</span>
-        <span className={`ml-auto h-2.5 w-2.5 rounded-full ${status?.available ? "bg-emerald-400" : "bg-amber-400"}`} />
+      <div className="flex items-center gap-2 border-b border-[#E3E8EF] bg-[#102A43] text-white px-3 py-2">
+        <Layers className="h-4 w-4 text-white" />
+        <span className="text-xs font-bold tracking-wide">TNGIS LIVE LAYERS</span>
+        <span className={`ml-auto h-2 w-2 rounded-full ${status?.available ? "bg-[#16845B]" : "bg-[#E99A16]"}`} />
       </div>
 
-      <div className="border-b border-cyan-400/20 p-3">
-        <label className="flex items-center gap-2 rounded-md border border-cyan-100/60 bg-[#071e35] px-3 py-2 text-sm">
-          <Search className="h-4 w-4 text-cyan-300" />
+      <div className="border-b border-[#E3E8EF] p-2.5 bg-[#F7F9FC]">
+        <label className="flex items-center gap-2 rounded-md border border-[#E3E8EF] bg-white px-2.5 py-1.5 text-xs">
+          <Search className="h-3.5 w-3.5 text-[#53627A]" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search layer name"
-            className="w-full bg-transparent text-white outline-none placeholder:text-slate-300"
+            className="w-full bg-transparent text-[#14213D] outline-none placeholder:text-[#53627A]"
           />
         </label>
-        <p className={`mt-2 text-xs ${status?.available ? "text-emerald-300" : "text-amber-300"}`}>
+        <p className={`mt-1.5 text-[10px] font-medium ${status?.available ? "text-[#16845B]" : "text-[#E99A16]"}`}>
           {status?.available ? `${activeLayers.length} layer${activeLayers.length === 1 ? "" : "s"} visible` : status?.message || "Connecting to TNGIS…"}
         </p>
       </div>
 
-      <div className="max-h-[calc(100vh-230px)] overflow-y-auto p-2">
+      <div className="max-h-[calc(100vh-230px)] overflow-y-auto p-2 custom-scrollbar">
         {status?.available && Object.entries(groupedLayers).map(([group, layers]) => (
-          <section key={group} className="mb-2 overflow-hidden rounded-md border border-cyan-400/30">
+          <section key={group} className="mb-2 overflow-hidden rounded-md border border-[#E3E8EF]">
             <button
               type="button"
               onClick={() => setExpanded((current) => ({ ...current, [group]: !current[group] }))}
-              className="flex w-full items-center justify-between bg-[#158391] px-3 py-2 text-left text-sm font-semibold"
+              className="flex w-full items-center justify-between bg-[#F7F9FC] px-3 py-1.5 text-left text-xs font-semibold text-[#102A43]"
             >
-              {group}
-              <ChevronDown className={`h-4 w-4 transition-transform ${expanded[group] ? "rotate-180" : ""}`} />
+              <span>{group}</span>
+              <ChevronDown className={`h-3.5 w-3.5 text-[#53627A] transition-transform ${expanded[group] ? "rotate-180" : ""}`} />
             </button>
             {expanded[group] && (
-              <div className="space-y-0.5 bg-[#08243e] px-2 py-1.5">
+              <div className="space-y-0.5 bg-white px-2 py-1.5 border-t border-[#E3E8EF]">
                 {layers.map((layer) => {
                   const visible = activeLayers.includes(layer.name);
                   return (
@@ -160,9 +160,9 @@ export default function TngisLiveOverlay() {
                       type="button"
                       onClick={() => toggleLayer(layer.name)}
                       title={layer.name}
-                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-yellow-300 hover:bg-cyan-900/70"
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-[#14213D] hover:bg-[#F7F9FC]"
                     >
-                      {visible ? <Eye className="h-4 w-4 shrink-0 text-cyan-300" /> : <EyeOff className="h-4 w-4 shrink-0 text-cyan-400" />}
+                      {visible ? <Eye className="h-3.5 w-3.5 shrink-0 text-[#1D5FD1]" /> : <EyeOff className="h-3.5 w-3.5 shrink-0 text-[#53627A]" />}
                       <span className="truncate">{layer.title || layer.name}</span>
                     </button>
                   );
@@ -172,7 +172,7 @@ export default function TngisLiveOverlay() {
           </section>
         ))}
         {status?.available && Object.keys(groupedLayers).length === 0 && (
-          <p className="p-3 text-center text-sm text-slate-300">No layers match “{query}”.</p>
+          <p className="p-3 text-center text-xs text-[#53627A]">No layers match “{query}”.</p>
         )}
       </div>
     </aside>

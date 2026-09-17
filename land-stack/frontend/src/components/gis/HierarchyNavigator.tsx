@@ -83,7 +83,6 @@ export default function HierarchyNavigator({
       setLoadingTaluks(false);
     });
 
-    // Fly to district boundary
     fetchHierarchyBoundary("district", { district: selectedDistrict }).then((boundary) => {
       if (boundary?.available === true) {
         if (boundary.bounds) onFlyToBounds(boundary.bounds);
@@ -92,10 +91,8 @@ export default function HierarchyNavigator({
       } else {
         onBoundaryGeoJSON(null);
         setBoundaryStatus(boundary?.reason || `Boundary data not yet available for ${selectedDistrict}`);
-        // Still fly to the center point if provided
         if (boundary?.center) {
-          const zoom = 10;
-          onFlyToBounds({ minLat: boundary.center.lat - 0.15, maxLat: boundary.center.lat + 0.15, minLng: boundary.center.lng - 0.15, maxLng: boundary.center.lng + 0.15 });
+          onFlyToBounds({ minLat: boundary.center.lat - 0.2, maxLat: boundary.center.lat + 0.2, minLng: boundary.center.lng - 0.2, maxLng: boundary.center.lng + 0.2 });
         }
       }
     });
@@ -118,10 +115,7 @@ export default function HierarchyNavigator({
       setLoadingVillages(false);
     });
 
-    fetchHierarchyBoundary("subdistrict", {
-      district: selectedDistrict,
-      subdistrict: selectedTaluk,
-    }).then((boundary) => {
+    fetchHierarchyBoundary("subdistrict", { district: selectedDistrict, taluk: selectedTaluk, subdistrict: selectedTaluk }).then((boundary) => {
       if (boundary?.available === true) {
         if (boundary.bounds) onFlyToBounds(boundary.bounds);
         if (boundary.geojson) onBoundaryGeoJSON(boundary.geojson);
@@ -130,7 +124,7 @@ export default function HierarchyNavigator({
         onBoundaryGeoJSON(null);
         setBoundaryStatus(boundary?.reason || `Boundary data not yet available for ${selectedTaluk}`);
         if (boundary?.center) {
-          onFlyToBounds({ minLat: boundary.center.lat - 0.06, maxLat: boundary.center.lat + 0.06, minLng: boundary.center.lng - 0.06, maxLng: boundary.center.lng + 0.06 });
+          onFlyToBounds({ minLat: boundary.center.lat - 0.08, maxLat: boundary.center.lat + 0.08, minLng: boundary.center.lng - 0.08, maxLng: boundary.center.lng + 0.08 });
         }
       }
     });
@@ -153,6 +147,8 @@ export default function HierarchyNavigator({
 
     fetchHierarchyBoundary("village", {
       district: selectedDistrict,
+      taluk: selectedTaluk,
+      subdistrict: selectedTaluk,
       village: selectedVillage,
     }).then((boundary) => {
       if (boundary?.available === true) {
@@ -193,41 +189,41 @@ export default function HierarchyNavigator({
   if (selectedVillage) breadcrumbParts.push(selectedVillage);
 
   return (
-    <div className="relative">
+    <div className="relative font-sans">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="h-10 px-3 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xs flex items-center space-x-2 text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors shrink-0"
+        className="h-9 px-3 bg-[#FFFFFF] border border-[#E3E8EF] rounded-md shadow-xs flex items-center space-x-2 text-xs font-semibold text-[#102A43] hover:bg-[#F7F9FC] transition-colors shrink-0"
       >
-        <MapPin className="w-4 h-4 text-indigo-600" />
-        <span>Hierarchy</span>
+        <MapPin className="w-4 h-4 text-[#1D5FD1]" />
+        <span>Hierarchy Drill-down</span>
         {selectedDistrict && (
-          <span className="bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded text-[9px] font-bold max-w-[120px] truncate">
+          <span className="bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] px-1.5 py-0.5 rounded text-[10px] font-bold max-w-[120px] truncate">
             {selectedVillage || selectedTaluk || selectedDistrict}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-[340px] bg-white/95 backdrop-blur-xl border border-slate-200 p-3.5 rounded-2xl shadow-xl z-50 space-y-3 animate-in fade-in slide-in-from-top-2">
+        <div className="absolute top-full left-0 mt-1.5 w-[330px] bg-[#FFFFFF] border border-[#E3E8EF] p-3 rounded-md shadow-lg z-50 space-y-3">
           {/* Header */}
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="flex items-center justify-between pb-2 border-b border-[#E3E8EF]">
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                DISTRICT → TALUK → VILLAGE → SURVEY
+              <span className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider block">
+                Administrative Hierarchy
               </span>
-              <span className="text-[9px] text-slate-400">TNGIS-style cascading hierarchy drill-down</span>
+              <span className="text-[10px] text-[#53627A]">District → Taluk → Village → Survey</span>
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
-              <X className="w-3.5 h-3.5 text-slate-400" />
+            <button onClick={() => setIsOpen(false)} className="p-1 rounded hover:bg-[#F7F9FC] text-[#53627A] transition-colors">
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Breadcrumb */}
-          <div className="flex items-center flex-wrap gap-0.5 text-[9px]">
+          <div className="flex items-center flex-wrap gap-0.5 text-[10px]">
             {breadcrumbParts.map((part, idx) => (
               <span key={idx} className="flex items-center">
-                {idx > 0 && <ChevronRight className="w-2.5 h-2.5 text-slate-300 mx-0.5" />}
-                <span className={`font-bold ${idx === breadcrumbParts.length - 1 ? "text-indigo-700" : "text-slate-500"}`}>
+                {idx > 0 && <ChevronRight className="w-2.5 h-2.5 text-slate-400 mx-0.5" />}
+                <span className={`font-semibold ${idx === breadcrumbParts.length - 1 ? "text-[#1D5FD1]" : "text-[#53627A]"}`}>
                   {part}
                 </span>
               </span>
@@ -235,32 +231,31 @@ export default function HierarchyNavigator({
             {selectedDistrict && (
               <button
                 onClick={handleReset}
-                className="ml-auto text-[8px] text-red-500 hover:text-red-700 font-bold px-1.5 py-0.5 rounded hover:bg-red-50 transition-colors"
+                className="ml-auto text-[9px] text-[#D9363E] hover:underline font-semibold px-1 py-0.5"
               >
                 Reset
               </button>
             )}
           </div>
 
-          {/* Boundary availability status message */}
+          {/* Boundary availability status */}
           {boundaryStatus && selectedDistrict && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 text-[9px] text-amber-700 font-semibold flex items-start space-x-1.5">
-              <span className="text-amber-500 flex-shrink-0 mt-px">⚠️</span>
+            <div className="bg-[#FEF5E7] border border-[#E99A16] rounded px-2 py-1 text-[10px] text-[#E99A16] font-medium flex items-start space-x-1">
+              <span>⚠️</span>
               <span>{boundaryStatus}</span>
             </div>
           )}
 
           {/* District Selector */}
           <div className="space-y-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500" />
-              <span>District</span>
+            <label className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider">
+              District
             </label>
             <select
               value={selectedDistrict}
               onChange={(e) => setSelectedDistrict(e.target.value)}
               disabled={loadingDistricts}
-              className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 disabled:opacity-50 transition-all appearance-none cursor-pointer"
+              className="w-full px-2 py-1.5 bg-white border border-[#E3E8EF] rounded text-xs text-[#14213D] focus:outline-none focus:border-[#1D5FD1] disabled:opacity-50 cursor-pointer"
             >
               <option value="">
                 {loadingDistricts ? "Loading districts…" : "— Select District —"}
@@ -273,15 +268,14 @@ export default function HierarchyNavigator({
 
           {/* Taluk Selector */}
           <div className="space-y-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
-              <span>Taluk / Sub-District</span>
+            <label className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider">
+              Taluk / Sub-District
             </label>
             <select
               value={selectedTaluk}
               onChange={(e) => setSelectedTaluk(e.target.value)}
               disabled={!selectedDistrict || loadingTaluks}
-              className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-400 disabled:opacity-50 disabled:bg-slate-50 transition-all appearance-none cursor-pointer"
+              className="w-full px-2 py-1.5 bg-white border border-[#E3E8EF] rounded text-xs text-[#14213D] focus:outline-none focus:border-[#1D5FD1] disabled:opacity-50 disabled:bg-[#F7F9FC] cursor-pointer"
             >
               <option value="">
                 {loadingTaluks ? "Loading taluks…" : !selectedDistrict ? "Select district first" : "— Select Taluk —"}
@@ -294,15 +288,14 @@ export default function HierarchyNavigator({
 
           {/* Village Selector */}
           <div className="space-y-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Village</span>
+            <label className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider">
+              Revenue Village
             </label>
             <select
               value={selectedVillage}
               onChange={(e) => setSelectedVillage(e.target.value)}
               disabled={!selectedTaluk || loadingVillages}
-              className="w-full px-2.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-400 disabled:opacity-50 disabled:bg-slate-50 transition-all appearance-none cursor-pointer"
+              className="w-full px-2 py-1.5 bg-white border border-[#E3E8EF] rounded text-xs text-[#14213D] focus:outline-none focus:border-[#1D5FD1] disabled:opacity-50 disabled:bg-[#F7F9FC] cursor-pointer"
             >
               <option value="">
                 {loadingVillages ? "Loading villages…" : !selectedTaluk ? "Select taluk first" : "— Select Village —"}
@@ -315,59 +308,52 @@ export default function HierarchyNavigator({
 
           {/* Survey Number Selector */}
           <div className="space-y-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            <label className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider flex items-center justify-between">
               <span>Survey Number</span>
               {surveyNumbers.length > 0 && (
-                <span className="text-[8px] bg-amber-100 text-amber-700 border border-amber-200 px-1 py-0.5 rounded font-bold">
+                <span className="text-[9px] bg-[#F1F5FB] text-[#1D5FD1] px-1.5 py-0.5 rounded font-bold">
                   {surveyNumbers.length} parcels
                 </span>
               )}
             </label>
 
             {loadingSurveys ? (
-              <div className="flex items-center justify-center py-3">
-                <div className="w-4 h-4 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
-                <span className="ml-2 text-[10px] text-amber-600 font-semibold">Loading survey records…</span>
+              <div className="flex items-center justify-center py-2 text-xs text-[#1D5FD1]">
+                <span>Loading survey records…</span>
               </div>
             ) : !selectedVillage ? (
-              <div className="text-[10px] text-slate-400 font-semibold py-2 text-center">
+              <div className="text-[10px] text-[#53627A] py-1 text-center">
                 Select village to view survey numbers
               </div>
             ) : surveyNumbers.length === 0 ? (
-              <div className="text-[10px] text-slate-400 font-semibold py-2 text-center">
+              <div className="text-[10px] text-[#53627A] py-1 text-center">
                 No survey records found for this village
               </div>
             ) : (
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
                 {surveyNumbers.map((entry) => (
                   <button
                     key={entry.ulpin}
                     onClick={() => handleSelectSurvey(entry)}
-                    className={`w-full text-left p-2 rounded-lg border transition-all text-[10px] ${
+                    className={`w-full text-left p-2 rounded border transition-colors text-[11px] ${
                       selectedSurvey === entry.ulpin
-                        ? "bg-amber-50 border-amber-300 ring-1 ring-amber-200"
-                        : "bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                        ? "bg-[#F1F5FB] border-[#1D5FD1]"
+                        : "bg-white border-[#E3E8EF] hover:bg-[#F7F9FC]"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
-                        <FileText className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                        <span className="font-bold text-slate-800">S.No {entry.survey_number}</span>
+                        <FileText className="w-3 h-3 text-[#1D5FD1] shrink-0" />
+                        <span className="font-bold text-[#102A43]">S.No {entry.survey_number}</span>
                       </div>
-                      <span className="font-mono text-[8px] text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded font-bold">
+                      <span className="font-mono text-[9px] text-[#1D5FD1] font-bold">
                         {entry.ulpin}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-1 text-slate-500">
+                    <div className="flex items-center justify-between mt-1 text-[#53627A] text-[10px]">
                       <span>{entry.land_classification || "—"}</span>
-                      <span className="font-semibold">{entry.area_acres} acres</span>
+                      <span className="font-medium">{entry.area_acres} acres</span>
                     </div>
-                    {entry.owner_name && (
-                      <div className="text-[9px] text-slate-400 mt-0.5 truncate">
-                        Owner: {entry.owner_name}
-                      </div>
-                    )}
                   </button>
                 ))}
               </div>

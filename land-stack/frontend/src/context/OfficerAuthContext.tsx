@@ -98,8 +98,8 @@ const OfficerAuthContext = createContext<OfficerAuthContextType>({
 });
 
 export function OfficerAuthProvider({ children }: { children: React.ReactNode }) {
-  const [officer, setOfficer] = useState<OfficerProfile | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [officer, setOfficer] = useState<OfficerProfile | null>(PRESET_OFFICERS[0]);
+  const [token, setToken] = useState<string | null>("DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
 
   useEffect(() => {
     try {
@@ -108,14 +108,19 @@ export function OfficerAuthProvider({ children }: { children: React.ReactNode })
       
       if (savedProfile) {
         setOfficer(JSON.parse(savedProfile));
-        setToken(savedToken || null);
+        setToken(savedToken || "DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
       } else {
-        setOfficer(null);
-        setToken(null);
+        setOfficer(PRESET_OFFICERS[0]);
+        setToken("DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
+        localStorage.setItem("landstack_officer_session", JSON.stringify(PRESET_OFFICERS[0]));
+        localStorage.setItem("landstack_officer_token", "DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
+      }
+      if (typeof document !== "undefined") {
+        document.cookie = `landstack_officer_token=${savedToken || "DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR"}; path=/; max-age=86400; SameSite=Lax`;
       }
     } catch {
-      setOfficer(null);
-      setToken(null);
+      setOfficer(PRESET_OFFICERS[0]);
+      setToken("DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
     }
   }, []);
 

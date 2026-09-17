@@ -5,40 +5,43 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   FileText, 
-  Map, 
-  ShieldCheck, 
   Clock, 
-  CheckCircle2, 
-  XCircle, 
   MapPin, 
-  UserCheck, 
   LogOut, 
   FolderKanban, 
-  LayoutDashboard, 
   FileCheck, 
   ArrowRight,
-  Activity,
-  Layers,
-  BarChart2
+  ArrowUpRight,
+  ArrowUp,
+  ShieldCheck,
+  CheckCircle2,
+  Search,
+  Filter,
+  X,
+  Plus,
+  Map
 } from "lucide-react";
 import { useOfficerAuth } from "@/context/OfficerAuthContext";
 import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
+import StatusBadge from "@/components/StatusBadge";
 
 export default function OfficerDashboardPage() {
   const router = useRouter();
   const { officer, logoutOfficer } = useOfficerAuth();
 
-
   const [metrics, setMetrics] = useState({
-    total: 12,
-    pending: 4,
-    underVerification: 3,
-    inspectionsPending: 2,
+    total: 23,
+    pending: 5,
+    underVerification: 5,
+    inspectionsPending: 5,
     approved: 2,
     rejected: 1
   });
 
   const [cases, setCases] = useState<any[]>([]);
+  const [caseSearchQuery, setCaseSearchQuery] = useState("");
+  const [caseStatusFilter, setCaseStatusFilter] = useState("ALL");
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!officer) {
@@ -83,142 +86,593 @@ export default function OfficerDashboardPage() {
     loadDashboardData();
   }, [officer, router]);
 
+  const [currentTime, setCurrentTime] = useState({
+    date: "Wednesday, 16 September 2026",
+    time: "12:25 PM"
+  });
+  const [greeting, setGreeting] = useState("Good Morning,");
+
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-GB", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+      const timeStr = now.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      });
+      setCurrentTime({ date: dateStr, time: timeStr });
+
+      const hour = now.getHours();
+      if (hour >= 12 && hour < 17) {
+        setGreeting("Good Afternoon,");
+      } else if (hour >= 17) {
+        setGreeting("Good Evening,");
+      } else {
+        setGreeting("Good Morning,");
+      }
+    };
+
+    updateDateTime();
+    const timer = setInterval(updateDateTime, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleLogout = () => {
     logoutOfficer();
     router.push("/");
   };
 
+  // DEFAULT EXEMPLAR CASES LIST (Matching government registry structure)
+  const defaultRecentCases = [
+    {
+      id: "100001",
+      caseNumber: "CASE-2026-TN-01-100001",
+      surveyNumber: "171/3A",
+      village: "Sriperumbudur",
+      caseType: "Wetland Conversion Violation",
+      status: "OFFICER_REVIEW",
+      statusLabel: "Officer Review",
+      dueDate: "Today"
+    },
+    {
+      id: "100002",
+      caseNumber: "CASE-2026-TN-01-100002",
+      surveyNumber: "197/7B",
+      village: "Pennalur",
+      caseType: "Waterbody Encroachment Appeal",
+      status: "FIELD_INSPECTION",
+      statusLabel: "Field Inspection",
+      dueDate: "18 Sep 2026"
+    },
+    {
+      id: "100003",
+      caseNumber: "CASE-2026-TN-01-100003",
+      surveyNumber: "334/9C",
+      village: "Irungattukottai",
+      caseType: "Patta Transfer Dispute",
+      status: "DOCUMENT_VERIFICATION",
+      statusLabel: "Document Verification",
+      dueDate: "20 Sep 2026"
+    },
+    {
+      id: "100004",
+      caseNumber: "CASE-2026-TN-01-100004",
+      surveyNumber: "133/9D",
+      village: "Oragadam",
+      caseType: "Cadastral Boundary Discrepancy",
+      status: "APPROVED",
+      statusLabel: "Approved",
+      dueDate: "—"
+    },
+    {
+      id: "100005",
+      caseNumber: "CASE-2026-TN-01-100005",
+      surveyNumber: "101/5E",
+      village: "Mambakkam",
+      caseType: "Land Acquisition Valuation Claim",
+      status: "REJECTED",
+      statusLabel: "Rejected",
+      dueDate: "—"
+    }
+  ];
+
+  // Map existing case data if available, or fall back to exemplar cases
+  const recentCasesList = cases.length > 0
+    ? cases.slice(0, 10).map((c, idx) => {
+        let statusLabel = "Officer Review";
+        let dueDate = "Today";
+        if (c.status === "FIELD_INSPECTION") {
+          statusLabel = "Field Inspection";
+          dueDate = "18 Sep 2026";
+        } else if (c.status === "DOCUMENT_VERIFICATION") {
+          statusLabel = "Document Verification";
+          dueDate = "20 Sep 2026";
+        } else if (c.status === "APPROVED") {
+          statusLabel = "Approved";
+          dueDate = "—";
+        } else if (c.status === "REJECTED") {
+          statusLabel = "Rejected";
+          dueDate = "—";
+        }
+
+        return {
+          id: String(c.id),
+          caseNumber: c.caseNumber || `CASE-2026-TN-01-${100001 + idx}`,
+          surveyNumber: c.surveyNumber || "171/3A",
+          village: c.village || "Sriperumbudur",
+          caseType: c.caseType || c.title || "Wetland Conversion Violation",
+          status: c.status || "OFFICER_REVIEW",
+          statusLabel,
+          dueDate
+        };
+      })
+    : defaultRecentCases;
+
+  // Filter cases by search query and status filter
+  const filteredRecentCases = recentCasesList.filter((item) => {
+    const q = caseSearchQuery.toLowerCase().trim();
+    const matchesSearch = !q || (
+      item.caseNumber.toLowerCase().includes(q) ||
+      item.surveyNumber.toLowerCase().includes(q) ||
+      item.village.toLowerCase().includes(q) ||
+      item.caseType.toLowerCase().includes(q)
+    );
+    const matchesStatus = caseStatusFilter === "ALL" || item.status === caseStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <OfficerProtectedGuard>
-      <div className="max-w-7xl mx-auto p-6 sm:p-8 space-y-8 font-sans antialiased pb-20">
+      <div className="w-full max-w-[1600px] px-4 sm:px-6 lg:px-8 py-4 space-y-4 font-sans antialiased pb-16">
+        {/* ================================================================= */}
+        {/* ================================================================= */}
+        {/* WELCOME / HEADER SECTION (LEFT: OFFICER DETAILS, RIGHT: STATUS)   */}
+        {/* ================================================================= */}
+        <section className="py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E3E8EF]">
+          {/* LEFT: GREETING, OFFICER DETAILS, POLICY MOTTO */}
+          <div className="flex flex-col justify-center space-y-2 max-w-2xl">
+            <div>
+              <span className="text-xs font-semibold text-[#53627A] tracking-wide block">
+                {greeting}
+              </span>
+              <h1 className="text-2xl sm:text-[28px] font-extrabold text-[#14213D] tracking-tight leading-tight pt-0.5">
+                {officer?.name || "Thiru K. Muthusamy, IAS"}
+              </h1>
+              <div className="text-xs sm:text-[13px] text-[#53627A] font-medium pt-1 flex flex-wrap items-center gap-x-2">
+                <span>{officer?.title || "District Collector & District Magistrate"}</span>
+                <span className="text-slate-300">•</span>
+                <span className="text-[#14213D] font-semibold">
+                  {officer?.district ? `${officer.district} District` : "Kanchipuram District"}
+                </span>
+              </div>
+            </div>
 
-      
-      {/* TOP WELCOME & JURISDICTION HEADER */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-black text-slate-900">Welcome, {officer?.name || 'Officer'}</h1>
-          <div className="text-xs text-slate-500 flex flex-wrap items-center gap-2">
-            <span>Role: <strong className="text-blue-700 font-semibold">{officer?.title}</strong></span>
-            <span>•</span>
-            <span>Jurisdiction: <strong className="text-emerald-700 font-semibold">{officer?.taluk} Taluk, {officer?.district} District</strong></span>
+            <div className="text-xs text-[#53627A] font-medium leading-relaxed italic border-l-2 border-[#1D5FD1] pl-2.5">
+              &ldquo;Transparent land records. Stronger communities. A prosperous Tamil Nadu.&rdquo;
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          <div className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-emerald-700 font-bold">
-            ID: {officer?.badgeNo}
+          {/* RIGHT: OPERATIONAL INFORMATION (DATE, TIME, SYSTEM STATUS) */}
+          <div className="flex flex-col items-start sm:items-end justify-center space-y-1 sm:text-right shrink-0">
+            <div className="text-xs font-semibold text-[#14213D]">
+              {currentTime.date}
+            </div>
+            <div className="text-2xl sm:text-3xl font-bold text-[#14213D] font-mono tracking-tight leading-none">
+              {currentTime.time}
+            </div>
+            <Link 
+              href="/integration"
+              title="View Connected Government Systems (DPI Interoperability)"
+              className="inline-flex items-center space-x-1.5 text-xs font-semibold text-[#16845B] hover:text-[#126b49] pt-0.5 group transition-colors"
+            >
+              <span className="w-2 h-2 rounded-full bg-[#16845B] animate-pulse"></span>
+              <span className="group-hover:underline">System Operational</span>
+            </Link>
           </div>
+        </section>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-red-600 font-bold text-xs border border-slate-200 transition-colors shadow-xs"
+        {/* ================================================================= */}
+        {/* FOUR PRIMARY KPI CARDS (Desktop: 4 in row, Tablet: 2x2, Mobile: 1)*/}
+        {/* ================================================================= */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* CARD 1: Pending Approvals (Soft red/pink visual treatment) */}
+          <Link
+            href="/officer/cases?status=OFFICER_REVIEW"
+            className="group block p-4 rounded-xl bg-[#FFF9F9] border border-[#FADBD8] shadow-2xs hover:border-[#F1948A] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
           >
-            <LogOut className="w-4 h-4" />
-            <span>Logout</span>
-          </button>
-        </div>
-      </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                  Pending Approvals
+                </span>
+                <div className="w-7 h-7 rounded-lg bg-rose-100/80 text-[#D9363E] flex items-center justify-center shrink-0 border border-rose-200/60">
+                  <Clock className="w-3.5 h-3.5" />
+                </div>
+              </div>
 
-      {/* DASHBOARD SUMMARY CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-2 shadow-sm">
-          <div className="text-xs text-slate-500 font-semibold flex items-center justify-between">
-            <span>Pending Approvals</span>
-            <Clock className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="text-3xl font-black text-slate-900">{metrics.pending}</div>
-          <div className="text-[10px] text-slate-500">Requires officer action</div>
-        </div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                {metrics.pending ?? 5}
+              </div>
+            </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-2 shadow-sm">
-          <div className="text-xs text-slate-500 font-semibold flex items-center justify-between">
-            <span>Active Land Cases</span>
-            <FileText className="w-4 h-4 text-blue-600" />
-          </div>
-          <div className="text-3xl font-black text-slate-900">{metrics.total}</div>
-          <div className="text-[10px] text-slate-500">In assigned jurisdiction</div>
-        </div>
+            <div className="flex items-center justify-between pt-2 border-t border-rose-200/60 text-[11px]">
+              <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
+                <span className="w-2 h-2 rounded-full bg-[#D9363E] shrink-0"></span>
+                <span>2 overdue • 3 due today</span>
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-rose-400 group-hover:text-[#D9363E] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            </div>
+          </Link>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-2 shadow-sm">
-          <div className="text-xs text-slate-500 font-semibold flex items-center justify-between">
-            <span>Field Inspections</span>
-            <MapPin className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="text-3xl font-black text-slate-900">{metrics.inspectionsPending}</div>
-          <div className="text-[10px] text-slate-500">Scheduled on-site visits</div>
-        </div>
+          {/* CARD 2: Field Inspections (Soft orange visual treatment) */}
+          <Link
+            href="/officer/cases?status=FIELD_INSPECTION"
+            className="group block p-4 rounded-xl bg-[#FFFAF5] border border-[#FDEBD0] shadow-2xs hover:border-[#F8C471] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                  Field Inspections
+                </span>
+                <div className="w-7 h-7 rounded-lg bg-amber-100/80 text-[#E99A16] flex items-center justify-center shrink-0 border border-amber-200/60">
+                  <MapPin className="w-3.5 h-3.5" />
+                </div>
+              </div>
 
-        <div className="p-5 rounded-2xl bg-white border border-slate-200 space-y-2 shadow-sm">
-          <div className="text-xs text-slate-500 font-semibold flex items-center justify-between">
-            <span>Docs Pending Verification</span>
-            <FileCheck className="w-4 h-4 text-cyan-600" />
-          </div>
-          <div className="text-3xl font-black text-slate-900">{metrics.underVerification}</div>
-          <div className="text-[10px] text-slate-500">Patta & OCR checks</div>
-        </div>
-      </div>
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                {metrics.inspectionsPending ?? 5}
+              </div>
+            </div>
 
-      {/* RECENT LAND CASES TABLE */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <FolderKanban className="w-5 h-5 text-blue-600" />
-            <span>Recent Land Cases & Approvals</span>
-          </h3>
-          <Link href="/officer/cases" className="text-xs text-blue-600 font-bold hover:underline">
-            View All Cases →
+            <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 text-[11px]">
+              <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
+                <span className="w-2 h-2 rounded-full bg-[#E99A16] shrink-0"></span>
+                <span>2 scheduled today</span>
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-amber-400 group-hover:text-[#E99A16] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            </div>
+          </Link>
+
+          {/* CARD 3: Documents to Verify (Soft blue visual treatment) */}
+          <Link
+            href="/officer/cases?status=DOCUMENT_VERIFICATION"
+            className="group block p-4 rounded-xl bg-[#F7FAFF] border border-[#D4E6F1] shadow-2xs hover:border-[#85C1E9] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                  Documents to Verify
+                </span>
+                <div className="w-7 h-7 rounded-lg bg-blue-100/80 text-[#1D5FD1] flex items-center justify-center shrink-0 border border-blue-200/60">
+                  <FileCheck className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                {metrics.underVerification ?? 5}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-blue-200/60 text-[11px]">
+              <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
+                <span className="w-2 h-2 rounded-full bg-[#1D5FD1] shrink-0"></span>
+                <span>3 new submissions</span>
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-blue-400 group-hover:text-[#1D5FD1] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            </div>
+          </Link>
+
+          {/* CARD 4: Active Land Cases (Soft green visual treatment) */}
+          <Link
+            href="/officer/cases"
+            className="group block p-4 rounded-xl bg-[#F5FBF8] border border-[#D5F5E3] shadow-2xs hover:border-[#82E0AA] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                  Active Land Cases
+                </span>
+                <div className="w-7 h-7 rounded-lg bg-emerald-100/80 text-[#16845B] flex items-center justify-center shrink-0 border border-emerald-200/60">
+                  <FolderKanban className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                {metrics.total || 23}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 text-[11px]">
+              <span className="flex items-center gap-1 font-semibold text-[#16845B]">
+                <ArrowUp className="w-3 h-3" />
+                <span>+4 from last month</span>
+              </span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400 group-hover:text-[#16845B] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            </div>
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-500 font-semibold uppercase border-b border-slate-200">
-              <tr>
-                <th className="p-3">Case ID</th>
-                <th className="p-3">Survey Number</th>
-                <th className="p-3">Location</th>
-                <th className="p-3">Case Type</th>
-                <th className="p-3">Status</th>
-                <th className="p-3">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {cases.slice(0, 5).map(c => (
-                <tr key={c.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-3 font-mono font-bold text-emerald-700">{c.caseNumber}</td>
-                  <td className="p-3 font-mono font-semibold">{c.surveyNumber}</td>
-                  <td className="p-3">{c.village}, {c.district}</td>
-                  <td className="p-3">{c.caseType}</td>
-                  <td className="p-3">
-                    <span className={`px-2.5 py-1 rounded text-[10px] font-bold ${
-                      c.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                      c.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
-                      c.status === 'FIELD_INSPECTION' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                      'bg-blue-50 text-blue-700 border border-blue-200'
-                    }`}>
-                      {c.status.replace("_", " ")}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    <Link href={`/officer/cases/${c.id}`} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors shadow-xs">
-                      Review Case →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              {cases.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="p-6 text-center text-slate-500 text-xs">
-                    No recent land cases found in your jurisdiction.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        {/* ================================================================= */}
+        {/* QUICK ACTIONS SECTION (Compact Card, 2 x 2 Grid, ~165-175px)      */}
+        {/* ================================================================= */}
+        <div className="bg-white border border-[#E3E8EF] rounded-xl p-4 sm:p-5 space-y-3 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm sm:text-base font-bold text-[#102A43]">
+              Quick Actions
+            </h2>
+            <span className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider hidden sm:inline-block">
+              Operational Shortcuts
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            {/* ACTION 1: New Land Case */}
+            <Link
+              href="/cases"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-white border border-[#E3E8EF] hover:border-[#1D5FD1] hover:bg-[#F1F5FB] transition-all group shadow-2xs"
+            >
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-md bg-[#F1F5FB] group-hover:bg-[#1D5FD1] text-[#1D5FD1] group-hover:text-white flex items-center justify-center shrink-0 border border-[#E3E8EF] group-hover:border-[#1D5FD1] transition-colors">
+                  <Plus className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs sm:text-[13px] font-semibold text-[#102A43] group-hover:text-[#1D5FD1] transition-colors truncate">
+                  New Land Case
+                </span>
+              </div>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[#53627A] group-hover:text-[#1D5FD1] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 ml-1.5" />
+            </Link>
+
+            {/* ACTION 2: Search Records */}
+            <Link
+              href="/officer/registry"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-white border border-[#E3E8EF] hover:border-[#1D5FD1] hover:bg-[#F1F5FB] transition-all group shadow-2xs"
+            >
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-md bg-[#F1F5FB] group-hover:bg-[#1D5FD1] text-[#1D5FD1] group-hover:text-white flex items-center justify-center shrink-0 border border-[#E3E8EF] group-hover:border-[#1D5FD1] transition-colors">
+                  <Search className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs sm:text-[13px] font-semibold text-[#102A43] group-hover:text-[#1D5FD1] transition-colors truncate">
+                  Search Records
+                </span>
+              </div>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[#53627A] group-hover:text-[#1D5FD1] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 ml-1.5" />
+            </Link>
+
+            {/* ACTION 3: Open GIS Map */}
+            <Link
+              href="/gis"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-white border border-[#E3E8EF] hover:border-[#1D5FD1] hover:bg-[#F1F5FB] transition-all group shadow-2xs"
+            >
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-md bg-[#F1F5FB] group-hover:bg-[#1D5FD1] text-[#1D5FD1] group-hover:text-white flex items-center justify-center shrink-0 border border-[#E3E8EF] group-hover:border-[#1D5FD1] transition-colors">
+                  <Map className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs sm:text-[13px] font-semibold text-[#102A43] group-hover:text-[#1D5FD1] transition-colors truncate">
+                  Open GIS Map
+                </span>
+              </div>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[#53627A] group-hover:text-[#1D5FD1] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 ml-1.5" />
+            </Link>
+
+            {/* ACTION 4: Generate Report */}
+            <Link
+              href="/reports"
+              className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg bg-white border border-[#E3E8EF] hover:border-[#1D5FD1] hover:bg-[#F1F5FB] transition-all group shadow-2xs"
+            >
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-md bg-[#F1F5FB] group-hover:bg-[#1D5FD1] text-[#1D5FD1] group-hover:text-white flex items-center justify-center shrink-0 border border-[#E3E8EF] group-hover:border-[#1D5FD1] transition-colors">
+                  <FileText className="w-3.5 h-3.5" />
+                </div>
+                <span className="text-xs sm:text-[13px] font-semibold text-[#102A43] group-hover:text-[#1D5FD1] transition-colors truncate">
+                  Generate Report
+                </span>
+              </div>
+              <ArrowUpRight className="w-3.5 h-3.5 text-[#53627A] group-hover:text-[#1D5FD1] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 ml-1.5" />
+            </Link>
+          </div>
         </div>
+
+        {/* ================================================================= */}
+        {/* RECENT LAND CASES TABLE (FULL WIDTH)                              */}
+        {/* ================================================================= */}
+        <div className="w-full bg-white border border-[#E3E8EF] rounded-xl p-4 sm:p-5 space-y-3.5 shadow-2xs">
+            {/* TITLE & VIEW ALL → */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-[#102A43]">
+                  Recent Land Cases
+                </h2>
+                <p className="text-[11px] text-[#53627A] font-medium">
+                  Statutory clearances and dispute resolutions in your jurisdiction
+                </p>
+              </div>
+              <Link 
+                href="/officer/cases" 
+                className="text-xs font-semibold text-[#1D5FD1] hover:text-[#154CB0] inline-flex items-center space-x-1 transition-colors"
+              >
+                <span>View All</span>
+                <span>→</span>
+              </Link>
+            </div>
+
+            {/* SEARCH INPUT & FILTERS BUTTON */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-0.5">
+              {/* Search Box */}
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-[#53627A] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={caseSearchQuery}
+                  onChange={(e) => setCaseSearchQuery(e.target.value)}
+                  placeholder="Search by Case ID, Survey Number, Village..."
+                  className="w-full h-9 pl-9 pr-8 rounded-md border border-[#E3E8EF] bg-white text-xs text-[#14213D] placeholder:text-[#53627A]/75 focus:outline-none focus:border-[#1D5FD1] focus:ring-1 focus:ring-[#1D5FD1] shadow-2xs transition-all"
+                />
+                {caseSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCaseSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                    title="Clear search"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Filters Button with Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setFilterMenuOpen(!filterMenuOpen)}
+                  className={`h-9 px-3 rounded-md border text-xs font-semibold flex items-center space-x-2 transition-colors shadow-2xs shrink-0 ${
+                    caseStatusFilter !== "ALL"
+                      ? "bg-[#F1F5FB] border-[#1D5FD1] text-[#1D5FD1]"
+                      : "bg-white border-[#E3E8EF] text-[#14213D] hover:bg-[#F7F9FC]"
+                  }`}
+                >
+                  <Filter className="w-3 h-3 text-[#53627A]" />
+                  <span>Status Filter</span>
+                  {caseStatusFilter !== "ALL" && (
+                    <span className="w-2 h-2 rounded-full bg-[#1D5FD1]"></span>
+                  )}
+                </button>
+
+                {/* Status Filter Popover */}
+                {filterMenuOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-20" 
+                      onClick={() => setFilterMenuOpen(false)} 
+                    />
+                    <div className="absolute right-0 mt-1 w-52 bg-white border border-[#E3E8EF] rounded-lg shadow-lg py-1.5 z-30 text-xs text-[#14213D]">
+                      <div className="px-3 py-1 text-[10px] font-bold text-[#53627A] uppercase tracking-wider border-b border-[#E3E8EF]">
+                        Filter by Status
+                      </div>
+                      {[
+                        { id: "ALL", label: "All Statuses" },
+                        { id: "OFFICER_REVIEW", label: "Officer Review" },
+                        { id: "FIELD_INSPECTION", label: "Field Inspection" },
+                        { id: "DOCUMENT_VERIFICATION", label: "Document Verification" },
+                        { id: "APPROVED", label: "Approved" },
+                        { id: "REJECTED", label: "Rejected" },
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setCaseStatusFilter(opt.id);
+                            setFilterMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-[#F7F9FC] transition-colors ${
+                            caseStatusFilter === opt.id ? "text-[#1D5FD1] font-bold bg-[#F1F5FB]" : "text-[#14213D]"
+                          }`}
+                        >
+                          <span>{opt.label}</span>
+                          {caseStatusFilter === opt.id && <span className="text-[#1D5FD1] font-bold">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* TABLE: 7 COLUMNS (Case ID, Survey No., Village / Location, Case Type, Status, Due Date, Action) */}
+            <div className="overflow-x-auto pt-0.5">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead className="bg-[#F8FAFD] text-[#53627A] font-semibold uppercase tracking-wider border-b border-[#E3E8EF]">
+                  <tr>
+                    <th className="px-3 py-2.5 font-bold">Case ID</th>
+                    <th className="px-3 py-2.5 font-bold">Survey No.</th>
+                    <th className="px-3 py-2.5 font-bold">Village</th>
+                    <th className="px-3 py-2.5 font-bold">Case Type</th>
+                    <th className="px-3 py-2.5 font-bold">Status</th>
+                    <th className="px-3 py-2.5 font-bold">Due Date</th>
+                    <th className="px-3 py-2.5 text-right font-bold">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E3E8EF] text-[#14213D]">
+                  {filteredRecentCases.map((c) => (
+                    <tr key={c.id} className="hover:bg-[#F8FAFD] transition-colors h-12">
+                      {/* Case ID */}
+                      <td className="px-3 py-2 font-mono text-[11px] font-semibold text-[#0E4A68] whitespace-nowrap">
+                        {c.caseNumber}
+                      </td>
+
+                      {/* Survey No. */}
+                      <td className="px-3 py-2 font-mono text-xs text-[#14213D] font-medium whitespace-nowrap">
+                        {c.surveyNumber}
+                      </td>
+
+                      {/* Village */}
+                      <td className="px-3 py-2 text-xs text-[#53627A] font-medium whitespace-nowrap">
+                        {c.village}
+                      </td>
+
+                      {/* Case Type */}
+                      <td className="px-3 py-2 text-xs text-[#14213D] font-medium max-w-[150px] truncate" title={c.caseType}>
+                        {c.caseType}
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <StatusBadge status={c.status} />
+                      </td>
+
+                      {/* Due Date */}
+                      <td className="px-3 py-2 text-xs font-medium whitespace-nowrap">
+                        {c.dueDate === "Today" ? (
+                          <span className="text-[#D9363E] font-semibold">{c.dueDate}</span>
+                        ) : c.dueDate === "—" ? (
+                          <span className="text-slate-400">—</span>
+                        ) : (
+                          <span className="text-[#53627A]">{c.dueDate}</span>
+                        )}
+                      </td>
+
+                      {/* Action */}
+                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                        <Link 
+                          href={`/officer/cases/${c.id}`} 
+                          className="text-xs font-semibold text-[#1D5FD1] hover:text-[#154CB0] hover:underline inline-flex items-center space-x-1 transition-colors"
+                        >
+                          <span>View</span>
+                          <span>→</span>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+
+                  {filteredRecentCases.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-[#53627A] text-xs">
+                        <div className="space-y-1.5">
+                          <div>No land cases match your search or filter criteria.</div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCaseSearchQuery("");
+                              setCaseStatusFilter("ALL");
+                            }}
+                            className="text-[#1D5FD1] font-semibold hover:underline"
+                          >
+                            Clear search and filters
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
       </div>
-    </div>
     </OfficerProtectedGuard>
   );
 }
-

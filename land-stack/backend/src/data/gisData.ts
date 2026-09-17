@@ -87,6 +87,23 @@ export const adminBoundaries: AdminBoundary[] = [
     ]
   },
   {
+    id: 'ADM-CBE',
+    name: 'Coimbatore District',
+    level: 'District',
+    stateName: 'Tamil Nadu',
+    center: [11.0168, 76.9558],
+    bounds: [[10.2, 76.6], [11.5, 77.3]],
+    coordinates: [
+      [
+        [76.6, 10.2],
+        [77.3, 10.2],
+        [77.3, 11.5],
+        [76.6, 11.5],
+        [76.6, 10.2]
+      ]
+    ]
+  },
+  {
     id: 'ADM-PUNE',
     name: 'Pune District',
     level: 'District',

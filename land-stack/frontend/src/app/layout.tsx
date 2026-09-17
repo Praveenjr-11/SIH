@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/Navbar";
+import AppLayoutWrapper from "@/components/AppLayoutWrapper";
 import { OfficerAuthProvider } from "@/context/OfficerAuthContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LAND STACK – Integrated GIS-based DPI for Land Governance",
-  description: "Enterprise Digital Public Infrastructure for Land Governance and Cadastral GIS Management",
+  title: "Tamil Nadu Land Stack | Integrated Geospatial DPI for Land Governance",
+  description: "Government of Tamil Nadu Enterprise Digital Public Infrastructure for Cadastral GIS, ULPIN Land Registry & Statutory Officer Clearances",
 };
 
 export default function RootLayout({
@@ -23,10 +23,9 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body className="bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased">
+      <body className="bg-[#F7F9FC] text-[#14213D] min-h-screen flex flex-col antialiased font-sans">
         <OfficerAuthProvider>
-          <Navbar />
-          <main className="flex-1 bg-slate-50">{children}</main>
+          <AppLayoutWrapper>{children}</AppLayoutWrapper>
         </OfficerAuthProvider>
       </body>
     </html>

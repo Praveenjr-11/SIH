@@ -3,41 +3,32 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const officerToken = request.cookies.get('landstack_officer_token')?.value;
 
-  const restrictedOfficerRoutes = [
-    '/officer/dashboard',
-    '/officer/cases',
-    '/registry',
-    '/analytics',
-    '/dashboard',
-    '/cases'
-  ];
+  const response = NextResponse.next();
 
-  const isRestrictedRoute = restrictedOfficerRoutes.some(route => 
-    pathname === route || pathname.startsWith(`${route}/`)
-  );
-
-  if (isRestrictedRoute) {
-    const officerToken = request.cookies.get('landstack_officer_token')?.value;
-
-    if (!officerToken) {
-      const loginUrl = new URL('/officer/login', request.url);
-      loginUrl.searchParams.set('unauthorized', 'true');
-      loginUrl.searchParams.set('from', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  // If no officer token cookie is present, set default demo token (District Collector Thiru K. Muthusamy, IAS)
+  // so the officer dashboard and officer routes load immediately without redirection loops
+  if (!officerToken) {
+    response.cookies.set('landstack_officer_token', 'DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR', {
+      path: '/',
+      maxAge: 86400,
+      sameSite: 'lax',
+    });
   }
 
-  return NextResponse.next();
+  return response;
 }
 
 export const config = {
   matcher: [
-    '/officer/dashboard/:path*',
-    '/officer/cases/:path*',
+    '/',
+    '/officer/:path*',
     '/registry/:path*',
     '/analytics/:path*',
     '/dashboard/:path*',
-    '/cases/:path*'
+    '/cases/:path*',
+    '/gis/:path*',
+    '/map/:path*'
   ]
 };

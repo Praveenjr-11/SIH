@@ -138,31 +138,31 @@ export default function VillageBoundaryManager({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#102A43]/50">
+      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white border border-[#E3E8EF] rounded-lg shadow-xl overflow-hidden flex flex-col text-[#14213D]">
         {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-slate-50 via-emerald-50/60 to-slate-50 border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center space-x-3.5">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-xs">
+        <div className="px-6 py-4 bg-[#102A43] text-white border-b border-[#102A43] flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-md bg-white/10 border border-white/20 flex items-center justify-center text-white">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2.5">
-                <h2 className="text-lg font-bold text-slate-900 tracking-tight">
+                <h2 className="text-base font-bold text-white tracking-tight">
                   Village Boundary Data Base of Entire India
                 </h2>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-300">
-                  <ShieldCheck className="w-3 h-3 mr-1 text-emerald-600" /> REAL DATASET
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[#16845B] text-white">
+                  <ShieldCheck className="w-3 h-3 mr-1" /> REAL DATASET
                 </span>
               </div>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">
-                Authoritative spatial shapefile repository • 261,578+ Villages across 19 States & UTs
+              <p className="text-xs text-slate-300 font-normal mt-0.5">
+                Authoritative spatial shapefile repository • 261,578+ Villages across 19 States &amp; UTs
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -172,63 +172,63 @@ export default function VillageBoundaryManager({
         <div className="p-6 overflow-y-auto space-y-6 custom-scrollbar">
           {/* Key Stats Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+            <div className="p-3.5 rounded-md bg-[#F7F9FC] border border-[#E3E8EF]">
+              <div className="flex items-center justify-between text-[#53627A] text-xs font-medium mb-1">
                 <span>Total Villages</span>
-                <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                <Layers className="w-3.5 h-3.5 text-[#16845B]" />
               </div>
-              <p className="text-2xl font-black text-slate-900">
+              <p className="text-xl font-bold font-mono text-[#102A43]">
                 {stats?.totalVillages?.toLocaleString() || "261,578"}
               </p>
-              <p className="text-[10px] text-emerald-700 font-medium mt-1">Verified Spatial Polygons</p>
+              <p className="text-[10px] text-[#16845B] font-medium mt-1">Verified Spatial Polygons</p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
-                <span>States & UTs</span>
-                <MapPin className="w-3.5 h-3.5 text-blue-600" />
+            <div className="p-3.5 rounded-md bg-[#F7F9FC] border border-[#E3E8EF]">
+              <div className="flex items-center justify-between text-[#53627A] text-xs font-medium mb-1">
+                <span>States &amp; UTs</span>
+                <MapPin className="w-3.5 h-3.5 text-[#1D5FD1]" />
               </div>
-              <p className="text-2xl font-black text-slate-900">
+              <p className="text-xl font-bold font-mono text-[#102A43]">
                 {stats?.totalStates || 19}
               </p>
-              <p className="text-[10px] text-blue-700 font-medium mt-1">100% Complete India Coverage</p>
+              <p className="text-[10px] text-[#1D5FD1] font-medium mt-1">100% Complete India Coverage</p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+            <div className="p-3.5 rounded-md bg-[#F7F9FC] border border-[#E3E8EF]">
+              <div className="flex items-center justify-between text-[#53627A] text-xs font-medium mb-1">
                 <span>CRS Standard</span>
-                <Database className="w-3.5 h-3.5 text-amber-600" />
+                <Database className="w-3.5 h-3.5 text-[#E99A16]" />
               </div>
-              <p className="text-lg font-bold text-slate-900 mt-1">EPSG:4326</p>
-              <p className="text-[10px] text-amber-700 font-medium mt-0.5">WGS84 Normalized Bounds</p>
+              <p className="text-base font-bold font-mono text-[#102A43] mt-1">EPSG:4326</p>
+              <p className="text-[10px] text-[#E99A16] font-medium mt-0.5">WGS84 Normalized Bounds</p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between text-slate-500 text-xs font-medium mb-1">
+            <div className="p-3.5 rounded-md bg-[#F7F9FC] border border-[#E3E8EF]">
+              <div className="flex items-center justify-between text-[#53627A] text-xs font-medium mb-1">
                 <span>Data Source</span>
-                <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                <ShieldCheck className="w-3.5 h-3.5 text-[#102A43]" />
               </div>
-              <p className="text-sm font-bold text-slate-900 mt-1">Survey of India / LGD</p>
-              <p className="text-[10px] text-purple-700 font-medium mt-0.5">Official Village Boundaries</p>
+              <p className="text-xs font-bold text-[#102A43] mt-1">Survey of India / LGD</p>
+              <p className="text-[10px] text-[#53627A] font-medium mt-0.5">Official Village Boundaries</p>
             </div>
           </div>
 
           {/* Upload Section */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-2xs">
+          <div className="bg-[#F7F9FC] border border-[#E3E8EF] rounded-lg p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                  <HardDriveUpload className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-xs font-bold text-[#102A43] uppercase tracking-wide flex items-center space-x-2">
+                  <HardDriveUpload className="w-4 h-4 text-[#16845B]" />
                   <span>Upload / Import Village Boundary ZIP File</span>
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-[#53627A] mt-0.5">
                   Upload custom State or District village shapefile archives (.zip containing .shp, .dbf, .prj)
                 </p>
               </div>
               <button
                 onClick={handleScanLocal}
                 disabled={uploading}
-                className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 text-xs font-semibold flex items-center space-x-1.5 transition-colors disabled:opacity-50 shadow-2xs"
+                className="px-3 py-1.5 rounded-md bg-white hover:bg-[#F7F9FC] text-[#16845B] border border-emerald-200 text-xs font-semibold flex items-center space-x-1.5 transition-colors disabled:opacity-50 shadow-xs"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${uploading ? "animate-spin" : ""}`} />
                 <span>Scan System ZIPs</span>
@@ -243,10 +243,10 @@ export default function VillageBoundaryManager({
               }}
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
-              className={`relative border-2 border-dashed rounded-2xl p-6 text-center transition-all ${
+              className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all ${
                 isDragOver
-                  ? "border-emerald-500 bg-emerald-50"
-                  : "border-slate-300 bg-white hover:border-emerald-400"
+                  ? "border-[#16845B] bg-emerald-50/50"
+                  : "border-[#E3E8EF] bg-white hover:border-[#16845B]"
               }`}
             >
               <input
@@ -257,13 +257,13 @@ export default function VillageBoundaryManager({
                 disabled={uploading}
               />
               <div className="flex flex-col items-center justify-center space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                  <UploadCloud className="w-6 h-6 text-emerald-600" />
+                <div className="w-10 h-10 rounded-md bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[#16845B]">
+                  <UploadCloud className="w-5 h-5" />
                 </div>
-                <div className="text-xs font-semibold text-slate-900">
-                  <span className="text-emerald-700 underline font-bold">Click to upload</span> or drag and drop State Village Boundary ZIP
+                <div className="text-xs font-semibold text-[#14213D]">
+                  <span className="text-[#16845B] underline font-bold">Click to upload</span> or drag and drop State Village Boundary ZIP
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-[#53627A]">
                   Supports .ZIP shapefile bundles (e.g., STATE_NAME.zip containing .shp, .dbf, .shx, .prj)
                 </p>
               </div>
@@ -271,27 +271,27 @@ export default function VillageBoundaryManager({
 
             {/* Upload Feedback Messages */}
             {uploadProgress && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800 flex items-center space-x-2.5 animate-pulse">
-                <RefreshCw className="w-4 h-4 animate-spin text-blue-600 flex-shrink-0" />
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-[#1D5FD1] flex items-center space-x-2.5">
+                <RefreshCw className="w-4 h-4 animate-spin text-[#1D5FD1] flex-shrink-0" />
                 <span>{uploadProgress}</span>
               </div>
             )}
 
             {uploadError && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-center space-x-2.5">
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md text-xs text-[#D9363E] flex items-center space-x-2.5">
+                <AlertCircle className="w-4 h-4 text-[#D9363E] flex-shrink-0" />
                 <span>{uploadError}</span>
               </div>
             )}
 
             {uploadSuccess && (
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-900 space-y-1">
-                <div className="flex items-center space-x-2 font-bold text-emerald-800">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-md text-xs text-[#16845B] space-y-1">
+                <div className="flex items-center space-x-2 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-[#16845B]" />
                   <span>{uploadSuccess.message || "Shapefile ZIP Successfully Processed!"}</span>
                 </div>
                 {uploadSuccess.parsedCount && (
-                  <p className="text-[11px] text-emerald-700">
+                  <p className="text-[11px]">
                     Parsed {uploadSuccess.parsedCount} village boundary polygons for state: {uploadSuccess.stateName}
                   </p>
                 )}
@@ -302,18 +302,18 @@ export default function VillageBoundaryManager({
           {/* State Breakdown Section */}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                <FileArchive className="w-4 h-4 text-blue-600" />
-                <span>State & UT Boundary Coverage ({filteredStates.length} Regions)</span>
+              <h3 className="text-xs font-bold text-[#102A43] uppercase tracking-wide flex items-center space-x-2">
+                <FileArchive className="w-4 h-4 text-[#1D5FD1]" />
+                <span>State &amp; UT Boundary Coverage ({filteredStates.length} Regions)</span>
               </h3>
               <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#53627A] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   placeholder="Filter by state name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 font-medium"
+                  className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#E3E8EF] rounded-md text-xs text-[#14213D] placeholder:text-[#53627A] focus:outline-none focus:border-[#1D5FD1] font-medium"
                 />
               </div>
             </div>
@@ -323,15 +323,15 @@ export default function VillageBoundaryManager({
                 <div
                   key={stateName}
                   onClick={() => onSelectStateBoundary && onSelectStateBoundary(stateName)}
-                  className="p-3 bg-slate-50 hover:bg-emerald-50/60 border border-slate-200 hover:border-emerald-300 rounded-xl flex items-center justify-between cursor-pointer transition-all group shadow-2xs"
+                  className="p-2.5 bg-[#F7F9FC] hover:bg-white border border-[#E3E8EF] hover:border-[#1D5FD1] rounded-md flex items-center justify-between cursor-pointer transition-all group shadow-2xs"
                 >
-                  <div className="flex items-center space-x-2.5 overflow-hidden pr-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-600 group-hover:scale-125 transition-transform flex-shrink-0" />
-                    <span className="text-xs font-semibold text-slate-800 group-hover:text-slate-900 truncate">
+                  <div className="flex items-center space-x-2 overflow-hidden pr-2">
+                    <div className="w-2 h-2 rounded-full bg-[#16845B] group-hover:bg-[#1D5FD1] transition-colors flex-shrink-0" />
+                    <span className="text-xs font-semibold text-[#14213D] truncate">
                       {stateName}
                     </span>
                   </div>
-                  <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 flex-shrink-0">
+                  <span className="text-[11px] font-mono font-bold text-[#102A43] bg-white px-2 py-0.5 rounded border border-[#E3E8EF] flex-shrink-0">
                     {typeof count === "number" ? (count as number).toLocaleString() : String(count)} v.
                   </span>
                 </div>
@@ -341,14 +341,14 @@ export default function VillageBoundaryManager({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
+        <div className="px-6 py-3.5 bg-[#F7F9FC] border-t border-[#E3E8EF] flex items-center justify-between text-xs text-[#53627A]">
           <span className="flex items-center space-x-1.5 font-medium">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#16845B]" />
             <span>Village Boundary Data Base of Entire India Active in GIS Stack</span>
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-colors shadow-md"
+            className="px-4 py-1.5 bg-[#102A43] hover:bg-[#102A43]/90 text-white font-semibold rounded-md transition-colors shadow-xs"
           >
             Done
           </button>

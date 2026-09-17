@@ -47,15 +47,15 @@ export default function AdministrativeBoundarySelector({ onSelectBoundary }: Adm
   const safeList = Array.isArray(boundaries) ? boundaries : [];
 
   return (
-    <div className="h-10 px-2.5 flex items-center space-x-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-xs shrink-0">
-      <div className="w-6 h-6 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shrink-0">
+    <div className="h-9 px-2.5 flex items-center space-x-2 bg-white border border-[#E3E8EF] rounded-md shadow-xs shrink-0">
+      <div className="w-6 h-6 rounded bg-[#F7F9FC] border border-[#E3E8EF] flex items-center justify-center text-[#1D5FD1] shrink-0">
         <Building2 className="w-3.5 h-3.5" />
       </div>
 
       <select
         value={selectedState}
         onChange={(e) => handleSelect(e.target.value)}
-        className="bg-transparent text-xs text-slate-800 font-bold focus:outline-none pr-1 cursor-pointer max-w-[180px] sm:max-w-none truncate"
+        className="bg-transparent text-xs text-[#14213D] font-semibold focus:outline-none pr-1 cursor-pointer max-w-[180px] sm:max-w-none truncate"
       >
         <option value="all">🇮🇳 All India Jurisdiction</option>
         {safeList.map((b) => (
