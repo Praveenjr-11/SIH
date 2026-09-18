@@ -99,7 +99,10 @@ export async function fetchGSILayers() {
 
 export async function fetchMutations() {
   try {
-    const res = await fetch(`${API_BASE}/mutations`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/mutations`, { 
+      headers: getAuthHeader(),
+      cache: 'no-store' 
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return data.mutations || [];
@@ -172,7 +175,10 @@ export async function fetchAnalytics() {
 
 export async function fetchArchitectureSpecs() {
   try {
-    const res = await fetch(`${API_BASE}/analytics/architecture-specs`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/analytics/architecture-specs`, { 
+      headers: getAuthHeader(),
+      cache: 'no-store' 
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return data.architecture;

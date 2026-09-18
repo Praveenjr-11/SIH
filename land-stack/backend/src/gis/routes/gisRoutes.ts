@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { gisController } from '../controllers/gisController.js';
+import { landDetailsController } from '../../controllers/landDetailsController.js';
 
 const router = Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 150 * 1024 * 1024 }, // 150 MB max zip upload
 });
+
+// Official Spatial Identify & Tamil Nilam Land Details Integration Endpoints
+router.get('/identify', (req, res) => landDetailsController.identifyParcel(req, res));
+router.post('/identify', (req, res) => landDetailsController.identifyParcel(req, res));
 
 // 1. GET /api/gis/health
 router.get('/health', (req, res) => gisController.getHealth(req, res));

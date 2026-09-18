@@ -21,6 +21,7 @@
     "gis:download-boundaries": "tsx src/gis/scripts/downloadBoundaryData.ts",
     "gis:import-chandigarh": "tsx src/gis/ingestion/adapters/adapterEngine.ts src/gis/ingestion/adapters/chandigarh.config.json src/gis/ingestion/sources/chandigarh_mock.json",
     "gis:seed-officers": "tsx src/gis/scripts/seedOfficersFromCSV.ts",
+    "gis:seed-dashboards": "tsx src/gis/scripts/seedDashboardDemoData.ts",
     "gis:seed-hierarchy": "tsx src/gis/scripts/seedRealHierarchyAndCensus.ts",
     "gis:create-tables": "tsx src/gis/scripts/createAllTables.ts"
   },

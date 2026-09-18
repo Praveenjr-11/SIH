@@ -23,6 +23,8 @@ import { authenticateOfficerToken } from './middleware/authMiddleware.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
 import { loadTamilNaduOfficers } from './gis/services/officerService.js';
 
+import { landDetailsController } from './controllers/landDetailsController.js';
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -42,6 +44,12 @@ app.use(express.json());
 // Public Spatial & System Health Endpoints (Unrestricted)
 app.use('/api/gis', phase4GisRouter);
 app.use('/api/v1/gis', phase4GisRouter);
+
+// Public Land Records & Land Details Integration Endpoints
+app.get('/api/land-records/:parcel_id', (req, res) => landDetailsController.getLandRecord(req, res));
+app.get('/api/land-details/:parcel_id', (req, res) => landDetailsController.getCombinedLandDetails(req, res));
+app.get('/api/land-details', (req, res) => landDetailsController.getCombinedLandDetails(req, res));
+app.post('/api/land-details', (req, res) => landDetailsController.getCombinedLandDetails(req, res));
 app.use('/api/v1/health', healthRouter);
 app.use('/api/v1', docsRouter);
 app.use('/api/v1/auth', authRouter);

@@ -37,20 +37,6 @@ export default function OfficerProtectedGuard({ children }: { children: React.Re
               <ArrowRight className="w-4 h-4" />
             </Link>
 
-            <div className="pt-4 border-t border-[#E3E8EF] space-y-2">
-              <span className="text-[11px] text-[#53627A] font-semibold block">Quick 1-Click Demo Login:</span>
-              <div className="flex flex-wrap justify-center gap-1.5">
-                {PRESET_OFFICERS.slice(0, 3).map((p, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => loginOfficer(p)}
-                    className="px-2.5 py-1 rounded bg-[#F7F9FC] hover:bg-white text-[#102A43] font-mono text-[11px] font-semibold border border-[#E3E8EF] hover:border-[#1D5FD1] transition-colors"
-                  >
-                    {p.role}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>

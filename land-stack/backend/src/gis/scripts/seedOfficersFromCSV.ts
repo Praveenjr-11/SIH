@@ -20,18 +20,28 @@ const { Client } = pg;
 
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
 
-// CSV lives at repo root (SIH/).
-// This file is at: backend/src/gis/scripts/seedOfficersFromCSV.ts
-// So __dirname + '../../../../../' = SIH/ repo root (5 dirs up from scripts/)
-// Also try 4 dirs up in case of flatter dist directory structure.
-const POSSIBLE_CSV_PATHS = [
-  path.join(currentDir, '../../../../../tamil_nadu_verified_administrative_officers.csv'),
-  path.join(currentDir, '../../../../tamil_nadu_verified_administrative_officers.csv'),
-  path.join(process.cwd(), '../../tamil_nadu_verified_administrative_officers.csv'),
-  path.join(process.cwd(), 'gis-data', 'tamil_nadu_verified_administrative_officers.csv'),
-];
+// Map of department name to its respective CSV filename
+const CSV_FILES: Record<string, string> = {
+  'Revenue': 'tamil_nadu_verified_administrative_officers.csv',
+  'Registration': 'tamil_nadu_registration_department_officers.csv',
+  'Water Resources': 'tamil_nadu_water_resources_officers.csv',
+  'Town and Country Planning': 'tamil_nadu_town_planning_officers.csv',
+  'Forest': 'tamil_nadu_forest_environment_officers.csv',
+  'Municipal Administration and Water Supply': 'tamil_nadu_municipal_panchayat_officers.csv'
+};
+
+function getPossiblePaths(filename: string): string[] {
+  return [
+    path.join(currentDir, '../../../../../', filename),
+    path.join(currentDir, '../../../../', filename),
+    path.join(process.cwd(), '../../', filename),
+    path.join(process.cwd(), 'gis-data', filename),
+    path.join(process.cwd(), filename),
+  ];
+}
 
 interface OfficerRow {
+  department: string;
   state: string;
   district: string;
   administrativeLevel: string;
@@ -64,75 +74,84 @@ function parseCSVLine(text: string): string[] {
   return result;
 }
 
-function loadCSV(): { officers: OfficerRow[]; filePath: string } | null {
-  for (const filePath of POSSIBLE_CSV_PATHS) {
-    if (!fs.existsSync(filePath)) continue;
+function loadAllCSVs(): { officers: OfficerRow[]; filePaths: string[] } {
+  const allOfficers: OfficerRow[] = [];
+  const filePaths: string[] = [];
 
-    console.log(`  Found CSV at: ${filePath}`);
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length <= 1) {
-      console.warn(`  ⚠️  File is empty or header-only: ${filePath}`);
-      continue;
-    }
+  for (const [department, filename] of Object.entries(CSV_FILES)) {
+    const possiblePaths = getPossiblePaths(filename);
+    let found = false;
 
-    const header = lines[0].toLowerCase();
-    // Detect format: State,District,Administrative_Level,Designation,Officer_Name,...
-    const isNewFormat = header.includes('official_phone') || header.includes('source_type');
+    for (const filePath of possiblePaths) {
+      if (!fs.existsSync(filePath)) continue;
 
-    const officers: OfficerRow[] = [];
-    const seen = new Set<string>();
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = parseCSVLine(lines[i]);
-      if (cols.length < 5) continue;
-
-      let row: OfficerRow;
-
-      if (isNewFormat) {
-        row = {
-          state: 'Tamil Nadu',
-          district: cols[3] || '',
-          administrativeLevel: (cols[1] || '').toLowerCase().includes('collector') ? 'District'
-            : (cols[1] || '').toLowerCase().includes('tahsildar') ? 'Taluk' : 'District',
-          designation: cols[1] || '',
-          officerName: cols[0] || cols[1] || '',
-          officialEmail: cols[5] || '',
-          officialMobile: cols[4] || '',
-          officeLandline: '',
-          sourceUrl: cols[6] || 'https://tnrd.tn.gov.in',
-          verifiedDate: cols[9] || '2026-09-14',
-          dataStatus: 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
-        };
-      } else {
-        // State,District,Administrative_Level,Designation,Officer_Name,Official_Email,Official_Mobile,Office_Landline,Source_URL,Verified_Date,Data_Status
-        row = {
-          state: cols[0] || 'Tamil Nadu',
-          district: cols[1] || '',
-          administrativeLevel: cols[2] || 'District',
-          designation: cols[3] || '',
-          officerName: cols[4] || cols[3] || '',
-          officialEmail: cols[5] || '',
-          officialMobile: cols[6] || '',
-          officeLandline: cols[7] || '',
-          sourceUrl: cols[8] || 'https://tn.gov.in',
-          verifiedDate: cols[9] || '2026-09-07',
-          dataStatus: cols[10] || 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
-        };
+      console.log(`  Found CSV for ${department} at: ${filePath}`);
+      filePaths.push(filePath);
+      found = true;
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const lines = content.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length <= 1) {
+        console.warn(`  ⚠️  File is empty or header-only: ${filePath}`);
+        break;
       }
 
-      // Deduplicate on email (or district+designation if no email)
-      const dedupeKey = (row.officialEmail || `${row.district}__${row.designation}`).toLowerCase();
-      if (seen.has(dedupeKey)) continue;
-      seen.add(dedupeKey);
+      const header = lines[0].toLowerCase();
+      const isNewFormat = header.includes('official_phone') || header.includes('source_type');
+      const seen = new Set<string>();
 
-      officers.push(row);
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length < 5) continue;
+
+        let row: OfficerRow;
+
+        if (isNewFormat) {
+          row = {
+            department,
+            state: 'Tamil Nadu',
+            district: cols[3] || '',
+            administrativeLevel: (cols[1] || '').toLowerCase().includes('collector') ? 'District'
+              : (cols[1] || '').toLowerCase().includes('tahsildar') ? 'Taluk' : 'District',
+            designation: cols[1] || '',
+            officerName: cols[0] || cols[1] || '',
+            officialEmail: cols[5] || '',
+            officialMobile: cols[4] || '',
+            officeLandline: '',
+            sourceUrl: cols[6] || 'https://tnrd.tn.gov.in',
+            verifiedDate: cols[9] || '2026-09-14',
+            dataStatus: 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
+          };
+        } else {
+          row = {
+            department,
+            state: cols[0] || 'Tamil Nadu',
+            district: cols[1] || '',
+            administrativeLevel: cols[2] || 'District',
+            designation: cols[3] || '',
+            officerName: cols[4] || cols[3] || '',
+            officialEmail: cols[5] || '',
+            officialMobile: cols[6] || '',
+            officeLandline: cols[7] || '',
+            sourceUrl: cols[8] || 'https://tn.gov.in',
+            verifiedDate: cols[9] || '2026-09-07',
+            dataStatus: cols[10] || 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
+          };
+        }
+
+        const dedupeKey = (row.officialEmail || `${row.district}__${row.designation}`).toLowerCase();
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+
+        allOfficers.push(row);
+      }
+      break; // Stop looking for this department once we find a valid file
     }
-
-    return { officers, filePath };
+    if (!found) {
+      console.warn(`  ⚠️  Missing CSV for ${department}: ${filename}`);
+    }
   }
 
-  return null;
+  return { officers: allOfficers, filePaths };
 }
 
 async function seedOfficers() {
@@ -140,18 +159,16 @@ async function seedOfficers() {
   console.log('🌱  SIH 2026 — TN Administrative Officers DB Seeder');
   console.log('=============================================================');
 
-  // 1. Load CSV
-  console.log('\n📂 Searching for officers CSV...');
-  const csvResult = loadCSV();
-  if (!csvResult) {
-    console.error('❌ CSV file not found in any of these locations:');
-    POSSIBLE_CSV_PATHS.forEach(p => console.error(`   - ${p}`));
-    console.error('\nEnsure the CSV exists at the repo root (SIH/) and re-run.');
+  // 1. Load CSVs
+  console.log('\n📂 Searching for officers CSVs...');
+  const { officers, filePaths } = loadAllCSVs();
+  
+  if (officers.length === 0) {
+    console.error('❌ No CSV files found. Ensure the CSVs exist at the repo root (SIH/) and re-run.');
     process.exit(1);
   }
 
-  const { officers, filePath } = csvResult;
-  console.log(`✅ Loaded ${officers.length} officer records from:\n   ${filePath}`);
+  console.log(`✅ Loaded ${officers.length} officer records from ${filePaths.length} files.`);
 
   // 2. Connect to Postgres
   const client = new Client({
@@ -167,10 +184,11 @@ async function seedOfficers() {
   await client.connect();
   console.log('✅ Connected.');
 
-  // 3. Ensure table exists
+  // 3. Ensure table exists with new department column
   await client.query(`
     CREATE TABLE IF NOT EXISTS tn_administrative_officers (
       id SERIAL PRIMARY KEY,
+      department VARCHAR(100) NOT NULL DEFAULT 'Revenue',
       state VARCHAR(100) NOT NULL DEFAULT 'Tamil Nadu',
       district VARCHAR(100) NOT NULL,
       administrative_level VARCHAR(50) NOT NULL,
@@ -184,8 +202,18 @@ async function seedOfficers() {
       data_status VARCHAR(50) NOT NULL DEFAULT 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+    
+    -- Add department column if it doesn't exist (for existing tables)
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tn_administrative_officers' AND column_name='department') THEN 
+        ALTER TABLE tn_administrative_officers ADD COLUMN department VARCHAR(100) NOT NULL DEFAULT 'Revenue';
+      END IF; 
+    END $$;
+
     CREATE INDEX IF NOT EXISTS idx_tn_officers_district ON tn_administrative_officers (district);
     CREATE INDEX IF NOT EXISTS idx_tn_officers_designation ON tn_administrative_officers (designation);
+    CREATE INDEX IF NOT EXISTS idx_tn_officers_department ON tn_administrative_officers (department);
   `);
 
   // 4. Upsert all rows
@@ -204,14 +232,15 @@ async function seedOfficers() {
 
       const res = await client.query(`
         INSERT INTO tn_administrative_officers
-          (state, district, administrative_level, designation, officer_name,
+          (department, state, district, administrative_level, designation, officer_name,
            official_email, official_mobile, office_landline, source_url, verified_date, data_status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9,
-                NULLIF($10, '')::date,
-                $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+                NULLIF($11, '')::date,
+                $12)
         ON CONFLICT DO NOTHING
         RETURNING id;
       `, [
+        o.department,
         o.state,
         o.district,
         o.administrativeLevel,

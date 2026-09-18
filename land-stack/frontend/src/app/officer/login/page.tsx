@@ -43,7 +43,7 @@ export default function OfficerLoginPage() {
     }
 
     try {
-      const res = await fetch("/api/v1/auth/login", {
+      const res = await fetch("http://localhost:5000/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
@@ -64,14 +64,10 @@ export default function OfficerLoginPage() {
         }, data.token);
         router.push("/officer/dashboard");
       } else {
-        const matched = PRESET_OFFICERS.find(p => p.email.toLowerCase() === email.toLowerCase()) || PRESET_OFFICERS[0];
-        loginOfficer(matched);
-        router.push("/officer/dashboard");
+        setError(data.error || "Invalid credentials provided");
       }
-    } catch {
-      const matched = PRESET_OFFICERS[0];
-      loginOfficer(matched);
-      router.push("/officer/dashboard");
+    } catch (err: any) {
+      setError("Network connection failed. Could not reach authentication server.");
     } finally {
       setLoading(false);
     }
@@ -171,7 +167,7 @@ export default function OfficerLoginPage() {
                 <button
                   key={idx}
                   type="button"
-                  onClick={() => { setEmail(p.email); setPassword("GovPass2026!"); }}
+                  onClick={() => { setEmail(p.email); setPassword("demo1234"); }}
                   className="px-2 py-1 rounded bg-[#F7F9FC] hover:bg-[#F1F5FB] text-[#102A43] hover:text-[#1D5FD1] font-mono font-semibold border border-[#E3E8EF] transition-colors"
                 >
                   {p.role}

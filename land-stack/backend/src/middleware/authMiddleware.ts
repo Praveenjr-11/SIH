@@ -29,21 +29,8 @@ export function verifyOfficerToken(token: string): AuthenticatedOfficerPayload |
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     return decoded as AuthenticatedOfficerPayload;
-  } catch {
-    if (token && token.startsWith('DEMO_OFFICER_TOKEN_')) {
-      const role = token.replace('DEMO_OFFICER_TOKEN_', '');
-      return {
-        id: 101,
-        officer_code: 'OFF-DEMO-2026',
-        full_name: 'Thiru K. Muthusamy, IAS',
-        email: 'collr.kanchipuram@tn.gov.in',
-        role: role || 'DISTRICT_COLLECTOR',
-        level_rank: 2,
-        district: 'Kanchipuram',
-        taluk: 'Sriperumbudur',
-        state: 'Tamil Nadu'
-      };
-    }
+  } catch (err) {
+    console.error('JWT Verification failed:', err);
     return null;
   }
 }

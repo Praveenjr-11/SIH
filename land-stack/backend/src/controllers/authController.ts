@@ -66,40 +66,73 @@ export async function loginOfficer(req: Request, res: Response) {
 
     let officerName = 'Thiru K. Muthusamy, IAS';
     let officerDesignation = 'District Collector & District Magistrate';
-    let officerRole = role || 'DISTRICT_COLLECTOR';
+    let officerRole = role; // Do not default yet
     let rank = 2;
     let badgeNo = 'TN-IAS-2012-042';
 
-    if (assigned.collector && (officerRole === 'DISTRICT_COLLECTOR' || email?.includes('collr'))) {
-      officerName = assigned.collector.officerName;
-      officerDesignation = assigned.collector.designation;
+    if (officerRole === 'DISTRICT_COLLECTOR' || email?.includes('collr') || (!officerRole && !email)) {
+      officerName = assigned.collector?.officerName || 'Thiru K. Muthusamy, IAS';
+      officerDesignation = assigned.collector?.designation || 'District Collector & District Magistrate';
       officerRole = 'DISTRICT_COLLECTOR';
       rank = 2;
       badgeNo = 'TN-IAS-2012-042';
-    } else if (assigned.dro && (officerRole === 'DRO' || email?.includes('dro'))) {
-      officerName = assigned.dro.officerName;
-      officerDesignation = assigned.dro.designation;
+    } else if (officerRole === 'DRO' || email?.includes('dro')) {
+      officerName = assigned.dro?.officerName || 'District Revenue Officer';
+      officerDesignation = assigned.dro?.designation || 'District Revenue Officer';
       officerRole = 'DRO';
       rank = 3;
       badgeNo = 'TN-DRO-2015-108';
-    } else if (assigned.rdo && (officerRole === 'RDO' || email?.includes('rdo'))) {
-      officerName = assigned.rdo.officerName;
-      officerDesignation = assigned.rdo.designation;
+    } else if (officerRole === 'RDO' || email?.includes('rdo')) {
+      officerName = assigned.rdo?.officerName || 'Revenue Divisional Officer';
+      officerDesignation = assigned.rdo?.designation || 'Revenue Divisional Officer';
       officerRole = 'RDO';
       rank = 4;
       badgeNo = 'TN-RDO-2018-074';
-    } else if (assigned.tahsildar && (officerRole === 'TAHSILDAR' || email?.includes('tahsildar'))) {
-      officerName = assigned.tahsildar.officerName;
-      officerDesignation = assigned.tahsildar.designation;
+    } else if (officerRole === 'TAHSILDAR' || email?.includes('tahsildar')) {
+      officerName = assigned.tahsildar?.officerName || 'Taluk Tahsildar';
+      officerDesignation = assigned.tahsildar?.designation || 'Taluk Tahsildar';
       officerRole = 'TAHSILDAR';
       rank = 5;
       badgeNo = 'TN-TAH-2020-312';
-    } else if (assigned.surveyAD && (officerRole === 'SURVEY_OFFICER' || email?.includes('survey'))) {
-      officerName = assigned.surveyAD.officerName;
-      officerDesignation = assigned.surveyAD.designation;
+    } else if (officerRole === 'SURVEY_OFFICER' || email?.includes('survey')) {
+      officerName = assigned.surveyAD?.officerName || 'Er. M. Gunasekar';
+      officerDesignation = assigned.surveyAD?.designation || 'Assistant Director of Survey';
       officerRole = 'SURVEY_OFFICER';
       rank = 9;
       badgeNo = 'TN-SURV-2017-089';
+    } else if (officerRole === 'SUB_REGISTRAR' || email?.includes('sro') || email?.includes('reg')) {
+      officerName = assigned.sro?.officerName || 'Sub-Registrar';
+      officerDesignation = assigned.sro?.designation || 'Sub-Registrar';
+      officerRole = 'SUB_REGISTRAR';
+      rank = 6;
+      badgeNo = 'TN-REG-2019-112';
+    } else if (officerRole === 'TOWN_PLANNER' || email?.includes('dtcp')) {
+      officerName = assigned.dtcpOfficer?.officerName || 'Er. R. Anitha';
+      officerDesignation = assigned.dtcpOfficer?.designation || 'Senior Town Planning Officer';
+      officerRole = 'TOWN_PLANNER';
+      rank = 7;
+      badgeNo = 'TN-DTCP-2016-045';
+    } else if (officerRole === 'EXECUTIVE_ENGINEER_WRD' || email?.includes('wrd') || email?.includes('pwd')) {
+      officerName = assigned.wrdEE?.officerName || 'Executive Engineer (WRD)';
+      officerDesignation = assigned.wrdEE?.designation || 'Executive Engineer (WRD)';
+      officerRole = 'EXECUTIVE_ENGINEER_WRD';
+      rank = 8;
+      badgeNo = 'TN-WRD-2014-088';
+    } else if (officerRole === 'DISTRICT_FOREST_OFFICER' || email?.includes('dfo') || email?.includes('forest')) {
+      officerName = assigned.forestOfficer?.officerName || 'District Forest Officer';
+      officerDesignation = assigned.forestOfficer?.designation || 'District Forest Officer';
+      officerRole = 'DISTRICT_FOREST_OFFICER';
+      rank = 6;
+      badgeNo = 'TN-IFS-2015-021';
+    } else if (officerRole === 'MUNICIPAL_COMMISSIONER' || email?.includes('commr') || email?.includes('bdo') || email?.includes('maws')) {
+      officerName = assigned.mawsOfficer?.officerName || 'Municipal Commissioner / BDO';
+      officerDesignation = assigned.mawsOfficer?.designation || 'Municipal Commissioner / BDO';
+      officerRole = 'MUNICIPAL_COMMISSIONER';
+      rank = 6;
+      badgeNo = 'TN-MAWS-2018-092';
+    } else {
+      officerName = assigned.collector?.officerName || 'Thiru K. Muthusamy, IAS';
+      officerRole = 'DISTRICT_COLLECTOR'; // Fallback if no match
     }
 
     const payload = {

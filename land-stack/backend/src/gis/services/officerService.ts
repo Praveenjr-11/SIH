@@ -1,16 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { queryPostGIS } from '../config/db.js';
 
-// Safe __dirname resolution compatible with both ESM (tsx) and CJS (tsc)
-const getDirname = (): string => {
-  if (typeof __dirname !== 'undefined') return __dirname;
-  return process.cwd();
-};
-const currentDir = getDirname();
-
 export interface AdministrativeOfficer {
+  department: string;
   state: string;
   district: string;
   administrativeLevel: string;
@@ -62,14 +53,15 @@ let cachedOfficers: AdministrativeOfficer[] | null = null;
 async function loadOfficersFromDb(): Promise<AdministrativeOfficer[]> {
   try {
     const res = await queryPostGIS(`
-      SELECT state, district, administrative_level, designation,
+      SELECT department, state, district, administrative_level, designation,
              officer_name, official_email, official_mobile, office_landline,
              source_url, verified_date::text, data_status
       FROM tn_administrative_officers
-      ORDER BY district, administrative_level, designation;
+      ORDER BY department, district, administrative_level, designation;
     `);
     if (!res || res.rows.length === 0) return [];
     return res.rows.map((r: any) => ({
+      department: r.department || 'Revenue',
       state: r.state || 'Tamil Nadu',
       district: r.district || '',
       administrativeLevel: r.administrative_level || 'District',
@@ -90,147 +82,28 @@ async function loadOfficersFromDb(): Promise<AdministrativeOfficer[]> {
 
 /**
  * Load Tamil Nadu administrative officers.
- * Priority: Postgres tn_administrative_officers table → CSV files at repo root.
- *
- * Path resolution strategy:
- *   __dirname = .../backend/src/gis/services/ (or dist/gis/services/ in compiled)
- *   Repo root = 4 directories up from this file's location.
- *   This is FIXED regardless of which directory the process was launched from.
- *   process.cwd() paths are secondary; they break when the server is started
- *   from any directory other than land-stack/backend/.
+ * Now strictly uses the Postgres tn_administrative_officers table.
+ * (CSV fallback has been removed to prevent file-path fragility).
  */
 export async function loadTamilNaduOfficers(): Promise<AdministrativeOfficer[]> {
   if (cachedOfficers) return cachedOfficers;
 
-  // 1. Try Postgres first (fastest, portable, no path issues)
   const dbOfficers = await loadOfficersFromDb();
   if (dbOfficers.length > 0) {
     cachedOfficers = dbOfficers;
     console.log(`[OfficerService] ✅ Loaded ${dbOfficers.length} real Tamil Nadu administrative officers from Postgres.`);
     return cachedOfficers;
   }
-  console.log('[OfficerService] ℹ️  tn_administrative_officers table empty or unavailable — falling back to CSV.');
 
-  // 2. Fallback: CSV files at repo root
-  //    __dirname is fixed to this file's real location at build/runtime.
-  //    4 dirs up: services → gis → src → backend → land-stack → (repo root)
-  //    Actually: services → gis → src → backend → land-stack → SIH (repo root)
-  //    That's 5 dirs up from services. Let's be explicit:
-  //    backend/src/gis/services/officerService.ts → go up 5 dirs to reach SIH/
-  const possiblePaths = [
-    // Primary: module-location relative — always correct regardless of CWD
-    path.join(currentDir, '../../../../../tamil_nadu_verified_administrative_officers.csv'),
-    path.join(currentDir, '../../../../../tamil_nadu_38_district_official_contacts.csv'),
-    // Also try 4 dirs up in case compiled output is flatter (dist/gis/services)
-    path.join(currentDir, '../../../../tamil_nadu_verified_administrative_officers.csv'),
-    path.join(currentDir, '../../../../tamil_nadu_38_district_official_contacts.csv'),
-    // Secondary: CWD-relative (two dirs up from land-stack/backend)
-    path.join(process.cwd(), '../../tamil_nadu_verified_administrative_officers.csv'),
-    path.join(process.cwd(), '../../tamil_nadu_38_district_official_contacts.csv'),
-    // Tertiary: gis-data directory fallback
-    path.join(process.cwd(), 'gis-data', 'tamil_nadu_verified_administrative_officers.csv'),
-    path.join(process.cwd(), 'gis-data', 'tamil_nadu_38_district_official_contacts.csv'),
-  ];
+  // ERROR-level — not warn — so this is never silent
+  console.error(
+    '[OfficerService] ❌ CRITICAL: 0 officers loaded from Postgres table.\n' +
+    '  Zone approval analysis will use generic fallback titles.\n' +
+    '  Fix: Run `npm run gis:seed-officers` to populate the DB table.'
+  );
 
-  const officers: AdministrativeOfficer[] = [];
-  const loadedEmails = new Set<string>();
-  let loadedFromFile: string | null = null;
-
-  for (const filePath of possiblePaths) {
-    if (!fs.existsSync(filePath)) continue;
-
-    const csvContent = fs.readFileSync(filePath, 'utf-8');
-    const lines = csvContent.split('\n').map(l => l.trim()).filter(Boolean);
-    if (lines.length <= 1) continue;
-
-    const header = lines[0].toLowerCase();
-    const isNewFormat = header.includes('official_phone') || header.includes('source_type');
-
-    for (let i = 1; i < lines.length; i++) {
-      const cols = parseCSVLine(lines[i]);
-      if (cols.length < 5) continue;
-
-      let email = '';
-      let designation = '';
-      let district = '';
-      let officerName = '';
-      let phone = '';
-      let landline = '';
-      let sourceUrl = '';
-      let verifiedDate = '2026-09-14';
-      let adminLevel = 'District';
-
-      if (isNewFormat) {
-        // Format: officer_name,designation,department,district,official_phone,official_email,source_url,source_type,verification_status,last_verified
-        officerName = cols[0] || cols[1] || 'Government Official';
-        designation = cols[1] || '';
-        district = cols[3] || '';
-        phone = cols[4] || '';
-        email = cols[5] || '';
-        sourceUrl = cols[6] || 'https://tnrd.tn.gov.in';
-        verifiedDate = cols[9] || '2026-09-14';
-        adminLevel = designation.toLowerCase().includes('collector') ? 'District'
-          : designation.toLowerCase().includes('tahsildar') ? 'Taluk' : 'District';
-      } else {
-        // Format: State,District,Administrative_Level,Designation,Officer_Name,Official_Email,Official_Mobile,Office_Landline,Source_URL,Verified_Date,Data_Status
-        district = cols[1] || '';
-        adminLevel = cols[2] || 'District';
-        designation = cols[3] || '';
-        officerName = cols[4] || cols[3] || 'Government Official';
-        email = cols[5] || '';
-        phone = cols[6] || '';
-        landline = cols[7] || '';
-        sourceUrl = cols[8] || 'https://tn.gov.in';
-        verifiedDate = cols[9] || '2026-09-07';
-      }
-
-      // Dedup: prefer email as unique key. For rows without email (e.g. Taluk Tahsildars
-      // listed by office name/phone rather than personal email), use district+designation+phone
-      // so that multiple Tahsildars in the same district (different taluks) are all retained.
-      const dedupeKey = email
-        ? email.toLowerCase()
-        : `${district}_${designation}_${phone || officerName}`.toLowerCase();
-      if (dedupeKey && loadedEmails.has(dedupeKey)) continue;
-      if (dedupeKey) loadedEmails.add(dedupeKey);
-
-      officers.push({
-        state: 'Tamil Nadu',
-        district: district || 'Tamil Nadu',
-        administrativeLevel: adminLevel,
-        designation: designation,
-        officerName: officerName || designation,
-        officialEmail: email,
-        officialMobile: phone,
-        officeLandline: landline || phone,
-        sourceUrl: sourceUrl,
-        verifiedDate: verifiedDate,
-        dataStatus: 'REAL_OFFICIAL_GOVERNMENT_PUBLISHED',
-      });
-    }
-
-    if (officers.length > 0) {
-      loadedFromFile = filePath;
-      break; // First successful file wins
-    }
-  }
-
-  if (officers.length === 0) {
-    // ERROR-level — not warn — so this is never silent
-    console.error(
-      '[OfficerService] ❌ CRITICAL: 0 officers loaded from all CSV paths and Postgres table.\n' +
-      '  Searched paths:\n' + possiblePaths.map(p => `    - ${p}`).join('\n') + '\n' +
-      '  Zone approval analysis will use generic fallback titles.\n' +
-      '  Fix: Run `npm run gis:seed-officers` to populate the DB table, or ensure the CSV exists at the repo root.'
-    );
-  } else {
-    console.log(
-      `[OfficerService] ✅ Successfully loaded ${officers.length} real Tamil Nadu administrative officers` +
-      ` from CSV: ${loadedFromFile}`
-    );
-  }
-
-  cachedOfficers = officers;
-  return officers;
+  cachedOfficers = [];
+  return cachedOfficers;
 }
 
 /**
@@ -239,26 +112,6 @@ export async function loadTamilNaduOfficers(): Promise<AdministrativeOfficer[]> 
  */
 export function loadTamilNaduOfficersSync(): AdministrativeOfficer[] {
   return cachedOfficers || [];
-}
-
-function parseCSVLine(text: string): string[] {
-  const result: string[] = [];
-  let cur = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c === '"') {
-      inQuotes = !inQuotes;
-    } else if (c === ',' && !inQuotes) {
-      result.push(cur.trim());
-      cur = '';
-    } else {
-      cur += c;
-    }
-  }
-  result.push(cur.trim());
-  return result;
 }
 
 export function getOfficersForLocation(districtName?: string, subdistrictName?: string) {
@@ -303,30 +156,54 @@ export function getOfficersForLocation(districtName?: string, subdistrictName?: 
   }
 
   const collector = districtMatches.find(o =>
-    o.designation.toLowerCase().includes('collector') && !o.designation.toLowerCase().includes('sub-collector')
-  ) || districtMatches.find(o => o.administrativeLevel === 'District') || districtMatches[0];
+    o.department === 'Revenue' && o.designation.toLowerCase().includes('collector') && !o.designation.toLowerCase().includes('sub-collector')
+  ) || districtMatches.find(o => o.administrativeLevel === 'District' && o.department === 'Revenue') || districtMatches.find(o => o.department === 'Revenue') || districtMatches[0];
 
   const dro = districtMatches.find(o =>
-    o.designation.toLowerCase().includes('district revenue officer') || o.designation.includes('DRO')
-  ) || districtMatches.find(o => o.designation.toLowerCase().includes('revenue officer'));
+    o.department === 'Revenue' && (o.designation.toLowerCase().includes('district revenue officer') || o.designation.includes('DRO'))
+  ) || districtMatches.find(o => o.department === 'Revenue' && o.designation.toLowerCase().includes('revenue officer'));
 
   const surveyAD = districtMatches.find(o =>
-    o.designation.toLowerCase().includes('survey') || o.designation.toLowerCase().includes('assistant director')
+    o.department === 'Revenue' && (o.designation.toLowerCase().includes('survey') || o.designation.toLowerCase().includes('assistant director'))
   );
 
   let rdo = districtMatches.find(o =>
-    subNorm && (o.officerName.toLowerCase().includes(subNorm) || o.designation.toLowerCase().includes(subNorm))
+    o.department === 'Revenue' && subNorm && (o.officerName.toLowerCase().includes(subNorm) || o.designation.toLowerCase().includes(subNorm))
   );
   if (!rdo) {
-    rdo = districtMatches.find(o => o.designation.includes('RDO') || o.designation.toLowerCase().includes('sub-collector'));
+    rdo = districtMatches.find(o => o.department === 'Revenue' && (o.designation.includes('RDO') || o.designation.toLowerCase().includes('sub-collector')));
   }
 
   let tahsildar = districtMatches.find(o =>
-    subNorm && (o.officerName.toLowerCase().includes(subNorm) || o.designation.toLowerCase().includes(subNorm))
+    o.department === 'Revenue' && subNorm && (o.officerName.toLowerCase().includes(subNorm) || o.designation.toLowerCase().includes(subNorm))
   );
   if (!tahsildar) {
-    tahsildar = districtMatches.find(o => o.designation.toLowerCase().includes('tahsildar'));
+    tahsildar = districtMatches.find(o => o.department === 'Revenue' && o.designation.toLowerCase().includes('tahsildar'));
   }
+
+  // Registration Department
+  let sro = districtMatches.find(o => 
+    o.department === 'Registration' && subNorm && (o.officerName.toLowerCase().includes(subNorm) || o.designation.toLowerCase().includes(subNorm))
+  );
+  if (!sro) sro = districtMatches.find(o => o.department === 'Registration' && o.designation.toLowerCase().includes('sub-registrar'));
+
+  // WRD Department
+  let wrdEE = districtMatches.find(o => o.department === 'Water Resources' && o.designation.toLowerCase().includes('executive engineer'));
+  if (!wrdEE) wrdEE = allOfficers.find(o => o.department === 'Water Resources' && o.designation.toLowerCase().includes('engineer-in-chief'));
+
+  // DTCP Department
+  let dtcpOfficer = districtMatches.find(o => o.department === 'Town and Country Planning' && (o.designation.toLowerCase().includes('joint director') || o.designation.toLowerCase().includes('deputy director')));
+  if (!dtcpOfficer) dtcpOfficer = allOfficers.find(o => o.department === 'Town and Country Planning' && o.designation.toLowerCase().includes('director'));
+
+  // Forest Department
+  let forestOfficer = districtMatches.find(o => o.department === 'Forest' && o.designation.toLowerCase().includes('district forest officer'));
+  if (!forestOfficer) forestOfficer = allOfficers.find(o => o.department === 'Forest' && o.designation.toLowerCase().includes('principal'));
+
+  // MAWS Department
+  let mawsOfficer = districtMatches.find(o => 
+    o.department === 'Municipal Administration and Water Supply' && subNorm && (o.officerName.toLowerCase().includes(subNorm) || o.designation.toLowerCase().includes(subNorm))
+  );
+  if (!mawsOfficer) mawsOfficer = districtMatches.find(o => o.department === 'Municipal Administration and Water Supply' && (o.designation.toLowerCase().includes('commissioner') || o.designation.toLowerCase().includes('block development')));
 
   return {
     collector: collector || null,
@@ -334,6 +211,11 @@ export function getOfficersForLocation(districtName?: string, subdistrictName?: 
     rdo: rdo || tahsildar || null,
     tahsildar: tahsildar || null,
     surveyAD: surveyAD || null,
+    sro: sro || null,
+    wrdEE: wrdEE || null,
+    dtcpOfficer: dtcpOfficer || null,
+    forestOfficer: forestOfficer || null,
+    mawsOfficer: mawsOfficer || null,
   };
 }
 
@@ -412,66 +294,66 @@ export function generateZoneApprovalAnalysis(zoneMarking: any, adminData: any): 
       stageNumber: 3,
       stageName: 'Property Registration & Encumbrance Ledger Check',
       department: 'Department of Commercial Taxes and Registration (TNREGINET / SRO)',
-      assignedOfficerTitle: 'Sub-Registrar (SRO)',
-      officerName: `Sub-Registrar Office, ${subdistrictName}`,
-      officerContact: tahsildarMobile,
-      officerEmail: `sro.${subdistrictName.toLowerCase().replace(/\s+/g, '')}@tn.gov.in`,
-      officePhone: tahsildarPhone,
+      assignedOfficerTitle: officers?.sro?.designation || 'Sub-Registrar (SRO)',
+      officerName: officers?.sro?.officerName || `Sub-Registrar Office, ${subdistrictName}`,
+      officerContact: officers?.sro?.officialMobile || officers?.sro?.officeLandline || tahsildarMobile,
+      officerEmail: officers?.sro?.officialEmail || `sro.${subdistrictName.toLowerCase().replace(/\s+/g, '')}@tn.gov.in`,
+      officePhone: officers?.sro?.officeLandline || tahsildarPhone,
       status: 'Approved',
       regulatoryRules: '13-Year Encumbrance Certificate (EC) ledger check, stamp duty assessment, and title deed audit.',
-      sourceUrl: 'https://tnreginet.gov.in',
+      sourceUrl: officers?.sro?.sourceUrl || 'https://tnreginet.gov.in',
     },
     {
       stageNumber: 4,
       stageName: 'Master Plan Zoning & Building Clearance',
       department: 'Housing & Urban Development Dept (DTCP / CMDA)',
-      assignedOfficerTitle: 'Revenue Divisional Officer (RDO) / Member Secretary',
-      officerName: rdoName,
-      officerContact: officers?.rdo?.officialMobile || tahsildarMobile,
-      officerEmail: rdoEmail,
-      officePhone: rdoPhone,
+      assignedOfficerTitle: officers?.dtcpOfficer?.designation || 'Revenue Divisional Officer (RDO) / Member Secretary',
+      officerName: officers?.dtcpOfficer?.officerName || rdoName,
+      officerContact: officers?.dtcpOfficer?.officialMobile || officers?.rdo?.officialMobile || tahsildarMobile,
+      officerEmail: officers?.dtcpOfficer?.officialEmail || rdoEmail,
+      officePhone: officers?.dtcpOfficer?.officeLandline || rdoPhone,
       status: approvalCategory === 'Prohibited Zone' ? 'Prohibited' : 'Pending Verification',
       regulatoryRules: `Master Plan Zoning Clearance for ${zoneMarking?.zoneTitle || 'Selected Zone'} (FSI: ${zoneMarking?.fsiLimit || '1.75 FSI'}, Height: ${zoneMarking?.maxBuildingHeight || '18.0m'}).`,
-      sourceUrl: officers?.rdo?.sourceUrl || 'https://tn.gov.in',
+      sourceUrl: officers?.dtcpOfficer?.sourceUrl || officers?.rdo?.sourceUrl || 'https://tn.gov.in',
     },
     {
       stageNumber: 5,
       stageName: 'Urban / Rural Property Tax & Utility Connection Check',
       department: 'MAWS Department (Urban Local Bodies) / Rural Development & Panchayat Raj',
-      assignedOfficerTitle: 'Municipal Commissioner / Panchayat Union BDO',
-      officerName: `Municipal Commissioner / BDO, ${subdistrictName}`,
-      officerContact: collectorMobile,
-      officerEmail: droEmail,
-      officePhone: collectorPhone,
+      assignedOfficerTitle: officers?.mawsOfficer?.designation || 'Municipal Commissioner / Panchayat Union BDO',
+      officerName: officers?.mawsOfficer?.officerName || `Municipal Commissioner / BDO, ${subdistrictName}`,
+      officerContact: officers?.mawsOfficer?.officialMobile || collectorMobile,
+      officerEmail: officers?.mawsOfficer?.officialEmail || droEmail,
+      officePhone: officers?.mawsOfficer?.officeLandline || collectorPhone,
       status: 'Pending Verification',
       regulatoryRules: 'Property tax assessment ledger verification, TNEB power grid NOC, and water/sewerage connection clearance.',
-      sourceUrl: 'https://tnrd.tn.gov.in',
+      sourceUrl: officers?.mawsOfficer?.sourceUrl || 'https://tnrd.tn.gov.in',
     },
     {
       stageNumber: 6,
       stageName: 'Forest Buffer, Wildlife & Environmental NOC Clearance',
       department: 'Environment, Climate Change & Forests Dept (TN Forest Dept & TNPCB)',
-      assignedOfficerTitle: 'District Forest Officer (DFO) / TNPCB Engineer',
-      officerName: `District Forest Officer (${districtName}) / TNPCB Regional Officer`,
-      officerContact: collectorMobile,
-      officerEmail: droEmail,
-      officePhone: collectorPhone,
+      assignedOfficerTitle: officers?.forestOfficer?.designation || 'District Forest Officer (DFO) / TNPCB Engineer',
+      officerName: officers?.forestOfficer?.officerName || `District Forest Officer (${districtName}) / TNPCB Regional Officer`,
+      officerContact: officers?.forestOfficer?.officialMobile || collectorMobile,
+      officerEmail: officers?.forestOfficer?.officialEmail || droEmail,
+      officePhone: officers?.forestOfficer?.officeLandline || collectorPhone,
       status: approvalCategory === 'Prohibited Zone' ? 'Prohibited' : 'Clearance Required',
       regulatoryRules: 'Forest reserve boundary encroachment audit, Forest Rights Act (FRA) compliance, and TNPCB pollution NOC.',
-      sourceUrl: 'https://tnpcb.gov.in',
+      sourceUrl: officers?.forestOfficer?.sourceUrl || 'https://tnpcb.gov.in',
     },
     {
       stageNumber: 7,
       stageName: 'Water Resources & Canal Catchment Easement Clearance',
       department: 'Water Resources Department (PWD-WRD)',
-      assignedOfficerTitle: 'Executive Engineer (WRD)',
-      officerName: `Executive Engineer (WRD), ${districtName} Basin Division`,
-      officerContact: collectorMobile,
-      officerEmail: collectorEmail,
-      officePhone: collectorPhone,
+      assignedOfficerTitle: officers?.wrdEE?.designation || 'Executive Engineer (WRD)',
+      officerName: officers?.wrdEE?.officerName || `Executive Engineer (WRD), ${districtName} Basin Division`,
+      officerContact: officers?.wrdEE?.officialMobile || collectorMobile,
+      officerEmail: officers?.wrdEE?.officialEmail || collectorEmail,
+      officePhone: officers?.wrdEE?.officeLandline || collectorPhone,
       status: approvalCategory === 'Prohibited Zone' ? 'Prohibited' : 'Clearance Required',
       regulatoryRules: 'Water body buffer zone enforcement (water_bodies.buffer_zone_meters), irrigation canal easement & inundation flood risk check.',
-      sourceUrl: 'https://wrd.tn.gov.in',
+      sourceUrl: officers?.wrdEE?.sourceUrl || 'https://wrd.tn.gov.in',
     },
     {
       stageNumber: 8,

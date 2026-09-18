@@ -9,6 +9,8 @@ import GisLayerPanel from "./GisLayerPanel";
 import GisSearch from "./GisSearch";
 import HierarchyNavigator from "./HierarchyNavigator";
 import AILandIntelligencePanel from "./AILandIntelligencePanel";
+import LandDetailsPanel from "./LandDetailsPanel";
+import { fetchOfficialLandDetails, OfficialLandDetailsResponse } from "@/services/gisLandRecordService";
 
 // Dynamic import for Leaflet map component without SSR
 const GisMapInner = dynamic(() => import("./GisMapInner"), {
@@ -39,6 +41,10 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
   const [clickedLocation, setClickedLocation] = useState<ClickedLocation | null>(null);
   const [targetFlyTo, setTargetFlyTo] = useState<{ lat: number; lng: number; zoom?: number } | null>(null);
   const [showAIPanel, setShowAIPanel] = useState(false);
+  const [officialLandData, setOfficialLandData] = useState<OfficialLandDetailsResponse | null>(null);
+  const [loadingOfficialLandData, setLoadingOfficialLandData] = useState(false);
+  const [showLandDetailsPanel, setShowLandDetailsPanel] = useState(false);
+  const [isOfficerMode, setIsOfficerMode] = useState(false);
 
   // Hierarchy drill-down: boundary GeoJSON for highlighting on map
   const [hierarchyBoundary, setHierarchyBoundary] = useState<any>(null);
@@ -72,6 +78,44 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
       document.exitFullscreen().then(() => setIsFullscreen(false)).catch((err) => {
         console.warn("Exit fullscreen error:", err);
       });
+    }
+  };
+
+  const handleLayerFeatureClick = (properties: any, layerName: string) => {
+    // Show standard clicked location panel with the feature properties
+    setClickedLocation({
+      lat: 0, // Fallback if no specific lat/lng
+      lng: 0,
+      displayName: properties.name || properties.district_name || layerName,
+      addressDetails: properties,
+    } as any);
+    setShowAIPanel(false); // Can open AI panel later if wanted
+  };
+
+  const loadLandDetailsForLocation = (loc: ClickedLocation, officerState: boolean) => {
+    setLoadingOfficialLandData(true);
+    fetchOfficialLandDetails(loc.lat, loc.lng, officerState)
+      .then((data) => setOfficialLandData(data))
+      .catch((err) => console.error('Failed to load official land details:', err))
+      .finally(() => setLoadingOfficialLandData(false));
+  };
+
+  const handleLocationClickedOnMap = (loc: ClickedLocation | null) => {
+    setClickedLocation(loc);
+    if (loc) {
+      setShowAIPanel(true);
+      setShowLandDetailsPanel(true);
+      loadLandDetailsForLocation(loc, isOfficerMode);
+    } else {
+      setShowLandDetailsPanel(false);
+      setOfficialLandData(null);
+    }
+  };
+
+  const handleToggleOfficerMode = (newOfficerState: boolean) => {
+    setIsOfficerMode(newOfficerState);
+    if (clickedLocation) {
+      loadLandDetailsForLocation(clickedLocation, newOfficerState);
     }
   };
 
@@ -162,11 +206,23 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
         onClear={() => {
           setClickedLocation(null);
           setShowAIPanel(false);
+          setShowLandDetailsPanel(false);
         }}
       />
 
-      {/* RIGHT AI LAND INTELLIGENCE DRAWER */}
-      {showAIPanel && clickedLocation && (
+      {/* Right Official Government Land Details Drawer */}
+      {showLandDetailsPanel && (
+        <LandDetailsPanel
+          data={officialLandData}
+          loading={loadingOfficialLandData}
+          isOfficer={isOfficerMode}
+          onToggleOfficer={handleToggleOfficerMode}
+          onClose={() => setShowLandDetailsPanel(false)}
+        />
+      )}
+
+      {/* Right AI Land Intelligence Drawer (can be toggled if Land Details closed) */}
+      {showAIPanel && clickedLocation && !showLandDetailsPanel && (
         <AILandIntelligencePanel
           lat={clickedLocation.lat}
           lng={clickedLocation.lng}

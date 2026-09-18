@@ -7,15 +7,8 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
-  // If no officer token cookie is present, set default demo token (District Collector Thiru K. Muthusamy, IAS)
-  // so the officer dashboard and officer routes load immediately without redirection loops
-  if (!officerToken) {
-    response.cookies.set('landstack_officer_token', 'DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR', {
-      path: '/',
-      maxAge: 86400,
-      sameSite: 'lax',
-    });
-  }
+  // We no longer automatically inject a fake token.
+  // The client-side OfficerProtectedGuard component handles redirecting unauthenticated users to the login page.
 
   return response;
 }

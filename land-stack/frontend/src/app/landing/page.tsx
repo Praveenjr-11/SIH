@@ -32,14 +32,28 @@ export default function LandStackLandingPage() {
   const [activeTab, setActiveTab] = useState<"features" | "directory">("features");
   const [districtFilter, setDistrictFilter] = useState("Kanchipuram");
 
-  const handlePresetSelect = (profile: OfficerProfile, idx: number) => {
+  const handlePresetSelect = async (profile: OfficerProfile, idx: number) => {
     setSelectedRoleIndex(idx);
-    loginOfficer(profile);
-    setLoginStatusMsg(`Authenticated as ${profile.name} (${profile.title})`);
+    try {
+      const res = await fetch("http://localhost:5000/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: profile.email, password: "demo1234" })
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        loginOfficer(profile, data.token);
+        setLoginStatusMsg(`Authenticated as ${profile.name} (${profile.title})`);
+      } else {
+        setLoginStatusMsg("Authentication failed: " + (data.error || "Unknown Error"));
+      }
+    } catch {
+      setLoginStatusMsg("Network Error during authentication");
+    }
     setTimeout(() => setLoginStatusMsg(null), 5000);
   };
 
-  const handleCustomLogin = (e: React.FormEvent) => {
+  const handleCustomLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const preset = PRESET_OFFICERS[selectedRoleIndex];
     const updatedProfile: OfficerProfile = {
@@ -47,8 +61,22 @@ export default function LandStackLandingPage() {
       email: customEmail || preset.email,
       badgeNo: customBadge || preset.badgeNo
     };
-    loginOfficer(updatedProfile);
-    setLoginStatusMsg(`Officer session active for ${updatedProfile.name}`);
+    try {
+      const res = await fetch("http://localhost:5000/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: updatedProfile.email, password: customPassword || "demo1234" })
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        loginOfficer(updatedProfile, data.token);
+        setLoginStatusMsg(`Officer session active for ${updatedProfile.name}`);
+      } else {
+        setLoginStatusMsg("Authentication failed: " + (data.error || "Unknown Error"));
+      }
+    } catch {
+      setLoginStatusMsg("Network Error during authentication");
+    }
     setTimeout(() => setLoginStatusMsg(null), 5000);
   };
 
@@ -248,6 +276,17 @@ export default function LandStackLandingPage() {
                   className="w-full px-3 py-2 bg-white border border-[#E3E8EF] rounded text-xs text-[#14213D] focus:outline-none focus:border-[#1D5FD1] font-mono"
                 />
               </div>
+            </div>
+            
+            <div className="mt-3">
+              <label className="block text-[#102A43] font-semibold mb-1 text-xs">Password</label>
+              <input
+                type="password"
+                value={customPassword}
+                onChange={(e) => setCustomPassword(e.target.value)}
+                placeholder="demo1234"
+                className="w-full px-3 py-2 bg-white border border-[#E3E8EF] rounded text-xs text-[#14213D] focus:outline-none focus:border-[#1D5FD1] font-mono"
+              />
             </div>
 
             <button

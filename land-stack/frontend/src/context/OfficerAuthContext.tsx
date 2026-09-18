@@ -98,42 +98,42 @@ const OfficerAuthContext = createContext<OfficerAuthContextType>({
 });
 
 export function OfficerAuthProvider({ children }: { children: React.ReactNode }) {
-  const [officer, setOfficer] = useState<OfficerProfile | null>(PRESET_OFFICERS[0]);
-  const [token, setToken] = useState<string | null>("DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
+  const [officer, setOfficer] = useState<OfficerProfile | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     try {
       const savedProfile = localStorage.getItem("landstack_officer_session");
       const savedToken = localStorage.getItem("landstack_officer_token");
       
-      if (savedProfile) {
+      if (savedProfile && savedToken) {
         setOfficer(JSON.parse(savedProfile));
-        setToken(savedToken || "DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
+        setToken(savedToken);
       } else {
-        setOfficer(PRESET_OFFICERS[0]);
-        setToken("DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
-        localStorage.setItem("landstack_officer_session", JSON.stringify(PRESET_OFFICERS[0]));
-        localStorage.setItem("landstack_officer_token", "DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
-      }
-      if (typeof document !== "undefined") {
-        document.cookie = `landstack_officer_token=${savedToken || "DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR"}; path=/; max-age=86400; SameSite=Lax`;
+        setOfficer(null);
+        setToken(null);
+        localStorage.removeItem("landstack_officer_session");
+        localStorage.removeItem("landstack_officer_token");
       }
     } catch {
-      setOfficer(PRESET_OFFICERS[0]);
-      setToken("DEMO_OFFICER_TOKEN_DISTRICT_COLLECTOR");
+      setOfficer(null);
+      setToken(null);
     }
   }, []);
 
 
   const loginOfficer = (profile: OfficerProfile, newToken?: string | null) => {
-    const effectiveToken = newToken || `DEMO_OFFICER_TOKEN_${profile.role || 'DISTRICT_COLLECTOR'}`;
+    if (!newToken) {
+      console.error("Login attempt failed: No token provided");
+      return;
+    }
     setOfficer(profile);
-    setToken(effectiveToken);
+    setToken(newToken);
     try {
       localStorage.setItem("landstack_officer_session", JSON.stringify(profile));
-      localStorage.setItem("landstack_officer_token", effectiveToken);
+      localStorage.setItem("landstack_officer_token", newToken);
       if (typeof document !== "undefined") {
-        document.cookie = `landstack_officer_token=${effectiveToken}; path=/; max-age=86400; SameSite=Lax`;
+        document.cookie = `landstack_officer_token=${newToken}; path=/; max-age=86400; SameSite=Lax`;
       }
     } catch (e) {
       console.error("Failed to save officer session", e);
