@@ -410,17 +410,28 @@ export default function GisMapInner({
     const details = await reverseGeocode(lat, lng);
     const geojson = details.geojson;
 
-    // Only keep the Nominatim GeoJSON if it is a reasonably tight polygon
-    // (e.g. a named lake, park, building footprint — NOT a whole ward/district).
-    // We check the bounding-box diagonal: if it exceeds ~3km we discard it and
-    // let the zone computation draw a tight indicative rectangle instead.
+    // Only keep the Nominatim GeoJSON if it is a feature polygon (e.g. lake, park, hospital, campus, industrial unit).
+    // Discard large administrative boundaries (state, district, taluk, county, postcode) so we don't draw entire district borders.
     let boundaryGeojson: any = null;
     if (geojson) {
       const isPolyGeom =
         geojson.type === "Polygon" || geojson.type === "MultiPolygon" ||
         geojson.geometry?.type === "Polygon" || geojson.geometry?.type === "MultiPolygon";
 
-      if (isPolyGeom) {
+      const cat = (details.addressDetails?.category || "").toLowerCase();
+      const type = (details.addressDetails?.type || "").toLowerCase();
+      const isAdminBoundary =
+        cat === "boundary" ||
+        type === "administrative" ||
+        type === "state" ||
+        type === "county" ||
+        type === "district" ||
+        type === "postcode" ||
+        type === "country" ||
+        type === "subdistrict" ||
+        type === "state_district";
+
+      if (isPolyGeom && !isAdminBoundary) {
         // Compute bounding box diagonal in degrees and filter oversized polygons
         const coords: number[][] = [];
         const collectCoords = (g: any) => {
@@ -435,8 +446,8 @@ export default function GisMapInner({
           const lats = coords.map(c => c[1]);
           const spanLat = Math.max(...lats) - Math.min(...lats);
           const spanLng = Math.max(...lngs) - Math.min(...lngs);
-          // ~0.027° ≈ 3 km — discard anything wider than that
-          if (spanLat < 0.027 && spanLng < 0.027) {
+          // Allow up to ~0.09° (approx 10km) for real feature boundaries
+          if (spanLat < 0.09 && spanLng < 0.09) {
             boundaryGeojson = geojson;
           }
         }

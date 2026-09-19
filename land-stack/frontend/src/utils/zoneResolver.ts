@@ -69,13 +69,17 @@ export function computeZoneGeometry(
   const dLat = scope.dLat;
   const dLng = scope.dLng;
   const metrics = calculateGeodesicZoneMetrics(lat, lng, dLat, dLng);
-  const polygonCoordinates: [number, number][] = [
-    [lat - dLat, lng - dLng],
-    [lat - dLat, lng + dLng],
-    [lat + dLat, lng + dLng],
-    [lat + dLat, lng - dLng],
-    [lat - dLat, lng - dLng],
-  ];
+
+  // Generate a smooth 16-point circular polygon buffer instead of a rectangle
+  const numPoints = 16;
+  const polygonCoordinates: [number, number][] = [];
+  for (let i = 0; i <= numPoints; i++) {
+    const angle = (i / numPoints) * 2 * Math.PI;
+    const pLat = lat + dLat * Math.sin(angle);
+    const pLng = lng + dLng * Math.cos(angle);
+    polygonCoordinates.push([pLat, pLng]);
+  }
+
   return { dLat, dLng, polygonCoordinates, metrics };
 }
 
