@@ -350,8 +350,113 @@ function classifyZone(fullText: string, category: string, landuse: string): Zone
 }
 
 /**
+ * Direct OSM tag → zone type mapping.
+ * These come from Nominatim's category/type fields which map to OSM primary tags.
+ * This is the most accurate classification — OSM category is ground truth.
+ */
+const OSM_CATEGORY_MAP: Record<string, string> = {
+  // amenity
+  "amenity/hospital": "HEALTHCARE_ZONE",
+  "amenity/clinic": "HEALTHCARE_ZONE",
+  "amenity/doctors": "HEALTHCARE_ZONE",
+  "amenity/pharmacy": "HEALTHCARE_ZONE",
+  "amenity/nursing_home": "HEALTHCARE_ZONE",
+  "amenity/health_post": "HEALTHCARE_ZONE",
+  "amenity/university": "INSTITUTIONAL_ZONE",
+  "amenity/college": "INSTITUTIONAL_ZONE",
+  "amenity/school": "INSTITUTIONAL_ZONE",
+  "amenity/kindergarten": "INSTITUTIONAL_ZONE",
+  "amenity/library": "INSTITUTIONAL_ZONE",
+  "amenity/research_institute": "INSTITUTIONAL_ZONE",
+  "amenity/police": "GOVERNMENT_ZONE",
+  "amenity/fire_station": "GOVERNMENT_ZONE",
+  "amenity/courthouse": "GOVERNMENT_ZONE",
+  "amenity/townhall": "GOVERNMENT_ZONE",
+  "amenity/post_office": "GOVERNMENT_ZONE",
+  "amenity/bank": "COMMERCIAL_HUB",
+  "amenity/restaurant": "COMMERCIAL_HUB",
+  "amenity/cafe": "COMMERCIAL_HUB",
+  "amenity/marketplace": "COMMERCIAL_HUB",
+  "amenity/shopping_mall": "COMMERCIAL_HUB",
+  "amenity/fuel": "COMMERCIAL_HUB",
+  "amenity/bus_station": "TRANSPORT_HUB",
+  "amenity/train_station": "TRANSPORT_HUB",
+  "amenity/ferry_terminal": "TRANSPORT_HUB",
+  "amenity/parking": "TRANSPORT_HUB",
+  "amenity/place_of_worship": "RELIGIOUS_HERITAGE",
+  "amenity/temple": "RELIGIOUS_HERITAGE",
+  "amenity/church": "RELIGIOUS_HERITAGE",
+  "amenity/mosque": "RELIGIOUS_HERITAGE",
+  "amenity/stadium": "INSTITUTIONAL_ZONE",
+  "amenity/sports_centre": "INSTITUTIONAL_ZONE",
+  // landuse
+  "landuse/hospital": "HEALTHCARE_ZONE",
+  "landuse/education": "INSTITUTIONAL_ZONE",
+  "landuse/institutional": "INSTITUTIONAL_ZONE",
+  "landuse/industrial": "MANUFACTURING_HUB",
+  "landuse/quarry": "MANUFACTURING_HUB",
+  "landuse/commercial": "COMMERCIAL_HUB",
+  "landuse/retail": "COMMERCIAL_HUB",
+  "landuse/residential": "LIVING_ZONE",
+  "landuse/farmland": "AGRI_ZONE",
+  "landuse/farmyard": "AGRI_ZONE",
+  "landuse/orchard": "AGRI_ZONE",
+  "landuse/forest": "FOREST_RESERVE",
+  "landuse/nature_reserve": "FOREST_RESERVE",
+  "landuse/recreation_ground": "INSTITUTIONAL_ZONE",
+  "landuse/cemetery": "RELIGIOUS_HERITAGE",
+  // natural
+  "natural/water": "ECO_WATER_RESERVE",
+  "natural/wetland": "ECO_WATER_RESERVE",
+  "natural/wood": "FOREST_RESERVE",
+  "natural/scrub": "FOREST_RESERVE",
+  "natural/beach": "ECO_WATER_RESERVE",
+  "natural/peak": "HILL_ECO_ZONE",
+  "natural/ridge": "HILL_ECO_ZONE",
+  // leisure
+  "leisure/park": "INSTITUTIONAL_ZONE",
+  "leisure/garden": "INSTITUTIONAL_ZONE",
+  "leisure/stadium": "INSTITUTIONAL_ZONE",
+  "leisure/swimming_pool": "INSTITUTIONAL_ZONE",
+  "leisure/sports_centre": "INSTITUTIONAL_ZONE",
+  "leisure/golf_course": "INSTITUTIONAL_ZONE",
+  // railway / aeroway
+  "railway/station": "TRANSPORT_HUB",
+  "railway/halt": "TRANSPORT_HUB",
+  "aeroway/aerodrome": "TRANSPORT_HUB",
+  "aeroway/terminal": "TRANSPORT_HUB",
+  // tourism
+  "tourism/museum": "RELIGIOUS_HERITAGE",
+  "tourism/attraction": "RELIGIOUS_HERITAGE",
+  "tourism/hotel": "COMMERCIAL_HUB",
+  // building
+  "building/hospital": "HEALTHCARE_ZONE",
+  "building/school": "INSTITUTIONAL_ZONE",
+  "building/university": "INSTITUTIONAL_ZONE",
+  "building/government": "GOVERNMENT_ZONE",
+  "building/industrial": "MANUFACTURING_HUB",
+  "building/commercial": "COMMERCIAL_HUB",
+  "building/retail": "COMMERCIAL_HUB",
+  "building/house": "LIVING_ZONE",
+  "building/apartments": "LIVING_ZONE",
+  "building/residential": "LIVING_ZONE",
+  // place
+  "place/village": "LIVING_ZONE",
+  "place/hamlet": "LIVING_ZONE",
+  "place/suburb": "LIVING_ZONE",
+  "place/neighbourhood": "LIVING_ZONE",
+  "place/town": "LIVING_ZONE",
+  "place/city": "COMMERCIAL_HUB",
+};
+
+/**
  * Resolves the authentic Master Plan Zone Regulation & Dynamic Spatial Zone Scope
  * for any (lat, lng) point in India given reverse-geocoded place details.
+ *
+ * Priority:
+ * 1. Direct OSM category/type mapping (most accurate — ground truth from OSM tags)
+ * 2. Keyword scan on full display name + address fields
+ * 3. AGRI_ZONE fallback
  */
 export function resolveMasterPlanZone(
   lat: number,
@@ -367,12 +472,37 @@ export function resolveMasterPlanZone(
   const subdistrict = (addressDetails?.subdistrict || addressDetails?.suburb || addressDetails?.town || "").toLowerCase();
   const district = (addressDetails?.district || addressDetails?.county || addressDetails?.state_district || addressDetails?.city || "").toLowerCase();
   const state = (addressDetails?.state || "").toLowerCase();
-  const category = (addressDetails?.category || addressDetails?.type || "").toLowerCase();
+  const category = (addressDetails?.category || "").toLowerCase();
+  const osmType = (addressDetails?.type || "").toLowerCase();
   const landuse = (addressDetails?.landuse || "").toLowerCase();
 
-  const fullText = `${name} ${village} ${subdistrict} ${district} ${state} ${category} ${landuse}`;
+  const fullText = `${name} ${village} ${subdistrict} ${district} ${state} ${category} ${osmType} ${landuse}`;
 
-  const classification = classifyZone(fullText, category, landuse);
+  // ── Priority 1: Direct OSM category/type mapping ──────────────
+  // Try "category/type" key first (most specific), then "category" alone
+  const osmKey = category && osmType ? `${category}/${osmType}` : "";
+  const osmCategoryOnly = category ? `${category}/${osmType}` : "";
+  let zoneTypeFromOSM: string | null = null;
+
+  if (osmKey && OSM_CATEGORY_MAP[osmKey]) {
+    zoneTypeFromOSM = OSM_CATEGORY_MAP[osmKey];
+  } else if (category) {
+    // Try to match just by category prefix
+    const catMatch = Object.keys(OSM_CATEGORY_MAP).find(
+      (k) => k.startsWith(category + "/") && OSM_CATEGORY_MAP[k]
+    );
+    if (catMatch) zoneTypeFromOSM = OSM_CATEGORY_MAP[catMatch];
+  }
+  if (landuse && !zoneTypeFromOSM) {
+    const luKey = `landuse/${landuse}`;
+    if (OSM_CATEGORY_MAP[luKey]) zoneTypeFromOSM = OSM_CATEGORY_MAP[luKey];
+  }
+
+  // ── Priority 2: Keyword classification ───────────────────────
+  const classification = zoneTypeFromOSM
+    ? getZoneConfigForType(zoneTypeFromOSM)
+    : classifyZone(fullText, category, landuse);
+
   const { dLat, dLng, polygonCoordinates, metrics } = computeZoneGeometry(safeLat, safeLng, classification.zoneType, addressDetails);
 
   return {
@@ -383,6 +513,40 @@ export function resolveMasterPlanZone(
     metrics,
   };
 }
+
+/**
+ * Get a ZoneClassification config object for a known zoneType string.
+ * Used when OSM category gives us the zone type directly.
+ */
+function getZoneConfigForType(zoneType: string): ZoneClassification {
+  switch (zoneType) {
+    case "HEALTHCARE_ZONE":
+      return { zoneType, zoneTitle: "🏥 HEALTHCARE & MEDICAL ZONE", color: "#ec4899", fillColor: "#f472b6", permissibleUse: "Multi-Specialty Hospitals, Medical Research Centers, Clinics & Diagnostics", fsiLimit: "2.25 FSI", maxBuildingHeight: "30.0 Meters (G+9)", constructionPolicy: "Public Utility & Health Services Emergency Priority Zone" };
+    case "INSTITUTIONAL_ZONE":
+      return { zoneType, zoneTitle: "🏫 INSTITUTIONAL & EDUCATIONAL ZONE", color: "#f59e0b", fillColor: "#fbbf24", permissibleUse: "Universities, Engineering Colleges, Schools, Hostels & Research Labs", fsiLimit: "2.00 FSI", maxBuildingHeight: "24.0 Meters (G+7)", constructionPolicy: "Educational Master Plan Compliant — Wide Access Road Mandatory" };
+    case "GOVERNMENT_ZONE":
+      return { zoneType, zoneTitle: "🏛️ GOVERNMENT & CIVIC ZONE", color: "#7c3aed", fillColor: "#a78bfa", permissibleUse: "Government Offices, Civic Administration, Courts, Revenue & Regulatory Bodies", fsiLimit: "2.00 FSI (Govt Special)", maxBuildingHeight: "30.0 Meters (G+9)", constructionPolicy: "State / Central Government Authorized Construction Zone" };
+    case "TRANSPORT_HUB":
+      return { zoneType, zoneTitle: "🚉 TRANSPORT & INFRASTRUCTURE HUB", color: "#0891b2", fillColor: "#22d3ee", permissibleUse: "Railways, Airports, Bus Terminals, National Highways & Freight Corridors", fsiLimit: "2.00 FSI (Infrastructure)", maxBuildingHeight: "24.0 Meters (Transit Oriented)", constructionPolicy: "National Infrastructure Pipeline — Central / State Transit Authority Zone" };
+    case "RELIGIOUS_HERITAGE":
+      return { zoneType, zoneTitle: "🛕 RELIGIOUS & HERITAGE ZONE", color: "#dc2626", fillColor: "#f87171", permissibleUse: "Religious Institutions, Heritage Conservation, Pilgrimage Tourism", fsiLimit: "1.00 FSI (Heritage Restricted)", maxBuildingHeight: "12.0 Meters (G+2)", constructionPolicy: "ASI / State Heritage Conservation Authority Restrictions Apply" };
+    case "ECO_WATER_RESERVE":
+      return { zoneType, zoneTitle: "🌊 ECO WATER CATCHMENT RESERVE", color: "#0284c7", fillColor: "#38bdf8", permissibleUse: "Water Catchment Protection & Natural Water Buffer Zone", fsiLimit: "0.00 FSI (Zero Construction)", maxBuildingHeight: "0.0 Meters (Prohibited)", constructionPolicy: "CRZ / Wetland Protection Zone — Zero Construction Permitted" };
+    case "FOREST_RESERVE":
+      return { zoneType, zoneTitle: "🌲 PROTECTED FOREST / GREEN RESERVE", color: "#166534", fillColor: "#22c55e", permissibleUse: "Forest Conservation, Wildlife Habitat, Eco-Tourism", fsiLimit: "0.00 FSI (No Construction)", maxBuildingHeight: "0.0 Meters (Prohibited)", constructionPolicy: "Forest Conservation Act — No Construction Permitted" };
+    case "HILL_ECO_ZONE":
+      return { zoneType, zoneTitle: "🏔️ HILL STATION / ECO SENSITIVE ZONE", color: "#78716c", fillColor: "#a8a29e", permissibleUse: "Eco-Tourism, Limited Hill Residential, Agro-Forestry", fsiLimit: "0.50 FSI (Eco Restrictions)", maxBuildingHeight: "9.0 Meters (G+1)", constructionPolicy: "Hill Area Conservation Authority (HACA) License Mandatory" };
+    case "MANUFACTURING_HUB":
+      return { zoneType, zoneTitle: "🏭 MANUFACTURING / INDUSTRIAL HUB", color: "#8b5cf6", fillColor: "#a855f7", permissibleUse: "Factories, Automobile Assembly, Heavy Machinery & Logistics Hubs", fsiLimit: "2.50 FSI (Industrial Special Bonus)", maxBuildingHeight: "30.0 Meters (Heavy Sheds)", constructionPolicy: "SIPCOT / Industrial Master Plan Approved Foundation Zone" };
+    case "COMMERCIAL_HUB":
+      return { zoneType, zoneTitle: "🏢 COMMERCIAL BUSINESS ZONE", color: "#2563eb", fillColor: "#3b82f6", permissibleUse: "Corporate Offices, Financial Hubs, Malls, Retail Outlets & Hotels", fsiLimit: "2.50 FSI", maxBuildingHeight: "36.0 Meters (High Rise Commercial)", constructionPolicy: "Commercial Central Business District Master Plan Zone" };
+    case "LIVING_ZONE":
+      return { zoneType, zoneTitle: "🏡 RESIDENTIAL LIVING ZONE", color: "#06b6d4", fillColor: "#22d3ee", permissibleUse: "Housing Colonies, Residential Apartments, Parks & Local Shops", fsiLimit: "1.75 FSI", maxBuildingHeight: "18.0 Meters (G+5)", constructionPolicy: "DTCP / Municipal Building Permission Compliant Zone" };
+    default:
+      return { zoneType: "AGRI_ZONE", zoneTitle: "🌾 AGRICULTURAL GREEN BELT", color: "#059669", fillColor: "#10b981", permissibleUse: "Organic Farming, Paddy & Crop Cultivation, Agro Storage Sheds", fsiLimit: "0.25 FSI (Farm House Only)", maxBuildingHeight: "9.0 Meters (G+1)", constructionPolicy: "Heavy Commercial & Industrial Construction Strictly Prohibited" };
+  }
+}
+
 
 /**
  * Resolve zone geometry from a backend zone type.

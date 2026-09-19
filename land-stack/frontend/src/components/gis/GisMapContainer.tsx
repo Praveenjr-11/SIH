@@ -94,7 +94,7 @@ export default function GisMapContainer({ parcels = [], onSelectParcel }: GisMap
 
   const loadLandDetailsForLocation = (loc: ClickedLocation, officerState: boolean) => {
     setLoadingOfficialLandData(true);
-    fetchOfficialLandDetails(loc.lat, loc.lng, officerState)
+    fetchOfficialLandDetails(loc.lat, loc.lng, officerState, loc.addressDetails as Record<string, any>)
       .then((data) => setOfficialLandData(data))
       .catch((err) => console.error('Failed to load official land details:', err))
       .finally(() => setLoadingOfficialLandData(false));

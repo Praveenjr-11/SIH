@@ -41,9 +41,18 @@ export interface OfficialLandDetailsResponse {
 }
 
 /**
- * Fetch official government land details for a given lat/lng coordinate
+ * Fetch official government land details for a given lat/lng coordinate.
+ * @param lat Latitude of clicked location
+ * @param lng Longitude of clicked location
+ * @param isOfficer Whether officer authentication token should be sent
+ * @param addressDetails Optional Nominatim address details for fallback generation
  */
-export async function fetchOfficialLandDetails(lat: number, lng: number, isOfficer: boolean = false): Promise<OfficialLandDetailsResponse> {
+export async function fetchOfficialLandDetails(
+  lat: number,
+  lng: number,
+  isOfficer: boolean = false,
+  addressDetails?: Record<string, any>
+): Promise<OfficialLandDetailsResponse> {
   try {
     const headers: Record<string, string> = {
       'Accept': 'application/json'
@@ -61,46 +70,48 @@ export async function fetchOfficialLandDetails(lat: number, lng: number, isOffic
     const data = await res.json();
     return data;
   } catch (err) {
-    console.warn('Backend connection issue, generating normalized fallback response for pilot:', err);
+    console.warn('Backend not available, generating normalized fallback from Nominatim data:', err);
     const currentDate = new Date().toISOString().split('T')[0];
-    const acres = (54450 / 43560).toFixed(2);
-    
-    // Fixed mock data from the pilot screenshot (Kuniamuthur, Coimbatore)
-    const isMockTarget = Math.abs(lat - 10.9371) < 0.05;
-    
-    const district = 'Coimbatore / கோயம்புத்தூர்';
-    const taluk = isMockTarget ? 'Perur / பேரூர்' : 'Pollachi';
-    const village = isMockTarget ? 'Kuniamuthur / குனியமுத்தூர்' : 'Pollachi Town';
-    const sNo = isMockTarget ? '24' : Math.abs(Math.floor(lat * 1000) % 250 + 1).toString();
-    const subDiv = isMockTarget ? '2' : '1A';
-    const ulpin = isMockTarget ? '72T8R6D9TTDEH0' : `TN-33-COI-${sNo.padStart(3, '0')}-${subDiv}`;
+
+    // Use real address details from Nominatim if available
+    const addr = addressDetails || {};
+    const districtName = addr.district || addr.county || addr.state_district || addr.city || 'Unknown District';
+    const talukName = addr.subdistrict || addr.suburb || addr.town || 'Unknown Taluk';
+    const villageName = addr.village || addr.hamlet || addr.neighbourhood || addr.suburb || 'Unknown Village';
+    const stateName = addr.state || 'India';
+    const pincode = addr.pincode || addr.postcode || '';
+
+    // Generate a reproducible but location-derived survey number from coordinates
+    const sNo = Math.abs(Math.floor((lat * 1000 + lng * 100) % 500) + 1).toString();
+    const subDiv = Math.abs(Math.floor(lat * 10) % 5 + 1).toString() + 'A';
+    const stateCode = stateName.toLowerCase().includes('tamil') ? 'TN' :
+      stateName.toLowerCase().includes('kerala') ? 'KL' :
+      stateName.toLowerCase().includes('karnataka') ? 'KA' :
+      stateName.toLowerCase().includes('andhra') ? 'AP' :
+      stateName.toLowerCase().includes('telangana') ? 'TS' :
+      stateName.toLowerCase().includes('maharashtra') ? 'MH' : 'IN';
+    const ulpin = `${stateCode}-${Math.abs(Math.floor(lat)).toString().padStart(2, '0')}-${Math.abs(Math.floor(lng)).toString().padStart(3, '0')}-${sNo.padStart(3, '0')}-${subDiv}`;
 
     return {
       parcel: {
         parcel_id: ulpin,
-        district: district,
-        taluk: taluk,
-        village: village,
+        district: districtName,
+        taluk: talukName,
+        village: villageName,
         survey_number: sNo,
         subdivision_number: subDiv
       },
       land: {
-        land_type: 'Wet (Nanjai)',
-        extent: '1.20 Acres (120 Cents / 52,272 sq.ft)',
-        tax: '₹ 2,160 / annum',
-        patta_number: `PATTA-COI-${sNo}/${subDiv}`
+        land_type: 'Survey Land',
+        extent: `${((lat * lng) % 2 + 1).toFixed(2)} Acres`,
+        tax: '— (Connect official API)',
+        patta_number: `PATTA-${stateCode}-${sNo}/${subDiv}`
       },
       ownership: isOfficer ? {
-        status: 'AVAILABLE',
-        status_label: 'Official API Connected',
-        message: 'Authorized record retrieved from Tamil Nilam / A-Register database (Nodal Officer Session)',
-        records: [
-          {
-            owner_name: isMockTarget ? 'வி.எல்.பி.அறக்கட்டளை' : 'M. Ramanathan & Co-Owners',
-            relation_type: isMockTarget ? '' : 'Son of',
-            relation_name: isMockTarget ? '...' : 'K. Murugan'
-          }
-        ]
+        status: 'NOT_CONNECTED',
+        status_label: 'Official API Not Connected',
+        message: 'Backend API unavailable — please connect the TNGIS/Tamil Nilam official data source',
+        records: []
       } : {
         status: 'NOT_CONNECTED',
         status_label: 'Official Data Source Not Connected',
@@ -110,12 +121,13 @@ export async function fetchOfficialLandDetails(lat: number, lng: number, isOffic
       gis: {
         latitude: lat,
         longitude: lng,
-        area_sqft: 54450
+        area_sqft: Math.abs(Math.floor((lat * lng * 1000) % 50000) + 5000)
       },
       sources: [
-        { name: 'TNGIS Spatial Layer', type: 'GIS_SPATIAL', status: 'CONNECTED', verified_at: currentDate },
-        { name: 'Tamil Nilam / A-Register', type: 'LAND_RECORD', status: isOfficer ? 'CONNECTED' : 'NOT_CONNECTED', verified_at: currentDate }
+        { name: 'TNGIS Spatial Layer', type: 'GIS_SPATIAL', status: 'NOT_CONNECTED', verified_at: currentDate },
+        { name: 'Tamil Nilam / A-Register', type: 'LAND_RECORD', status: 'NOT_CONNECTED', verified_at: currentDate }
       ]
     };
   }
 }
+

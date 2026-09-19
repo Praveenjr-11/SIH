@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { resolveMasterPlanZone, resolveZoneWithBackendType, computeZoneGeometry, MasterPlanZoneConfig } from "@/utils/zoneResolver";
+import { resolveMasterPlanZone, resolveZoneWithBackendType, MasterPlanZoneConfig } from "@/utils/zoneResolver";
 import { ClickedLocation } from "@/types/gis";
-import { fetchGisLocation, fetchLocationAnalysis } from "@/services/gisAnalysisService";
-import { MapPin, Copy, Check, X, Compass, Loader2, Building2, Layers, ShieldCheck, ChevronUp, ChevronDown } from "lucide-react";
+import { fetchLocationAnalysis } from "@/services/gisAnalysisService";
+import {
+  MapPin, Copy, Check, X, Compass, Loader2, Building2, Layers,
+  ShieldCheck, ChevronUp, ChevronDown, Globe, Home, Droplets,
+  Mountain, TreePine, AlertTriangle, Activity
+} from "lucide-react";
 
 interface LocationInspectorProps {
   location: ClickedLocation | null;
@@ -13,30 +17,29 @@ interface LocationInspectorProps {
 
 export default function LocationInspector({ location, onClear }: LocationInspectorProps) {
   const [copied, setCopied] = useState(false);
-  const [gisLocationData, setGisLocationData] = useState<any>(null);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     if (!location) {
-      setGisLocationData(null);
       setAnalysisData(null);
       return;
     }
 
-    async function loadGisLocation() {
+    async function loadAnalysis() {
       setLoading(true);
-      const [adminData, analysis] = await Promise.all([
-        fetchGisLocation(location!.lat, location!.lng),
-        fetchLocationAnalysis(location!.lat, location!.lng),
-      ]);
-      setGisLocationData(adminData);
-      setAnalysisData(analysis);
-      setLoading(false);
+      try {
+        const analysis = await fetchLocationAnalysis(location!.lat, location!.lng);
+        setAnalysisData(analysis);
+      } catch (err) {
+        console.warn("LocationInspector: analysis fetch failed", err);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    loadGisLocation();
+    loadAnalysis();
   }, [location?.lat, location?.lng]);
 
   if (!location) return null;
@@ -48,8 +51,7 @@ export default function LocationInspector({ location, onClear }: LocationInspect
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const admin = gisLocationData;
-
+  // ── Zone Resolution ────────────────────────────────────────────
   const frontendZone = resolveMasterPlanZone(
     location.lat,
     location.lng,
@@ -58,198 +60,251 @@ export default function LocationInspector({ location, onClear }: LocationInspect
   );
 
   let zoning: MasterPlanZoneConfig = frontendZone;
-  if (analysisData?.zoningMarking?.zoneType) {
+  const backendZoneType = analysisData?.zoningMarking?.zoneType;
+  const isFrontendGeneric = frontendZone.zoneType === "AGRI_ZONE";
+  if (backendZoneType && backendZoneType !== "AGRI_ZONE" && isFrontendGeneric) {
     zoning = resolveZoneWithBackendType(
       location.lat,
       location.lng,
-      analysisData.zoningMarking.zoneType,
+      backendZoneType,
       analysisData.zoningMarking,
       location.addressDetails
     );
   }
 
-  const zoneMetrics = zoning.metrics;
+  // ── Real data from backend analysis ───────────────────────────
+  const admin = analysisData?.administration;
+  const landuse = analysisData?.landuse;
+  const water = analysisData?.water;
+  const terrain = analysisData?.terrain;
+  const risk = analysisData?.risk;
+  const roads = analysisData?.roads;
+
+  // Build readable admin hierarchy
+  const village = admin?.village || location.addressDetails?.village || location.addressDetails?.neighbourhood || null;
+  const taluk = admin?.subdistrict || location.addressDetails?.subdistrict || location.addressDetails?.suburb || null;
+  const district = admin?.district || location.addressDetails?.district || location.addressDetails?.county || null;
+  const state = admin?.state || location.addressDetails?.state || "India";
+  const pincode = admin?.pincode || location.addressDetails?.pincode || location.addressDetails?.postcode || null;
+
+  // OSM category for zone indicator
+  const osmCategory = (location.addressDetails?.category || "").toLowerCase();
+  const osmType = (location.addressDetails?.type || "").toLowerCase();
 
   return (
-    <div className="absolute bottom-3 left-3 sm:left-4 z-30 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] bg-[#FFFFFF] border border-[#E3E8EF] p-3.5 rounded-md shadow-lg space-y-3 transition-all text-[#14213D] max-h-[calc(100vh-8rem)] flex flex-col font-sans">
-      {/* Top Header */}
-      <div className="flex items-center justify-between shrink-0 border-b border-[#E3E8EF] pb-2">
+    <div className="absolute bottom-3 left-3 sm:left-4 z-30 w-80 sm:w-96 max-w-[calc(100vw-1.5rem)] bg-white border border-slate-200 rounded-xl shadow-xl flex flex-col font-sans max-h-[calc(100vh-8rem)]" style={{ backdropFilter: "blur(8px)" }}>
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-100 shrink-0">
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded bg-[#F1F5FB] border border-[#E3E8EF] flex items-center justify-center text-[#1D5FD1]">
-            <Compass className="w-3.5 h-3.5" />
+          <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center">
+            <Compass className="w-4 h-4 text-blue-600" />
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#102A43]">SPATIAL POINT INSPECTOR</span>
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">SPATIAL POINT INSPECTOR</span>
+            <span className="text-[11px] font-semibold text-slate-800 leading-none">
+              {village || district || "Location"}
+            </span>
+          </div>
         </div>
         <div className="flex items-center space-x-1">
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 rounded text-[#53627A] hover:text-[#102A43] hover:bg-[#F7F9FC] transition-colors"
-            title={isCollapsed ? "Expand Inspector" : "Collapse Inspector"}
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            title={isCollapsed ? "Expand" : "Collapse"}
           >
-            {isCollapsed ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isCollapsed ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
           <button
             onClick={onClear}
-            className="p-1 rounded text-[#53627A] hover:text-[#102A43] hover:bg-[#F7F9FC] transition-colors"
-            title="Close Inspector"
+            className="p-1 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
       {!isCollapsed && (
-        <div className="space-y-3 overflow-y-auto pr-1">
-          {/* Coordinates Box */}
-          <div className="bg-[#F7F9FC] p-2.5 rounded border border-[#E3E8EF] flex items-center justify-between">
+        <div className="overflow-y-auto flex-1 p-3 space-y-3">
+
+          {/* Coordinates */}
+          <div className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
             <div>
-              <span className="text-[10px] text-[#53627A] font-bold uppercase block">GIS Point Coordinates</span>
-              <div className="font-mono text-xs font-bold text-[#102A43] mt-0.5">
+              <span className="text-[9px] text-slate-400 font-bold uppercase block">GIS Coordinates</span>
+              <span className="font-mono text-xs font-bold text-slate-800">
                 {location.lat.toFixed(6)}° N, {location.lng.toFixed(6)}° E
-              </div>
+              </span>
             </div>
             <button
               onClick={handleCopy}
-              className="flex items-center space-x-1 text-xs font-semibold px-2 py-1 rounded bg-white border border-[#E3E8EF] text-[#102A43] hover:bg-[#F7F9FC] transition-colors shadow-2xs"
+              className="flex items-center space-x-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
             >
               {copied ? (
-                <>
-                  <Check className="w-3.5 h-3.5 text-[#16845B]" />
-                  <span className="text-[#16845B]">Copied</span>
-                </>
+                <><Check className="w-3 h-3 text-green-500" /><span className="text-green-600">Copied</span></>
               ) : (
-                <>
-                  <Copy className="w-3.5 h-3.5 text-[#53627A]" />
-                  <span>Copy</span>
-                </>
+                <><Copy className="w-3 h-3" /><span>Copy</span></>
               )}
             </button>
           </div>
 
-          {/* Master Plan Zone Regulation */}
-          <div className="p-3 rounded bg-white border border-[#E3E8EF] space-y-2">
+          {/* Zone */}
+          <div className="rounded-xl border p-3 space-y-2" style={{ borderColor: zoning.color + "40", background: zoning.fillColor + "10" }}>
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#53627A] uppercase tracking-wider flex items-center space-x-1">
-                <Building2 className="w-3.5 h-3.5 text-[#1D5FD1]" />
-                <span>Master Plan Zone Regulation</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                <Building2 className="w-3 h-3" />
+                <span>Master Plan Zone</span>
               </span>
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] uppercase">
+              <span
+                className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white"
+                style={{ backgroundColor: zoning.color }}
+              >
                 {zoning.zoneType?.replace(/_/g, " ")}
               </span>
             </div>
-
-            <div className="space-y-1">
-              <h4 className="text-xs font-bold text-[#102A43]">
-                {zoning.zoneTitle}
-              </h4>
-              <p className="text-[11px] text-[#53627A] font-normal leading-tight">
-                {zoning.permissibleUse}
-              </p>
+            <div>
+              <h4 className="text-xs font-bold" style={{ color: zoning.color }}>{zoning.zoneTitle}</h4>
+              <p className="text-[10px] text-slate-500 leading-snug mt-0.5">{zoning.permissibleUse}</p>
             </div>
-
-            {/* Zone Scope & Area Metrics */}
-            <div className="p-2 rounded bg-[#F7F9FC] border border-[#E3E8EF] space-y-1 font-mono text-[10px] text-[#14213D]">
-              <div className="flex items-center justify-between text-[#102A43] font-bold border-b border-[#E3E8EF] pb-1">
-                <span>SPATIAL ZONE BUFFER</span>
-                <span className="text-[#16845B] font-bold">{zoneMetrics.perimeterKm} km ({zoneMetrics.perimeterMeters.toLocaleString()} m)</span>
+            <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+              <div className="bg-white rounded-lg px-2 py-1.5 border border-slate-100">
+                <span className="text-slate-400 block text-[9px]">Permissible FSI</span>
+                <span className="font-bold text-green-700">{zoning.fsiLimit}</span>
               </div>
-              <div className="flex justify-between items-center text-[#53627A]">
-                <span>Enclosed Zone Area:</span>
-                <span className="font-bold text-[#102A43]">{zoneMetrics.areaAcres} Acres ({zoneMetrics.areaHectares} Ha)</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5 pt-0.5 text-[10px] font-mono">
-              <div className="bg-[#F7F9FC] p-1.5 rounded border border-[#E3E8EF]">
-                <span className="text-[#53627A] block text-[9px]">Permissible FSI</span>
-                <span className="text-[#16845B] font-bold">{zoning.fsiLimit}</span>
-              </div>
-              <div className="bg-[#F7F9FC] p-1.5 rounded border border-[#E3E8EF]">
-                <span className="text-[#53627A] block text-[9px]">Max Height</span>
-                <span className="text-[#E99A16] font-bold">{zoning.maxBuildingHeight}</span>
+              <div className="bg-white rounded-lg px-2 py-1.5 border border-slate-100">
+                <span className="text-slate-400 block text-[9px]">Max Height</span>
+                <span className="font-bold text-amber-700">{zoning.maxBuildingHeight}</span>
               </div>
             </div>
           </div>
 
-          {/* Cadastral Location & Land Record */}
-          <div className="p-3 rounded bg-[#EDF7F2] border border-[#16845B]/30 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#16845B] uppercase tracking-wider flex items-center space-x-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#16845B]" />
-                <span>Cadastral Location & Land Record</span>
+          {/* Administrative Hierarchy — Real Data */}
+          <div className="rounded-xl border border-slate-200 p-3 space-y-2">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1">
+                <Globe className="w-3 h-3 text-blue-500" />
+                <span>Administrative Location</span>
               </span>
-              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-white text-[#16845B] border border-[#16845B]/30">
-                {analysisData?.cadastralSurvey?.surveyNumber || `S.No ${Math.floor((Math.abs(location.lat) * 1000) % 250) + 1}/1A`}
-              </span>
+              {loading && <Loader2 className="w-3 h-3 animate-spin text-blue-400" />}
             </div>
 
-            <div className="space-y-1 text-xs">
-              <div className="flex flex-col space-y-0.5 font-mono text-[10px] text-[#14213D] bg-white p-2 rounded border border-[#E3E8EF]">
-                <div className="flex justify-between items-center">
-                  <span className="text-[#53627A]">14-Digit ULPIN:</span>
-                  <strong className="text-[#16845B] font-bold">{analysisData?.cadastralSurvey?.ulpin || `IN-TN-33-${Math.floor(location.lat * 100)}${Math.floor(location.lng * 100)}`}</strong>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[#53627A]">Certified Patta:</span>
-                  <strong className="text-[#102A43]">{analysisData?.cadastralSurvey?.pattaNumber || `PATTA-2026-${Math.floor(location.lat * 1000)}`}</strong>
-                </div>
-              </div>
-
-              <div className="font-semibold text-[#102A43] pt-0.5 flex justify-between items-center text-[11px]">
-                <span className="text-[#53627A]">Landowner:</span>
-                <span className="font-bold">{analysisData?.cadastralSurvey?.ownerName || "Thiru K. Ramaswamy & Family"}</span>
-              </div>
-
-              <div className="text-[10px] text-[#53627A] flex items-center justify-between font-mono bg-white p-1.5 rounded border border-[#E3E8EF]">
-                <span>Area: {analysisData?.cadastralSurvey?.areaAcres || "2.55"} Acres</span>
-                <span className="text-[#16845B] font-bold">{analysisData?.propertyTax?.guidelineValueSqFt || "₹ 3,450 / sq ft"}</span>
-              </div>
-            </div>
-
-            <div className="pt-1 border-t border-[#16845B]/20 flex items-center justify-between text-[10px]">
-              <span className="text-[#53627A] truncate max-w-[200px]">Doc: {analysisData?.cadastralSurvey?.registrationDocNo || "Doc No. 1420/2024 (SRO)"}</span>
-              <span className="text-[#16845B] font-bold">✓ Clear Title</span>
-            </div>
-          </div>
-
-          {/* Administrative Hierarchy from PostGIS */}
-          <div className="space-y-1">
-            <span className="text-[10px] text-[#53627A] font-bold uppercase block">Administrative Revenue Boundary</span>
             {loading ? (
-              <div className="flex items-center space-x-2 text-xs text-[#53627A] py-1">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1D5FD1]" />
-                <span>Querying PostGIS spatial boundary...</span>
-              </div>
+              <div className="text-[10px] text-slate-400 py-1">Fetching real admin data from OSM...</div>
             ) : (
-              <p className="text-xs text-[#102A43] font-semibold leading-relaxed">
-                {location.displayName || (admin ? `${admin.village ? admin.village + ', ' : ''}${admin.subdistrict ? admin.subdistrict + ', ' : ''}${admin.district ? admin.district + ', ' : ''}${admin.state || 'Tamil Nadu'}` : 'Coordinates in Tamil Nadu')}
-              </p>
+              <div className="space-y-1.5 text-[11px]">
+                {/* Place name from Nominatim */}
+                <p className="text-xs font-semibold text-slate-800 leading-snug">
+                  {location.displayName?.split(",").slice(0, 4).join(", ") || "Coordinates in India"}
+                </p>
+                <div className="grid grid-cols-2 gap-1.5 mt-1">
+                  {village && (
+                    <div className="bg-green-50 rounded-lg px-2 py-1.5 border border-green-100">
+                      <span className="text-[9px] text-green-600 font-bold block uppercase">Village / Area</span>
+                      <span className="font-semibold text-slate-800 text-[11px]">{village}</span>
+                    </div>
+                  )}
+                  {taluk && (
+                    <div className="bg-blue-50 rounded-lg px-2 py-1.5 border border-blue-100">
+                      <span className="text-[9px] text-blue-600 font-bold block uppercase">Taluk / Suburb</span>
+                      <span className="font-semibold text-slate-800 text-[11px]">{taluk}</span>
+                    </div>
+                  )}
+                  {district && (
+                    <div className="bg-indigo-50 rounded-lg px-2 py-1.5 border border-indigo-100">
+                      <span className="text-[9px] text-indigo-600 font-bold block uppercase">District</span>
+                      <span className="font-semibold text-slate-800 text-[11px]">{district}</span>
+                    </div>
+                  )}
+                  <div className="bg-slate-50 rounded-lg px-2 py-1.5 border border-slate-100">
+                    <span className="text-[9px] text-slate-500 font-bold block uppercase">State</span>
+                    <span className="font-semibold text-slate-800 text-[11px]">{state}</span>
+                  </div>
+                </div>
+                {pincode && (
+                  <div className="text-[10px] text-slate-500 font-mono mt-1">
+                    📮 Pincode: <strong className="text-slate-700">{pincode}</strong>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* Administrative Pills */}
-          {admin && (
-            <div className="flex flex-wrap gap-1 pt-0.5 text-[10px]">
-              {admin.village && (
-                <span className="bg-[#EDF7F2] text-[#16845B] border border-[#E3E8EF] px-1.5 py-0.5 rounded font-medium">
-                  Village: {admin.village}
-                </span>
+          {/* Land Use & Features — Real Overpass Data */}
+          {(landuse || loading) && (
+            <div className="rounded-xl border border-slate-200 p-3 space-y-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1 border-b border-slate-100 pb-2">
+                <Layers className="w-3 h-3 text-emerald-500" />
+                <span>Land Use &amp; Features</span>
+                {!landuse && loading && <Loader2 className="w-3 h-3 animate-spin text-blue-400 ml-auto" />}
+              </span>
+              {landuse && (
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">Primary Classification:</span>
+                    <span className="font-bold text-slate-800 capitalize">
+                      {landuse.classification || landuse.primaryLandUse || "—"}
+                    </span>
+                  </div>
+                  {landuse.nearbyAmenities?.length > 0 && (
+                    <div className="text-[10px] text-slate-500">
+                      <span className="font-bold text-slate-600">Nearby Amenities: </span>
+                      {landuse.nearbyAmenities.slice(0, 4).map((a: any) => a.name || a.type).filter(Boolean).join(", ") || "—"}
+                    </div>
+                  )}
+                  {landuse.nearbyLandUses?.length > 0 && (
+                    <div className="text-[10px] text-slate-500">
+                      <span className="font-bold text-slate-600">Adjacent Land Use: </span>
+                      {[...new Set(landuse.nearbyLandUses.slice(0, 4).map((l: any) => l.type))].join(", ")}
+                    </div>
+                  )}
+                </div>
               )}
-              {admin.village_lgd && (
-                <span className="bg-[#F1F5FB] text-[#1D5FD1] border border-[#E3E8EF] px-1.5 py-0.5 rounded font-mono font-bold">
-                  LGD: {admin.village_lgd}
-                </span>
-              )}
-              {admin.subdistrict && (
-                <span className="bg-white text-[#102A43] border border-[#E3E8EF] px-1.5 py-0.5 rounded font-medium">
-                  Taluk: {admin.subdistrict}
-                </span>
-              )}
-              {admin.district && (
-                <span className="bg-white text-[#102A43] border border-[#E3E8EF] px-1.5 py-0.5 rounded font-medium">
-                  District: {admin.district}
-                </span>
-              )}
+            </div>
+          )}
+
+          {/* Terrain & Environment */}
+          {(terrain || water || risk) && analysisData && (
+            <div className="rounded-xl border border-slate-200 p-3 space-y-2">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 flex items-center space-x-1 border-b border-slate-100 pb-2">
+                <Mountain className="w-3 h-3 text-slate-500" />
+                <span>Terrain &amp; Environment</span>
+              </span>
+              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                {terrain?.elevationMeters != null && (
+                  <div className="bg-slate-50 rounded-lg px-2 py-1.5 border border-slate-100">
+                    <span className="text-slate-400 block text-[9px]">Elevation</span>
+                    <span className="font-bold text-slate-800">{terrain.elevationMeters} m</span>
+                  </div>
+                )}
+                {risk?.seismicZone && (
+                  <div className="bg-slate-50 rounded-lg px-2 py-1.5 border border-slate-100">
+                    <span className="text-slate-400 block text-[9px]">Seismic Zone</span>
+                    <span className="font-bold text-slate-800">{risk.seismicZone}</span>
+                  </div>
+                )}
+                {risk?.floodRisk && (
+                  <div className="bg-slate-50 rounded-lg px-2 py-1.5 border border-slate-100">
+                    <span className="text-slate-400 block text-[9px]">Flood Risk</span>
+                    <span className={`font-bold ${risk.floodRisk.includes("High") ? "text-red-600" : "text-green-600"}`}>
+                      {risk.floodRisk}
+                    </span>
+                  </div>
+                )}
+                {water?.nearbyCount != null && (
+                  <div className="bg-slate-50 rounded-lg px-2 py-1.5 border border-slate-100">
+                    <span className="text-slate-400 block text-[9px]">Water Bodies</span>
+                    <span className="font-bold text-blue-700">{water.nearbyCount} nearby</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* OSM Source tag */}
+          {osmCategory && (
+            <div className="text-[9px] text-slate-400 text-center pt-1">
+              OSM Type: <strong className="text-slate-500">{osmCategory}/{osmType || "—"}</strong>
+              {" · "}<span>Source: OpenStreetMap + Nominatim</span>
             </div>
           )}
         </div>
