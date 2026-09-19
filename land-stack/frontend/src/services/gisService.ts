@@ -116,13 +116,11 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Partial<
 /**
  * Fetch the EXACT OSM polygon geometry from Overpass API.
  *
- * Priority order:
- * 1. If osmType is "way" → fetch that specific way geometry
- * 2. If osmType is "relation" → fetch the relation's outer geometry
- * 3. If osmType is "node" → search for closest enclosing named polygon within 200m
+ * Uses Overpass is_in() to find areas/polygons that CONTAIN the clicked lat/lng.
+ * This is the correct approach — it finds the actual enclosing boundary
+ * (campus, hospital, lake, park, industrial zone etc.) regardless of its size.
  *
- * This gives real campus, lake, park, hospital and industrial unit outlines —
- * exactly like the actual feature boundary shown on the map.
+ * Falls back to named feature search within 500m if is_in finds nothing.
  */
 export async function fetchOverpassFeatureGeometry(
   osmType: string,
@@ -131,81 +129,143 @@ export async function fetchOverpassFeatureGeometry(
   lng: number
 ): Promise<any | null> {
   try {
-    let query = "";
-
-    if (osmType === "way") {
-      query = `[out:json][timeout:20];
-way(${osmId});
-out geom;`;
-    } else if (osmType === "relation") {
-      query = `[out:json][timeout:20];
-relation(${osmId});
-way(r);
-out geom;`;
-    } else {
-      // Node: search for enclosing polygon features (amenity, landuse, natural, leisure, building)
-      query = `[out:json][timeout:20];
+    // ── Strategy 1: is_in() — find all areas containing the clicked point ───────
+    // This is guaranteed to return enclosing polygons (campus, park, lake, etc.)
+    const isInQuery = `[out:json][timeout:25];
+is_in(${lat},${lng})->.enclosing;
 (
-  way["amenity"](around:250,${lat},${lng});
-  way["landuse"](around:250,${lat},${lng});
-  way["natural"](around:250,${lat},${lng});
-  way["leisure"](around:250,${lat},${lng});
-  way["building"](around:250,${lat},${lng});
-  way["sport"](around:250,${lat},${lng});
-  relation["amenity"](around:250,${lat},${lng});
-  relation["landuse"](around:250,${lat},${lng});
-  relation["leisure"](around:250,${lat},${lng});
+  way(pivot.enclosing)["amenity"];
+  way(pivot.enclosing)["landuse"];
+  way(pivot.enclosing)["natural"];
+  way(pivot.enclosing)["leisure"];
+  way(pivot.enclosing)["building"];
+  way(pivot.enclosing)["sport"];
+  way(pivot.enclosing)["tourism"];
+  relation(pivot.enclosing)["amenity"];
+  relation(pivot.enclosing)["landuse"];
+  relation(pivot.enclosing)["natural"];
+  relation(pivot.enclosing)["leisure"];
 );
 out geom;`;
-    }
 
-    const response = await fetch(OVERPASS_URL, {
+    const res1 = await fetch(OVERPASS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `data=${encodeURIComponent(query)}`,
+      body: `data=${encodeURIComponent(isInQuery)}`,
     });
 
-    if (!response.ok) throw new Error(`Overpass HTTP ${response.status}`);
-    const data = await response.json();
-    const elements: any[] = data.elements || [];
-    if (elements.length === 0) return null;
-
-    // Filter elements that have actual polygon geometry
-    const withGeom = elements.filter(
-      (e: any) => e.geometry && Array.isArray(e.geometry) && e.geometry.length > 3
-    );
-    if (withGeom.length === 0) return null;
-
-    // Score elements: prefer named features and those with most geometry nodes
-    const scored = withGeom.map((e: any) => {
-      let score = e.geometry.length;
-      if (e.tags?.name) score += 1000; // Strong preference for named features
-      if (e.tags?.amenity) score += 500;
-      if (e.tags?.landuse) score += 300;
-      if (e.tags?.natural) score += 300;
-      if (e.tags?.leisure) score += 200;
-      return { element: e, score };
-    });
-
-    const best = scored.sort((a, b) => b.score - a.score)[0].element;
-
-    // Convert Overpass geometry (array of {lat, lon}) to GeoJSON Polygon
-    const ring = best.geometry.map((pt: { lat: number; lon: number }) => [pt.lon, pt.lat]);
-    // Ensure ring is closed
-    if (
-      ring.length > 0 &&
-      (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])
-    ) {
-      ring.push([...ring[0]]);
+    if (res1.ok) {
+      const d1 = await res1.json();
+      const geom = pickBestGeometry(d1.elements || [], lat, lng);
+      if (geom) return geom;
     }
-    if (ring.length < 4) return null;
 
-    return {
-      type: "Polygon",
-      coordinates: [ring],
-    };
+    // ── Strategy 2: fetch specific OSM element by ID (way or relation) ───────────
+    if (osmType === "way") {
+      const q = `[out:json][timeout:20];\nway(${osmId});\nout geom;`;
+      const res2 = await fetch(OVERPASS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(q)}`,
+      });
+      if (res2.ok) {
+        const d2 = await res2.json();
+        const geom = pickBestGeometry(d2.elements || [], lat, lng);
+        if (geom) return geom;
+      }
+    } else if (osmType === "relation") {
+      const q = `[out:json][timeout:20];\nrelation(${osmId});\nout geom;`;
+      const res2 = await fetch(OVERPASS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(q)}`,
+      });
+      if (res2.ok) {
+        const d2 = await res2.json();
+        const geom = pickBestGeometry(d2.elements || [], lat, lng);
+        if (geom) return geom;
+      }
+    }
+
+    // ── Strategy 3: named features within 500m ────────────────────────────────
+    const nearbyQuery = `[out:json][timeout:20];
+(
+  way["amenity"]["name"](around:500,${lat},${lng});
+  way["landuse"]["name"](around:500,${lat},${lng});
+  way["natural"]["name"](around:500,${lat},${lng});
+  way["leisure"]["name"](around:500,${lat},${lng});
+  relation["amenity"]["name"](around:500,${lat},${lng});
+  relation["landuse"]["name"](around:500,${lat},${lng});
+  relation["leisure"]["name"](around:500,${lat},${lng});
+);
+out geom;`;
+
+    const res3 = await fetch(OVERPASS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `data=${encodeURIComponent(nearbyQuery)}`,
+    });
+    if (res3.ok) {
+      const d3 = await res3.json();
+      const geom = pickBestGeometry(d3.elements || [], lat, lng);
+      if (geom) return geom;
+    }
+
+    return null;
   } catch (err) {
     console.warn("Overpass feature geometry fetch failed:", err);
     return null;
   }
 }
+
+/**
+ * From a list of Overpass elements, pick the best one and return as GeoJSON Polygon/MultiPolygon.
+ * Prefers named features, then amenity/landuse, then most nodes (largest/most detailed polygon).
+ * Skips country/state/county level admin boundaries to avoid full-state polygons.
+ */
+function pickBestGeometry(elements: any[], lat: number, lng: number): any | null {
+  if (!elements || elements.length === 0) return null;
+
+  // Filter elements that have actual polygon geometry (need at least 4 nodes to form a valid polygon)
+  const withGeom = elements.filter((e: any) => {
+    if (!e.geometry || !Array.isArray(e.geometry) || e.geometry.length < 4) return false;
+    // Skip overly large admin boundaries (country, state, county — these cover huge areas)
+    const adminLevel = parseInt(e.tags?.admin_level || "99", 10);
+    if (adminLevel <= 6) return false; // Skip admin level 1-6 (country to district)
+    return true;
+  });
+
+  if (withGeom.length === 0) return null;
+
+  // Score: prefer named + specific feature type + largest (most nodes = most detail)
+  const scored = withGeom.map((e: any) => {
+    let score = Math.min(e.geometry.length, 500); // cap geometry bonus at 500
+    if (e.tags?.name) score += 2000;
+    if (e.tags?.amenity) score += 800;
+    if (e.tags?.landuse) score += 600;
+    if (e.tags?.leisure) score += 600;
+    if (e.tags?.natural) score += 400;
+    if (e.tags?.building) score += 200;
+    // Slightly penalise very small polygons (likely single buildings, not campus)
+    if (e.geometry.length < 8) score -= 300;
+    return { element: e, score };
+  });
+
+  const best = scored.sort((a, b) => b.score - a.score)[0].element;
+
+  // Convert Overpass geometry [{lat, lon}, ...] to GeoJSON ring [[lon, lat], ...]
+  const ring: number[][] = best.geometry.map((pt: { lat: number; lon: number }) => [pt.lon, pt.lat]);
+
+  // Close the ring
+  if (ring.length > 0 && (ring[0][0] !== ring[ring.length - 1][0] || ring[0][1] !== ring[ring.length - 1][1])) {
+    ring.push([...ring[0]]);
+  }
+
+  if (ring.length < 4) return null;
+
+  return {
+    type: "Polygon",
+    coordinates: [ring],
+  };
+}
+

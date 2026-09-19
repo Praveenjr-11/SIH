@@ -306,6 +306,7 @@ export default function GisMapInner({
       setZoneData(null);
       setAnalysisData(null);
       setZoneLoading(false);
+      setOverpassBoundaryGeojson(null);
       return;
     }
 
@@ -469,20 +470,18 @@ export default function GisMapInner({
     });
 
     // ── Phase 3: Async Overpass fetch — upgrade to exact OSM polygon boundary ─
-    // Stored in local state so we don't need a functional-form setter on the prop callback
+    // Always fires for every click — is_in() only needs lat/lng, not osmId
     setOverpassBoundaryGeojson(null); // Clear previous boundary immediately
-    if (details._osmType && details._osmId) {
-      fetchOverpassFeatureGeometry(
-        details._osmType as string,
-        details._osmId as number,
-        lat,
-        lng
-      ).then((overpassGeojson) => {
-        if (overpassGeojson) {
-          setOverpassBoundaryGeojson(overpassGeojson);
-        }
-      }).catch(() => { /* silent fail — keep Nominatim boundary */ });
-    }
+    fetchOverpassFeatureGeometry(
+      details._osmType as string || "node",
+      details._osmId as number || 0,
+      lat,
+      lng
+    ).then((overpassGeojson) => {
+      if (overpassGeojson) {
+        setOverpassBoundaryGeojson(overpassGeojson);
+      }
+    }).catch(() => { /* silent fail — keep Nominatim boundary */ });
 
   };
 
