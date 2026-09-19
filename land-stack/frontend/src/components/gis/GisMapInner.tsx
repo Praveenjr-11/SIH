@@ -311,6 +311,7 @@ export default function GisMapInner({
     }
 
     // Step 1: Compute zone from frontend Nominatim data (instant — gives immediate feedback)
+    // This is the AUTHORITATIVE zone classification based on place name keyword matching.
     const resolvedZoning = resolveMasterPlanZone(
       clickedLocation.lat,
       clickedLocation.lng,
@@ -320,22 +321,34 @@ export default function GisMapInner({
     setZoneData(resolvedZoning);
     setZoneLoading(true);
 
-    // Step 2: Fetch backend analysis (Overpass + Elevation) and upgrade zone if more specific
+    // Step 2: Fetch backend analysis (Overpass + Elevation) for supplementary data only.
+    // The backend zone ONLY overrides if the frontend fell back to AGRI_ZONE (generic default)
+    // AND the backend has a more specific classification.
+    // This prevents the zone from randomly changing after the backend API responds.
+    const frontendZoneType = resolvedZoning.zoneType;
+
     async function loadZone() {
       try {
         const analysis = await fetchLocationAnalysis(clickedLocation!.lat, clickedLocation!.lng);
         if (analysis) {
           setAnalysisData(analysis);
-          if (analysis.zoningMarking?.zoneType) {
+
+          const backendZoneType: string = analysis.zoningMarking?.zoneType || "";
+          const isFrontendGeneric = frontendZoneType === "AGRI_ZONE";
+          const isBackendSpecific = backendZoneType && backendZoneType !== "AGRI_ZONE";
+
+          // Only let backend override if frontend was stuck on the generic fallback
+          if (isFrontendGeneric && isBackendSpecific) {
             const backendZone = resolveZoneWithBackendType(
               clickedLocation!.lat,
               clickedLocation!.lng,
-              analysis.zoningMarking.zoneType,
+              backendZoneType,
               analysis.zoningMarking,
               clickedLocation!.addressDetails
             );
             setZoneData(backendZone);
           }
+          // Otherwise: keep the frontend-resolved zone as-is — backend supplements data only
         }
       } catch (err) {
         console.error("Error loading zone marking:", err);
