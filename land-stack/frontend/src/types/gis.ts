@@ -25,6 +25,13 @@ export interface ClickedLocation {
   lng: number;
   displayName?: string;
   geojson?: any;
+  // Overpass-fetched precise feature boundary (building, campus, lake outline)
+  overpassGeojson?: any;
+  // Raw Nominatim identifiers for Overpass lookup
+  _osmType?: string | null;
+  _osmId?: number | null;
+  _nominatimCategory?: string | null;
+  _nominatimType?: string | null;
   addressDetails?: {
     village?: string;
     hamlet?: string;

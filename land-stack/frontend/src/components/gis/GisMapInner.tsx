@@ -8,7 +8,7 @@ import { ClickedLocation, BasemapType } from "@/types/gis";
 import MapClickHandler from "./MapClickHandler";
 import MapControls from "./MapControls";
 import MeasureTool from "./MeasureTool";
-import { reverseGeocode } from "@/services/gisService";
+import { reverseGeocode, fetchOverpassFeatureGeometry } from "@/services/gisService";
 import { fetchLocationAnalysis, fetchFeatureInfo, fetchHierarchyBoundary, fetchAdminBoundaries } from "@/services/gisAnalysisService";
 import { resolveMasterPlanZone, resolveZoneWithBackendType, MasterPlanZoneConfig } from "@/utils/zoneResolver";
 import DynamicVectorLayer from "./DynamicVectorLayer";
@@ -254,6 +254,8 @@ export default function GisMapInner({
   const [zoneData, setZoneData] = useState<MasterPlanZoneConfig | null>(null);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [zoneLoading, setZoneLoading] = useState(false);
+  // Holds the precise Overpass polygon (upgraded async after click)
+  const [overpassBoundaryGeojson, setOverpassBoundaryGeojson] = useState<any>(null);
 
   // Measurement tool state
   const [measureMode, setMeasureMode] = useState<"off" | "distance" | "area" | "select_zone">("off");
@@ -408,31 +410,30 @@ export default function GisMapInner({
 
     // Fallback if not hitting a parcel — reverse geocode for place name + address only
     const details = await reverseGeocode(lat, lng);
-    const geojson = details.geojson;
+    const nominatimGeojson = details.geojson;
 
-    // Only keep the Nominatim GeoJSON if it is a feature polygon (e.g. lake, park, hospital, campus, industrial unit).
-    // Discard large administrative boundaries (state, district, taluk, county, postcode) so we don't draw entire district borders.
+    // ── Phase 1: Evaluate Nominatim polygon ──────────────────────────────────
+    // Keep Nominatim polygon only if it is a FEATURE (not an administrative boundary)
+    // and it is reasonably compact (< 0.09° span ≈ 10km)
     let boundaryGeojson: any = null;
-    if (geojson) {
+    const cat = (details.addressDetails?.category || "").toLowerCase();
+    const nomType = (details.addressDetails?.type || "").toLowerCase();
+    const isAdminBoundary =
+      cat === "boundary" ||
+      nomType === "administrative" ||
+      nomType === "state" ||
+      nomType === "county" ||
+      nomType === "district" ||
+      nomType === "postcode" ||
+      nomType === "country" ||
+      nomType === "subdistrict" ||
+      nomType === "state_district";
+
+    if (nominatimGeojson && !isAdminBoundary) {
       const isPolyGeom =
-        geojson.type === "Polygon" || geojson.type === "MultiPolygon" ||
-        geojson.geometry?.type === "Polygon" || geojson.geometry?.type === "MultiPolygon";
-
-      const cat = (details.addressDetails?.category || "").toLowerCase();
-      const type = (details.addressDetails?.type || "").toLowerCase();
-      const isAdminBoundary =
-        cat === "boundary" ||
-        type === "administrative" ||
-        type === "state" ||
-        type === "county" ||
-        type === "district" ||
-        type === "postcode" ||
-        type === "country" ||
-        type === "subdistrict" ||
-        type === "state_district";
-
-      if (isPolyGeom && !isAdminBoundary) {
-        // Compute bounding box diagonal in degrees and filter oversized polygons
+        nominatimGeojson.type === "Polygon" || nominatimGeojson.type === "MultiPolygon" ||
+        nominatimGeojson.geometry?.type === "Polygon" || nominatimGeojson.geometry?.type === "MultiPolygon";
+      if (isPolyGeom) {
         const coords: number[][] = [];
         const collectCoords = (g: any) => {
           if (!g) return;
@@ -440,28 +441,48 @@ export default function GisMapInner({
           else if (g.type === "MultiPolygon") g.coordinates.flat(2).forEach((c: number[]) => coords.push(c));
           else if (g.geometry) collectCoords(g.geometry);
         };
-        collectCoords(geojson);
+        collectCoords(nominatimGeojson);
         if (coords.length > 0) {
           const lngs = coords.map(c => c[0]);
           const lats = coords.map(c => c[1]);
           const spanLat = Math.max(...lats) - Math.min(...lats);
           const spanLng = Math.max(...lngs) - Math.min(...lngs);
-          // Allow up to ~0.09° (approx 10km) for real feature boundaries
           if (spanLat < 0.09 && spanLng < 0.09) {
-            boundaryGeojson = geojson;
+            boundaryGeojson = nominatimGeojson;
           }
         }
       }
     }
 
+    // ── Phase 2: Set location immediately (fast UX) ──────────────────────────
     setClickedLocation({
       lat,
       lng,
       displayName: details.displayName,
       addressDetails: details.addressDetails,
       geojson: boundaryGeojson,
+      _osmType: details._osmType,
+      _osmId: details._osmId,
+      _nominatimCategory: details._nominatimCategory,
+      _nominatimType: details._nominatimType,
       loading: false,
     });
+
+    // ── Phase 3: Async Overpass fetch — upgrade to exact OSM polygon boundary ─
+    // Stored in local state so we don't need a functional-form setter on the prop callback
+    setOverpassBoundaryGeojson(null); // Clear previous boundary immediately
+    if (details._osmType && details._osmId) {
+      fetchOverpassFeatureGeometry(
+        details._osmType as string,
+        details._osmId as number,
+        lat,
+        lng
+      ).then((overpassGeojson) => {
+        if (overpassGeojson) {
+          setOverpassBoundaryGeojson(overpassGeojson);
+        }
+      }).catch(() => { /* silent fail — keep Nominatim boundary */ });
+    }
 
   };
 
@@ -775,51 +796,56 @@ export default function GisMapInner({
         />
 
         {/* Dynamic Zone Polygon Overlay when a Location is Clicked */}
-        {clickedLocation && (
-          <>
-            {clickedLocation.geojson ? (
-              <GeoJSON
-                key={`geojson-${clickedLocation.lat}-${clickedLocation.lng}-${clickedLocation.displayName || ""}`}
-                data={
-                  clickedLocation.geojson.type === "Feature" || clickedLocation.geojson.type === "FeatureCollection"
-                    ? clickedLocation.geojson
-                    : { type: "Feature", geometry: clickedLocation.geojson, properties: {} }
-                }
-                style={{
-                  color: zoneData?.color || "#4f46e5",
-                  fillColor: zoneData?.fillColor || "#6366f1",
-                  fillOpacity: 0.18,
-                  weight: 3,
-                  dashArray: "6, 4",
-                }}
-              >
-                <Tooltip direction="center" className="custom-zone-tooltip shadow-xl border-none">
-                  <span className="font-bold text-xs tracking-tight" style={{ color: zoneData?.color || "#4f46e5" }}>
-                    {zoneData?.zoneTitle || clickedLocation.addressDetails?.city || clickedLocation.addressDetails?.district || "Zone"} Boundary
-                  </span>
-                </Tooltip>
-              </GeoJSON>
-            ) : (
-              zoneData?.polygonCoordinates && (
-                <Polygon
-                  key={`zone-${clickedLocation.lat}-${clickedLocation.lng}-${zoneData.zoneType}`}
-                  positions={zoneData.polygonCoordinates}
-                  pathOptions={{
-                    color: zoneData.color || "#10b981",
-                    fillColor: zoneData.fillColor || "#10b981",
-                    fillOpacity: 0.25,
-                    weight: 3,
-                    dashArray: "8, 5",
+        {clickedLocation && (() => {
+          // Priority: 1) Overpass exact polygon  2) Nominatim polygon  3) Circular buffer fallback
+          const activeBoundaryGeojson = overpassBoundaryGeojson || clickedLocation.geojson;
+          return (
+            <>
+              {activeBoundaryGeojson ? (
+                <GeoJSON
+                  key={`geojson-${clickedLocation.lat}-${clickedLocation.lng}-${overpassBoundaryGeojson ? "overpass" : "nominatim"}`}
+                  data={
+                    activeBoundaryGeojson.type === "Feature" || activeBoundaryGeojson.type === "FeatureCollection"
+                      ? activeBoundaryGeojson
+                      : { type: "Feature", geometry: activeBoundaryGeojson, properties: {} }
+                  }
+                  style={{
+                    color: zoneData?.color || "#4f46e5",
+                    fillColor: zoneData?.fillColor || "#6366f1",
+                    fillOpacity: overpassBoundaryGeojson ? 0.15 : 0.18,
+                    weight: overpassBoundaryGeojson ? 3.5 : 3,
+                    dashArray: overpassBoundaryGeojson ? "none" : "6, 4",
                   }}
                 >
-                  <Tooltip permanent direction="top" className="custom-zone-tooltip shadow-xl border-none">
-                    <span className="font-bold text-xs tracking-tight" style={{ color: zoneData.color || "#059669" }}>
-                      {zoneData.zoneTitle}
+                  <Tooltip direction="center" className="custom-zone-tooltip shadow-xl border-none">
+                    <span className="font-bold text-xs tracking-tight" style={{ color: zoneData?.color || "#4f46e5" }}>
+                      {zoneData?.zoneTitle || clickedLocation.addressDetails?.city || clickedLocation.addressDetails?.district || "Zone"} Boundary
+                      {overpassBoundaryGeojson && " ✓"}
                     </span>
                   </Tooltip>
-                </Polygon>
-              )
-            )}
+                </GeoJSON>
+              ) : (
+                zoneData?.polygonCoordinates && (
+                  <Polygon
+                    key={`zone-${clickedLocation.lat}-${clickedLocation.lng}-${zoneData.zoneType}`}
+                    positions={zoneData.polygonCoordinates}
+                    pathOptions={{
+                      color: zoneData.color || "#10b981",
+                      fillColor: zoneData.fillColor || "#10b981",
+                      fillOpacity: 0.18,
+                      weight: 2.5,
+                      dashArray: "8, 5",
+                    }}
+                  >
+                    <Tooltip permanent direction="top" className="custom-zone-tooltip shadow-xl border-none">
+                      <span className="font-bold text-xs tracking-tight" style={{ color: zoneData.color || "#059669" }}>
+                        {zoneData.zoneTitle}
+                      </span>
+                    </Tooltip>
+                  </Polygon>
+                )
+              )}
+
 
             {/* Marker for Clicked GIS Location */}
             <Marker position={[clickedLocation.lat, clickedLocation.lng]}>
@@ -892,7 +918,8 @@ export default function GisMapInner({
               </Popup>
             </Marker>
           </>
-        )}
+        );
+      })()}
 
         {/* Feature Info Popup */}
         {featureInfoPopup && (
