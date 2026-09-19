@@ -30,18 +30,20 @@ export interface MasterPlanZoneConfig {
  * Used to compute accurate geodesic perimeter, area, and radial buffer.
  */
 export const ZONE_SCOPE_MAP: Record<string, { dLat: number; dLng: number }> = {
-  HEALTHCARE_ZONE:    { dLat: 0.004,  dLng: 0.004  },
-  INSTITUTIONAL_ZONE: { dLat: 0.004,  dLng: 0.004  },
-  ECO_WATER_RESERVE:  { dLat: 0.012,  dLng: 0.012  },
-  FOREST_RESERVE:     { dLat: 0.012,  dLng: 0.012  },
-  HILL_ECO_ZONE:      { dLat: 0.012,  dLng: 0.012  },
-  MANUFACTURING_HUB:  { dLat: 0.006,  dLng: 0.006  },
-  COMMERCIAL_HUB:     { dLat: 0.003,  dLng: 0.003  },
-  LIVING_ZONE:        { dLat: 0.0025, dLng: 0.0025 },
-  GOVERNMENT_ZONE:    { dLat: 0.004,  dLng: 0.004  },
-  TRANSPORT_HUB:      { dLat: 0.005,  dLng: 0.005  },
-  RELIGIOUS_HERITAGE:  { dLat: 0.003,  dLng: 0.003  },
-  AGRI_ZONE:          { dLat: 0.008,  dLng: 0.008  },
+  // Values represent the indicative zone radius drawn on the map around the clicked point.
+  // ~0.001° latitude ≈ 111 m | ~0.002° ≈ 222 m | ~0.003° ≈ 330 m
+  HEALTHCARE_ZONE:     { dLat: 0.0015, dLng: 0.0015 }, // ~165m — specific building/campus
+  INSTITUTIONAL_ZONE:  { dLat: 0.0018, dLng: 0.0018 }, // ~200m — school/college campus
+  ECO_WATER_RESERVE:   { dLat: 0.0030, dLng: 0.0030 }, // ~330m — lake / reservoir buffer
+  FOREST_RESERVE:      { dLat: 0.0040, dLng: 0.0040 }, // ~440m — forest patch
+  HILL_ECO_ZONE:       { dLat: 0.0040, dLng: 0.0040 }, // ~440m — eco-sensitive hill zone
+  MANUFACTURING_HUB:   { dLat: 0.0025, dLng: 0.0025 }, // ~275m — industrial plot / SIPCOT unit
+  COMMERCIAL_HUB:      { dLat: 0.0015, dLng: 0.0015 }, // ~165m — commercial block
+  LIVING_ZONE:         { dLat: 0.0012, dLng: 0.0012 }, // ~135m — residential plot cluster
+  GOVERNMENT_ZONE:     { dLat: 0.0015, dLng: 0.0015 }, // ~165m — government premises
+  TRANSPORT_HUB:       { dLat: 0.0020, dLng: 0.0020 }, // ~220m — station/terminal area
+  RELIGIOUS_HERITAGE:  { dLat: 0.0012, dLng: 0.0012 }, // ~135m — temple/church premises
+  AGRI_ZONE:           { dLat: 0.0030, dLng: 0.0030 }, // ~330m — field parcel
 };
 
 /**
@@ -49,19 +51,8 @@ export const ZONE_SCOPE_MAP: Record<string, { dLat: number; dLng: number }> = {
  * Uses administrative level or place type if available to accurately size the spatial scope for cities, districts, states, etc.
  */
 export function getZoneScopeConfig(zoneType: string, addressDetails?: Record<string, any>): { dLat: number; dLng: number } {
-  const type = (addressDetails?.type || "").toLowerCase();
-  const category = (addressDetails?.category || "").toLowerCase();
-  
-  // Dynamic Spatial Zone Scope based on Location Size (ONLY if it's an administrative boundary)
-  if (category === "boundary") {
-    if (type === "state" || type === "country") {
-      return { dLat: 2.0, dLng: 2.0 };
-    } else if (type === "state_district" || type === "county" || type === "region" || type === "administrative") {
-      return { dLat: 0.35, dLng: 0.35 };
-    }
-  }
-  
-  // Fallback to zone regulation default point-based size for cities, places, and standard pins
+  // Always use the zone's own scope — never inflate to district/state size.
+  // Admin boundary sizes are NOT used for zone indication on map.
   return ZONE_SCOPE_MAP[zoneType] || ZONE_SCOPE_MAP.AGRI_ZONE;
 }
 

@@ -22,13 +22,13 @@ import {
 } from "lucide-react";
 import { useOfficerAuth } from "@/context/OfficerAuthContext";
 import { fetchCasesList } from "@/services/landCasesService";
-import { resolveDepartmentProfile } from "@/config/departmentDashboardConfig";
+import { getDepartmentConfig } from "@/config/departmentDashboardConfig";
 import DepartmentTimeline from "@/components/DepartmentTimeline";
 import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 
 export default function OfficerDashboardPage() {
   const { officer } = useOfficerAuth();
-  const deptProfile = resolveDepartmentProfile(officer?.role || officer?.title || 'REVENUE');
+  const deptProfile = getDepartmentConfig(officer?.role || officer?.title || 'REVENUE');
 
   const [metrics, setMetrics] = useState({
     total: 0,
@@ -88,7 +88,8 @@ export default function OfficerDashboardPage() {
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {})
-          }
+          },
+          credentials: 'include'
         });
 
         if (res.ok) {
@@ -130,6 +131,7 @@ export default function OfficerDashboardPage() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
+        credentials: 'include',
         body: JSON.stringify({
           departmentCode: deptProfile.departmentCode,
           verdict: actionCode.includes('REJECT') ? 'REJECTED' : actionCode.includes('CONDITIONAL') ? 'CONDITIONAL' : 'APPROVED',
@@ -538,7 +540,7 @@ export default function OfficerDashboardPage() {
                 {deptProfile.departmentName} — Statutory Verdict Actions
               </h4>
               <div className="flex flex-wrap gap-2.5">
-                {deptProfile.allowedActions.map((action) => (
+                {deptProfile.allowedActions.map((action: any) => (
                   <button
                     key={action.actionCode}
                     onClick={() => handleDepartmentAction(action.actionCode, action.label)}

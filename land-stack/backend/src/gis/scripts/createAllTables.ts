@@ -341,8 +341,12 @@ async function createAllTables() {
       description TEXT,
       case_type VARCHAR(100) NOT NULL,
       status VARCHAR(50) NOT NULL DEFAULT 'NEW' CHECK (status IN (
-        'NEW', 'DOCUMENT_VERIFICATION', 'GIS_ANALYSIS', 'FIELD_INSPECTION', 
-        'OFFICER_REVIEW', 'RECOMMENDATION', 'APPROVED', 'REJECTED', 'CLOSED'
+        'NEW', 'CASE_CREATED', 'PARCEL_IDENTIFIED', 
+        'REVENUE_VERIFICATION', 'SURVEY_VERIFICATION', 'REGISTRATION_VERIFICATION', 
+        'GOVERNMENT_LAND_CHECK', 'PLANNING_AND_CONSTRAINT_CHECK', 'FIELD_INSPECTION', 
+        'CONSOLIDATED_REVIEW', 'OFFICER_RECOMMENDATION', 'CLARIFICATION_REQUIRED',
+        'APPROVED', 'REJECTED', 'CLOSED',
+        'DOCUMENT_VERIFICATION', 'GIS_ANALYSIS', 'OFFICER_REVIEW', 'RECOMMENDATION'
       )),
       priority VARCHAR(20) DEFAULT 'MEDIUM' CHECK (priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
       parcel_id INTEGER REFERENCES land_parcels(id),
@@ -359,6 +363,27 @@ async function createAllTables() {
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );`,
+
+    // 20.1 Case Department Verifications Table
+    `CREATE TABLE IF NOT EXISTS case_department_verifications (
+      id SERIAL PRIMARY KEY,
+      case_id INTEGER REFERENCES cases(id) ON DELETE CASCADE,
+      department VARCHAR(100) NOT NULL,
+      verification_status VARCHAR(50) DEFAULT 'PENDING' CHECK (verification_status IN (
+        'PENDING', 'IN_PROGRESS', 'VERIFIED', 'CONFLICT_FOUND', 'DOCUMENT_REQUIRED',
+        'FIELD_INSPECTION_REQUIRED', 'SOURCE_UNAVAILABLE', 'ACCESS_RESTRICTED', 'NOT_APPLICABLE', 'REJECTED'
+      )),
+      verified_by_officer_id INTEGER REFERENCES officers(id),
+      verified_at TIMESTAMPTZ,
+      findings JSONB,
+      evidence_ids JSONB,
+      remarks TEXT,
+      requires_further_review BOOLEAN DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE (case_id, department)
+    );`,
+    `CREATE INDEX IF NOT EXISTS idx_case_dept_verif_case ON case_department_verifications (case_id);`,
 
     // 21. Case Documents Table
     `CREATE TABLE IF NOT EXISTS case_documents (

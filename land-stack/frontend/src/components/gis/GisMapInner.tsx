@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polygon, Tooltip, useMap, GeoJSON } from "react-leaflet";
 import L from "leaflet";
 import { Parcel } from "@/types";
@@ -13,6 +13,9 @@ import { fetchLocationAnalysis, fetchFeatureInfo, fetchHierarchyBoundary, fetchA
 import { resolveMasterPlanZone, resolveZoneWithBackendType, MasterPlanZoneConfig } from "@/utils/zoneResolver";
 import DynamicVectorLayer from "./DynamicVectorLayer";
 import FeatureDataTable from "./FeatureDataTable";
+import ZoneInfoCard from "./ZoneInfoCard";
+import * as turf from "@turf/turf";
+import { X } from "lucide-react";
 
 import "leaflet/dist/leaflet.css";
 
@@ -250,10 +253,13 @@ export default function GisMapInner({
   const [currentZoom, setCurrentZoom] = useState(7);
   const [zoneData, setZoneData] = useState<MasterPlanZoneConfig | null>(null);
   const [analysisData, setAnalysisData] = useState<any>(null);
+  const [zoneLoading, setZoneLoading] = useState(false);
 
   // Measurement tool state
-  const [measureMode, setMeasureMode] = useState<"off" | "distance" | "area">("off");
+  const [measureMode, setMeasureMode] = useState<"off" | "distance" | "area" | "select_zone">("off");
   const [measureKey, setMeasureKey] = useState(0);
+  const [selectedZoneParcels, setSelectedZoneParcels] = useState<Parcel[]>([]);
+  const [selectedZoneArea, setSelectedZoneArea] = useState<{ value: number, unit: string } | null>(null);
 
   // Feature info popup for thematic layers
   const [featureInfoPopup, setFeatureInfoPopup] = useState<{
@@ -297,10 +303,11 @@ export default function GisMapInner({
     if (!clickedLocation) {
       setZoneData(null);
       setAnalysisData(null);
+      setZoneLoading(false);
       return;
     }
 
-    // Step 1: Compute zone from frontend Nominatim data (instant)
+    // Step 1: Compute zone from frontend Nominatim data (instant — gives immediate feedback)
     const resolvedZoning = resolveMasterPlanZone(
       clickedLocation.lat,
       clickedLocation.lng,
@@ -308,8 +315,9 @@ export default function GisMapInner({
       clickedLocation.addressDetails
     );
     setZoneData(resolvedZoning);
+    setZoneLoading(true);
 
-    // Step 2: Fetch backend analysis (Overpass + Elevation)
+    // Step 2: Fetch backend analysis (Overpass + Elevation) and upgrade zone if more specific
     async function loadZone() {
       try {
         const analysis = await fetchLocationAnalysis(clickedLocation!.lat, clickedLocation!.lng);
@@ -320,13 +328,16 @@ export default function GisMapInner({
               clickedLocation!.lat,
               clickedLocation!.lng,
               analysis.zoningMarking.zoneType,
-              analysis.zoningMarking
+              analysis.zoningMarking,
+              clickedLocation!.addressDetails
             );
             setZoneData(backendZone);
           }
         }
       } catch (err) {
         console.error("Error loading zone marking:", err);
+      } finally {
+        setZoneLoading(false);
       }
     }
 
@@ -335,6 +346,12 @@ export default function GisMapInner({
 
   const handleMapClick = async (lat: number, lng: number) => {
     if (measureMode !== "off") return;
+    
+    // Clear zone selection if clicked outside
+    if (selectedZoneParcels.length > 0) {
+      setSelectedZoneParcels([]);
+      setSelectedZoneArea(null);
+    }
 
     const queryLayer = activeQueryLayer || "parcels";
     if (queryLayer !== "parcels") {
@@ -354,38 +371,75 @@ export default function GisMapInner({
     setClickedLocation({
       lat,
       lng,
-      displayName: "Locating place details...",
+      displayName: "Identifying official parcel...",
       loading: true,
     });
 
+    try {
+      // 1. Identify official land parcel from PostGIS
+      const res = await fetch(`http://localhost:5000/api/v1/parcels/identify?lat=${lat}&lng=${lng}`);
+      const identifyData = await res.json();
+
+      if (identifyData && identifyData.success && identifyData.parcelStatus === 'IDENTIFIED' && identifyData.parcel) {
+        // Real parcel found — open ParcelInspector with enriched data
+        const enhancedParcel = {
+          ...identifyData.parcel,
+          _identifyIntelligence: {
+            boundaryStatus: identifyData.boundaryStatus,
+            geometrySource: identifyData.geometrySource,
+            areaSqM: identifyData.areaSqM,
+            perimeterM: identifyData.perimeterM,
+            requiresSurveyVerification: identifyData.requiresSurveyVerification,
+            message: identifyData.message,
+          },
+        };
+        if (onSelectParcel) {
+          onSelectParcel(enhancedParcel);
+        }
+        // Clear location so we don't also show LocationInspector/ZoneInfoCard
+        setClickedLocation(null);
+        return;
+      }
+      // If parcel not found or geometry unavailable — fall through to reverse geocode below
+    } catch (err) {
+      console.warn("Failed to hit identify API, falling back to reverse geocode:", err);
+    }
+
+
+    // Fallback if not hitting a parcel — reverse geocode for place name + address only
     const details = await reverseGeocode(lat, lng);
-    let boundaryGeojson = details.geojson;
-    const isPoly = boundaryGeojson && (
-      boundaryGeojson.type === "Polygon" ||
-      boundaryGeojson.type === "MultiPolygon" ||
-      boundaryGeojson.geometry?.type === "Polygon" ||
-      boundaryGeojson.geometry?.type === "MultiPolygon"
-    );
+    const geojson = details.geojson;
 
-    if (!isPoly && details.addressDetails) {
-      const districtName = details.addressDetails.district || details.addressDetails.state_district || details.addressDetails.city;
-      const subdistrictName = details.addressDetails.subdistrict || details.addressDetails.county;
+    // Only keep the Nominatim GeoJSON if it is a reasonably tight polygon
+    // (e.g. a named lake, park, building footprint — NOT a whole ward/district).
+    // We check the bounding-box diagonal: if it exceeds ~3km we discard it and
+    // let the zone computation draw a tight indicative rectangle instead.
+    let boundaryGeojson: any = null;
+    if (geojson) {
+      const isPolyGeom =
+        geojson.type === "Polygon" || geojson.type === "MultiPolygon" ||
+        geojson.geometry?.type === "Polygon" || geojson.geometry?.type === "MultiPolygon";
 
-      try {
-        if (districtName && subdistrictName) {
-          const subBoundary = await fetchHierarchyBoundary("subdistrict", { district: districtName, subdistrict: subdistrictName });
-          if (subBoundary?.available && subBoundary.geojson) {
-            boundaryGeojson = subBoundary.geojson;
+      if (isPolyGeom) {
+        // Compute bounding box diagonal in degrees and filter oversized polygons
+        const coords: number[][] = [];
+        const collectCoords = (g: any) => {
+          if (!g) return;
+          if (g.type === "Polygon") g.coordinates.flat().forEach((c: number[]) => coords.push(c));
+          else if (g.type === "MultiPolygon") g.coordinates.flat(2).forEach((c: number[]) => coords.push(c));
+          else if (g.geometry) collectCoords(g.geometry);
+        };
+        collectCoords(geojson);
+        if (coords.length > 0) {
+          const lngs = coords.map(c => c[0]);
+          const lats = coords.map(c => c[1]);
+          const spanLat = Math.max(...lats) - Math.min(...lats);
+          const spanLng = Math.max(...lngs) - Math.min(...lngs);
+          // ~0.027° ≈ 3 km — discard anything wider than that
+          if (spanLat < 0.027 && spanLng < 0.027) {
+            boundaryGeojson = geojson;
           }
         }
-        if (!boundaryGeojson && districtName) {
-          const distBoundary = await fetchHierarchyBoundary("district", { district: districtName });
-          if (distBoundary?.available && distBoundary.geojson) {
-            boundaryGeojson = distBoundary.geojson;
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to fetch boundary for clicked location:", err);
       }
     }
 
@@ -397,10 +451,13 @@ export default function GisMapInner({
       geojson: boundaryGeojson,
       loading: false,
     });
+
   };
 
   const handleClearMeasure = useCallback(() => {
     setMeasureKey((k) => k + 1);
+    setSelectedZoneParcels([]);
+    setSelectedZoneArea(null);
   }, []);
 
   const survey = analysisData?.cadastralSurvey;
@@ -675,6 +732,35 @@ export default function GisMapInner({
           key={measureKey}
           mode={measureMode === "off" ? "distance" : measureMode}
           active={measureMode !== "off"}
+          onMeasurementComplete={(val, unit, geom) => {
+            if (measureMode === "select_zone" && geom) {
+              const intersecting = parcels.filter(p => {
+                if (!p.coordinates || p.coordinates.length === 0) return false;
+                const firstElement = p.coordinates[0];
+                const rawRing = Array.isArray(firstElement?.[0]) ? firstElement : p.coordinates;
+                if (!Array.isArray(rawRing) || rawRing.length < 3) return false;
+
+                const positions = rawRing
+                  .filter((pt): pt is [number, number] => Array.isArray(pt) && pt.length >= 2 && typeof pt[0] === "number" && typeof pt[1] === "number")
+                  .map(([lng, lat]) => [lng, lat] as [number, number]);
+                
+                if (positions.length < 3) return false;
+                // turf requires first and last positions to be the same to close the polygon ring
+                if (positions[0][0] !== positions[positions.length - 1][0] || positions[0][1] !== positions[positions.length - 1][1]) {
+                  positions.push(positions[0]);
+                }
+
+                try {
+                  const parcelPoly = turf.polygon([positions]);
+                  return turf.booleanIntersects(geom, parcelPoly);
+                } catch (e) {
+                  return false;
+                }
+              });
+              setSelectedZoneParcels(intersecting);
+              setSelectedZoneArea({ value: val, unit });
+            }
+          }}
         />
 
         {/* Dynamic Zone Polygon Overlay when a Location is Clicked */}
@@ -689,16 +775,16 @@ export default function GisMapInner({
                     : { type: "Feature", geometry: clickedLocation.geojson, properties: {} }
                 }
                 style={{
-                  color: "#4f46e5",
-                  fillColor: "#6366f1",
-                  fillOpacity: 0.16,
+                  color: zoneData?.color || "#4f46e5",
+                  fillColor: zoneData?.fillColor || "#6366f1",
+                  fillOpacity: 0.18,
                   weight: 3,
                   dashArray: "6, 4",
                 }}
               >
                 <Tooltip direction="center" className="custom-zone-tooltip shadow-xl border-none">
-                  <span className="font-bold text-xs tracking-tight text-indigo-700">
-                    {clickedLocation.addressDetails?.city || clickedLocation.addressDetails?.district || (zoneData ? zoneData.zoneTitle : "City")} Boundary
+                  <span className="font-bold text-xs tracking-tight" style={{ color: zoneData?.color || "#4f46e5" }}>
+                    {zoneData?.zoneTitle || clickedLocation.addressDetails?.city || clickedLocation.addressDetails?.district || "Zone"} Boundary
                   </span>
                 </Tooltip>
               </GeoJSON>
@@ -710,9 +796,9 @@ export default function GisMapInner({
                   pathOptions={{
                     color: zoneData.color || "#10b981",
                     fillColor: zoneData.fillColor || "#10b981",
-                    fillOpacity: 0.35,
+                    fillOpacity: 0.25,
                     weight: 3,
-                    dashArray: "6, 6",
+                    dashArray: "8, 5",
                   }}
                 >
                   <Tooltip permanent direction="top" className="custom-zone-tooltip shadow-xl border-none">
@@ -839,6 +925,64 @@ export default function GisMapInner({
           </GeoJSON>
         )}
       </MapContainer>
+
+      {/* Selected Zone Details Overlay */}
+      {measureMode === "select_zone" && selectedZoneArea !== null && (
+        <div className="absolute top-20 right-4 z-[2000] w-80 bg-white rounded-lg shadow-xl border border-slate-200 flex flex-col overflow-hidden max-h-[60vh]">
+          <div className="bg-[#8B5CF6] text-white px-4 py-3 flex items-center justify-between">
+            <h3 className="font-bold text-sm">Zone Analysis</h3>
+            <button 
+              onClick={() => {
+                setSelectedZoneParcels([]);
+                setSelectedZoneArea(null);
+                handleClearMeasure();
+              }}
+              className="text-white hover:bg-white/20 p-1 rounded transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[10px] uppercase font-bold text-slate-500 mb-0.5">Parcels Inside</p>
+              <p className="text-xl font-bold text-slate-800">{selectedZoneParcels.length}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-slate-500 mb-0.5">Zone Area</p>
+              <p className="text-xl font-bold text-slate-800">
+                {selectedZoneArea?.value.toFixed(2)} {selectedZoneArea?.unit === "hectares" ? "ha" : "sqm"}
+              </p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-2">
+            {selectedZoneParcels.map((p, idx) => (
+              <div 
+                key={p.ulpin || idx} 
+                className="bg-white border border-slate-200 p-2.5 rounded-md shadow-sm hover:border-[#8B5CF6] cursor-pointer transition-colors"
+                onClick={() => onSelectParcel && onSelectParcel(p)}
+              >
+                <div className="flex justify-between items-start mb-1">
+                  <span className="font-mono text-xs font-bold text-slate-700">{p.ulpin}</span>
+                  <span className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-semibold text-slate-600">S.No {p.surveyNumber}</span>
+                </div>
+                <p className="text-[11px] text-slate-600 line-clamp-1">{p.ownerName}</p>
+                <p className="text-[10px] text-slate-500 mt-1">{p.areaAcres} Acres • {p.currentUse}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Zone Info Card — shown when a location is clicked (instantly with frontend zone, then upgraded by backend) */}
+      {clickedLocation && !clickedLocation.loading && zoneData && (
+        <ZoneInfoCard
+          location={clickedLocation}
+          zoneData={zoneData}
+          analysisData={analysisData}
+          loading={zoneLoading}
+          onClose={() => setClickedLocation(null)}
+        />
+      )}
 
       {/* Attribute Filter & Data Table (Rendered outside MapContainer) */}
       <FeatureDataTable activeLayers={activeRegistryLayers} />

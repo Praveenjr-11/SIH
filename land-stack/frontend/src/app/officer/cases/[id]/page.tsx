@@ -26,6 +26,8 @@ import { useOfficerAuth } from "@/context/OfficerAuthContext";
 import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 import StatusBadge from "@/components/StatusBadge";
 import { fetchCaseById, DetailedLandCase } from "@/services/landCasesService";
+import CaseDepartmentTimeline from "@/components/gis/CaseDepartmentTimeline";
+import ConsolidatedReviewPanel from "@/components/gis/ConsolidatedReviewPanel";
 
 export default function OfficerCaseReviewPage() {
   const params = useParams();
@@ -34,8 +36,9 @@ export default function OfficerCaseReviewPage() {
   const caseId = params.id as string;
 
   const [caseData, setCaseData] = useState<DetailedLandCase | null>(null);
+  const [timelineData, setTimelineData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"gis" | "docs" | "valuation" | "risk" | "ai" | "report">("gis");
+  const [activeTab, setActiveTab] = useState<"timeline" | "gis" | "docs" | "valuation" | "risk" | "ai" | "report">("timeline");
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [justification, setJustification] = useState("");
   const [officerSignature, setOfficerSignature] = useState("");
@@ -51,6 +54,23 @@ export default function OfficerCaseReviewPage() {
       setLoading(true);
       const data = await fetchCaseById(caseId);
       setCaseData(data);
+      
+      const token = localStorage.getItem("landstack_officer_token");
+      try {
+        const timelineRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/cases/${caseId}/department-timeline`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          credentials: 'include'
+        });
+        if (timelineRes.ok) {
+          const tData = await timelineRes.json();
+          if (tData.success) {
+            setTimelineData(tData.timeline || []);
+          }
+        }
+      } catch (err) {
+        console.error("Timeline fetch error", err);
+      }
+
       if (officer) {
         setOfficerSignature(`${officer.name}, ${officer.role}`);
       }
@@ -67,12 +87,13 @@ export default function OfficerCaseReviewPage() {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("landstack_officer_token") : null;
-      const res = await fetch(`http://localhost:5000/api/v1/cases/${caseId}/${actionType}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/cases/${caseId}/${actionType}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
+        credentials: 'include',
         body: JSON.stringify({ justification, signature: officerSignature })
       });
 
@@ -235,6 +256,14 @@ export default function OfficerCaseReviewPage() {
         {/* WORKSPACE NAVIGATION TABS */}
         <div className="flex flex-wrap gap-1.5 bg-white p-1.5 rounded-lg border border-[#E3E8EF] shadow-xs text-xs font-semibold">
           <button
+            onClick={() => setActiveTab("timeline")}
+            className={`px-3 py-2 rounded-md transition-colors ${
+              activeTab === "timeline" ? "bg-[#1D5FD1] text-white" : "text-[#53627A] hover:text-[#102A43] hover:bg-[#F7F9FC]"
+            }`}
+          >
+            📋 Inter-Department Ledger
+          </button>
+          <button
             onClick={() => setActiveTab("gis")}
             className={`px-3 py-2 rounded-md transition-colors ${
               activeTab === "gis" ? "bg-[#1D5FD1] text-white" : "text-[#53627A] hover:text-[#102A43] hover:bg-[#F7F9FC]"
@@ -288,6 +317,33 @@ export default function OfficerCaseReviewPage() {
           <div className="p-3.5 rounded-lg bg-[#EDF7F2] border border-[#16845B] text-[#16845B] text-xs font-semibold flex items-center space-x-2">
             <CheckCircle2 className="w-4 h-4 shrink-0 text-[#16845B]" />
             <span>{actionStatus}</span>
+          </div>
+        )}
+
+        {/* TAB 0: TIMELINE & REVIEW */}
+        {activeTab === "timeline" && (
+          <div className="space-y-6">
+            <CaseDepartmentTimeline 
+              caseId={caseId} 
+              timeline={timelineData} 
+              officerRole={officer?.role} 
+              onRefresh={() => {
+                // simple reload
+                window.location.reload();
+              }} 
+            />
+            
+            <ConsolidatedReviewPanel 
+              caseId={caseId} 
+              overallStatus={c.status} 
+              timeline={timelineData} 
+              onDecision={async (verdict, remarks) => {
+                 setJustification(remarks);
+                 if(verdict === 'APPROVED') await handleOfficerAction('approve');
+                 else if(verdict === 'REJECTED') await handleOfficerAction('reject');
+                 else if(verdict === 'CLARIFICATION_REQUIRED') await handleOfficerAction('request-info');
+              }} 
+            />
           </div>
         )}
 

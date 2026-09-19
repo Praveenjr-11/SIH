@@ -5,9 +5,9 @@ import { useMapEvents, Polyline, Polygon as LeafletPolygon, CircleMarker, Toolti
 import * as turf from "@turf/turf";
 
 interface MeasureToolProps {
-  mode: "distance" | "area";
+  mode: "distance" | "area" | "select_zone";
   active: boolean;
-  onMeasurementComplete?: (value: number, unit: string) => void;
+  onMeasurementComplete?: (value: number, unit: string, geom?: any) => void;
 }
 
 export default function MeasureTool({ mode, active, onMeasurementComplete }: MeasureToolProps) {
@@ -35,7 +35,7 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
         } else {
           setMeasurement(`${lengthKm.toFixed(3)} km`);
         }
-      } else if (mode === "area" && pts.length >= 3) {
+      } else if ((mode === "area" || mode === "select_zone") && pts.length >= 3) {
         // Close the polygon for turf
         const turfCoords = pts.map(([lat, lng]) => [lng, lat]);
         turfCoords.push(turfCoords[0]); // close ring
@@ -51,7 +51,7 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
         }
 
         if (onMeasurementComplete) {
-          onMeasurementComplete(areaHectares, "hectares");
+          onMeasurementComplete(areaHectares, "hectares", mode === "select_zone" ? polygon : undefined);
         }
       }
     },
@@ -110,13 +110,13 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
       )}
 
       {/* Area: polygon */}
-      {mode === "area" && points.length >= 3 && (
+      {(mode === "area" || mode === "select_zone") && points.length >= 3 && (
         <LeafletPolygon
           positions={points}
           pathOptions={{
-            color: "#D9363E",
-            fillColor: "#D9363E",
-            fillOpacity: 0.15,
+            color: mode === "select_zone" ? "#8B5CF6" : "#D9363E",
+            fillColor: mode === "select_zone" ? "#8B5CF6" : "#D9363E",
+            fillOpacity: 0.25,
             weight: 2,
             dashArray: isFinished ? undefined : "8, 6",
           }}
@@ -135,7 +135,7 @@ export default function MeasureTool({ mode, active, onMeasurementComplete }: Mea
               {measurement}
               {!isFinished && (
                 <span className="block text-[9px] text-slate-300 font-normal mt-0.5">
-                  {mode === "distance" ? "Click to add points • Dbl-click to finish" : "Click vertices • Dbl-click to close"}
+                  {mode === "distance" ? "Click to add points • Dbl-click to finish" : mode === "select_zone" ? "Draw zone to select parcels • Dbl-click to close" : "Click vertices • Dbl-click to close"}
                 </span>
               )}
               {isFinished && (

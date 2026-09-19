@@ -59,6 +59,48 @@ export const STATUS_CONFIGS: Record<string, StatusConfig> = {
     textClass: "text-[#991B1B] font-bold",
     borderClass: "border-[#FECDD3]",
     dotClass: "bg-[#DC2626]"
+  },
+  CASE_CREATED: {
+    label: "CASE CREATED",
+    bgClass: "bg-[#F3F4F6]",
+    textClass: "text-[#374151] font-bold",
+    borderClass: "border-[#E5E7EB]",
+    dotClass: "bg-[#4B5563]"
+  },
+  REVENUE_VERIFICATION: {
+    label: "REVENUE VERIFICATION",
+    bgClass: "bg-[#EFF6FF]",
+    textClass: "text-[#1E40AF] font-bold",
+    borderClass: "border-[#BFDBFE]",
+    dotClass: "bg-[#1D5FD1]"
+  },
+  SURVEY_VERIFICATION: {
+    label: "SURVEY VERIFICATION",
+    bgClass: "bg-[#F5F3FF]",
+    textClass: "text-[#5B21B6] font-bold",
+    borderClass: "border-[#DDD6FE]",
+    dotClass: "bg-[#6D28D9]"
+  },
+  REGISTRATION_VERIFICATION: {
+    label: "REGISTRATION VERIFICATION",
+    bgClass: "bg-[#FAF5FF]",
+    textClass: "text-[#6B21A8] font-bold",
+    borderClass: "border-[#E9D5FF]",
+    dotClass: "bg-[#7E22CE]"
+  },
+  CONSOLIDATED_REVIEW: {
+    label: "CONSOLIDATED REVIEW",
+    bgClass: "bg-[#FEFCE8]",
+    textClass: "text-[#854D0E] font-bold",
+    borderClass: "border-[#FEF08A]",
+    dotClass: "bg-[#A16207]"
+  },
+  CLARIFICATION_REQUIRED: {
+    label: "CLARIFICATION REQUIRED",
+    bgClass: "bg-[#FEF2F2]",
+    textClass: "text-[#991B1B] font-bold",
+    borderClass: "border-[#FECDD3]",
+    dotClass: "bg-[#DC2626]"
   }
 };
 

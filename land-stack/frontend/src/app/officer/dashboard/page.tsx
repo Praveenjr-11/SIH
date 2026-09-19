@@ -24,10 +24,15 @@ import {
 import { useOfficerAuth } from "@/context/OfficerAuthContext";
 import OfficerProtectedGuard from "@/components/OfficerProtectedGuard";
 import StatusBadge from "@/components/StatusBadge";
+import { getDepartmentConfig } from "@/config/departmentDashboardConfig";
 
 export default function OfficerDashboardPage() {
   const router = useRouter();
   const { officer, logoutOfficer } = useOfficerAuth();
+
+  const [dashboardMetrics, setDashboardMetrics] = useState<any>(null);
+  const [isSeniorDashboard, setIsSeniorDashboard] = useState(false);
+  const [deptConfig, setDeptConfig] = useState<any>(null);
 
   const [metrics, setMetrics] = useState({
     total: 23,
@@ -49,34 +54,24 @@ export default function OfficerDashboardPage() {
       return;
     }
 
+    const config = getDepartmentConfig(officer.role);
+    setDeptConfig(config);
+
     async function loadDashboardData() {
       if (!officer) return;
       try {
-        const { fetchCasesList } = await import("@/services/landCasesService");
-        const allCases = await fetchCasesList();
-
-        // JURISDICTION FILTERING
-        const isStateLevel = officer.role === "SYSTEM_ADMIN" || officer.role === "STATE_OFFICER";
-        const isDistrictLevel = ["DISTRICT_COLLECTOR", "DRO", "RDO", "SURVEY_OFFICER", "TOWN_PLANNER", "AD_SURVEY"].includes(officer.role);
+        const { fetchCasesList, fetchDashboardMetrics } = await import("@/services/landCasesService");
         
-        const filteredCases = allCases.filter((c: any) => {
-          if (isStateLevel) return true;
-          if (isDistrictLevel) return c.district === officer.district;
-          return c.district === officer.district && c.taluk === officer.taluk;
-        });
+        // 1. Fetch Department Metrics
+        const metricsData = await fetchDashboardMetrics();
+        if (metricsData && metricsData.success) {
+          setDashboardMetrics(metricsData.metrics);
+          setIsSeniorDashboard(metricsData.isSenior);
+        }
 
-        // COMPUTE METRICS
-        const metricsData = {
-          total: filteredCases.length,
-          pending: filteredCases.filter((c: any) => c.status === "OFFICER_REVIEW").length,
-          underVerification: filteredCases.filter((c: any) => c.status === "DOCUMENT_VERIFICATION").length,
-          inspectionsPending: filteredCases.filter((c: any) => c.status === "FIELD_INSPECTION").length,
-          approved: filteredCases.filter((c: any) => c.status === "APPROVED").length,
-          rejected: filteredCases.filter((c: any) => c.status === "REJECTED").length
-        };
-
-        setCases(filteredCases);
-        setMetrics(metricsData);
+        // 2. Fetch Cases (filtered by backend already based on role)
+        const allCases = await fetchCasesList();
+        setCases(allCases);
 
       } catch (err) {
         console.warn("Failed to load dashboard data", err);
@@ -280,123 +275,197 @@ export default function OfficerDashboardPage() {
         {/* ================================================================= */}
         {/* FOUR PRIMARY KPI CARDS (Desktop: 4 in row, Tablet: 2x2, Mobile: 1)*/}
         {/* ================================================================= */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* CARD 1: Pending Approvals (Soft red/pink visual treatment) */}
-          <Link
-            href="/officer/cases?status=OFFICER_REVIEW"
-            className="group block p-4 rounded-xl bg-[#FFF9F9] border border-[#FADBD8] shadow-2xs hover:border-[#F1948A] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
-                  Pending Approvals
-                </span>
-                <div className="w-7 h-7 rounded-lg bg-rose-100/80 text-[#D9363E] flex items-center justify-center shrink-0 border border-rose-200/60">
-                  <Clock className="w-3.5 h-3.5" />
+        {/* ================================================================= */}
+        {/* FOUR PRIMARY KPI CARDS (Desktop: 4 in row, Tablet: 2x2, Mobile: 1)*/}
+        {/* ================================================================= */}
+        {!isSeniorDashboard ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* DEPARTMENT CARD 1: Pending Work */}
+            <div className="group block p-4 rounded-xl bg-[#FFF9F9] border border-[#FADBD8] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    {deptConfig?.departmentCode === 'REGISTRATION' ? 'Pending EC Clearance' : 
+                     deptConfig?.departmentCode === 'TOWN_PLANNING' ? 'Zoning Reviews' :
+                     deptConfig?.departmentCode === 'FOREST_ENVIRONMENT' ? 'Encroachment Checks' :
+                     'Pending Work'}
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-rose-100/80 text-[#D9363E] flex items-center justify-center shrink-0 border border-rose-200/60">
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.pendingWork || metrics.pending}
                 </div>
               </div>
-
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
-                {metrics.pending ?? 5}
+              <div className="flex items-center justify-between pt-2 border-t border-rose-200/60 text-[11px]">
+                <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
+                  <span className="w-2 h-2 rounded-full bg-[#D9363E] shrink-0"></span>
+                  <span>Requires action</span>
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-rose-200/60 text-[11px]">
-              <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
-                <span className="w-2 h-2 rounded-full bg-[#D9363E] shrink-0"></span>
-                <span>2 overdue • 3 due today</span>
-              </span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-rose-400 group-hover:text-[#D9363E] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-            </div>
-          </Link>
-
-          {/* CARD 2: Field Inspections (Soft orange visual treatment) */}
-          <Link
-            href="/officer/cases?status=FIELD_INSPECTION"
-            className="group block p-4 rounded-xl bg-[#FFFAF5] border border-[#FDEBD0] shadow-2xs hover:border-[#F8C471] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
-                  Field Inspections
-                </span>
-                <div className="w-7 h-7 rounded-lg bg-amber-100/80 text-[#E99A16] flex items-center justify-center shrink-0 border border-amber-200/60">
-                  <MapPin className="w-3.5 h-3.5" />
+            {/* DEPARTMENT CARD 2: Total Assigned */}
+            <div className="group block p-4 rounded-xl bg-[#F7FAFF] border border-[#D4E6F1] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    Total Assigned
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-blue-100/80 text-[#1D5FD1] flex items-center justify-center shrink-0 border border-blue-200/60">
+                    <FolderKanban className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.totalAssigned || metrics.total}
                 </div>
               </div>
-
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
-                {metrics.inspectionsPending ?? 5}
+              <div className="flex items-center justify-between pt-2 border-t border-blue-200/60 text-[11px]">
+                <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
+                  <span className="w-2 h-2 rounded-full bg-[#1D5FD1] shrink-0"></span>
+                  <span>All jurisdiction cases</span>
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 text-[11px]">
-              <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
-                <span className="w-2 h-2 rounded-full bg-[#E99A16] shrink-0"></span>
-                <span>2 scheduled today</span>
-              </span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-amber-400 group-hover:text-[#E99A16] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-            </div>
-          </Link>
-
-          {/* CARD 3: Documents to Verify (Soft blue visual treatment) */}
-          <Link
-            href="/officer/cases?status=DOCUMENT_VERIFICATION"
-            className="group block p-4 rounded-xl bg-[#F7FAFF] border border-[#D4E6F1] shadow-2xs hover:border-[#85C1E9] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
-                  Documents to Verify
-                </span>
-                <div className="w-7 h-7 rounded-lg bg-blue-100/80 text-[#1D5FD1] flex items-center justify-center shrink-0 border border-blue-200/60">
-                  <FileCheck className="w-3.5 h-3.5" />
+            {/* DEPARTMENT CARD 3: Completed Work */}
+            <div className="group block p-4 rounded-xl bg-[#F5FBF8] border border-[#D5F5E3] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    Completed Verifications
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100/80 text-[#16845B] flex items-center justify-center shrink-0 border border-emerald-200/60">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.completedWork || metrics.approved}
                 </div>
               </div>
-
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
-                {metrics.underVerification ?? 5}
+              <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 text-[11px]">
+                <span className="flex items-center gap-1 font-semibold text-[#16845B]">
+                  <ArrowUp className="w-3 h-3" />
+                  <span>Verified output</span>
+                </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-blue-200/60 text-[11px]">
-              <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
-                <span className="w-2 h-2 rounded-full bg-[#1D5FD1] shrink-0"></span>
-                <span>3 new submissions</span>
-              </span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-blue-400 group-hover:text-[#1D5FD1] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
-            </div>
-          </Link>
-
-          {/* CARD 4: Active Land Cases (Soft green visual treatment) */}
-          <Link
-            href="/officer/cases"
-            className="group block p-4 rounded-xl bg-[#F5FBF8] border border-[#D5F5E3] shadow-2xs hover:border-[#82E0AA] hover:shadow-xs transition-all h-[126px] flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
-                  Active Land Cases
-                </span>
-                <div className="w-7 h-7 rounded-lg bg-emerald-100/80 text-[#16845B] flex items-center justify-center shrink-0 border border-emerald-200/60">
-                  <FolderKanban className="w-3.5 h-3.5" />
+            {/* DEPARTMENT CARD 4: Escalations */}
+            <div className="group block p-4 rounded-xl bg-[#FFFAF5] border border-[#FDEBD0] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    Conflicts / Escalated
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-amber-100/80 text-[#E99A16] flex items-center justify-center shrink-0 border border-amber-200/60">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.escalated || metrics.rejected}
                 </div>
               </div>
-
-              <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
-                {metrics.total || 23}
+              <div className="flex items-center justify-between pt-2 border-t border-amber-200/60 text-[11px]">
+                <span className="flex items-center gap-1.5 font-medium text-[#53627A]">
+                  <span className="w-2 h-2 rounded-full bg-[#E99A16] shrink-0"></span>
+                  <span>Needs higher review</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* SENIOR CARD 1: Total Cases */}
+            <div className="group block p-4 rounded-xl bg-[#F7FAFF] border border-[#D4E6F1] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    District Total Cases
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-blue-100/80 text-[#1D5FD1] flex items-center justify-center shrink-0 border border-blue-200/60">
+                    <FolderKanban className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.totalCases || 0}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-emerald-200/60 text-[11px]">
-              <span className="flex items-center gap-1 font-semibold text-[#16845B]">
-                <ArrowUp className="w-3 h-3" />
-                <span>+4 from last month</span>
-              </span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400 group-hover:text-[#16845B] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+            {/* SENIOR CARD 2: District Pending Reviews */}
+            <div className="group block p-4 rounded-xl bg-[#FFF9F9] border border-[#FADBD8] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    Pending Reviews
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-rose-100/80 text-[#D9363E] flex items-center justify-center shrink-0 border border-rose-200/60">
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.pendingReviews || 0}
+                </div>
+              </div>
             </div>
-          </Link>
-        </div>
+
+            {/* SENIOR CARD 3: Escalated / Blocked */}
+            <div className="group block p-4 rounded-xl bg-[#FFFAF5] border border-[#FDEBD0] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    Blocked / Conflicts
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-amber-100/80 text-[#E99A16] flex items-center justify-center shrink-0 border border-amber-200/60">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.escalated || 0}
+                </div>
+              </div>
+            </div>
+
+            {/* SENIOR CARD 4: Completed Clearances */}
+            <div className="group block p-4 rounded-xl bg-[#F5FBF8] border border-[#D5F5E3] shadow-2xs transition-all h-[126px] flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#53627A] group-hover:text-[#102A43] transition-colors">
+                    Completed
+                  </span>
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100/80 text-[#16845B] flex items-center justify-center shrink-0 border border-emerald-200/60">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  </div>
+                </div>
+                <div className="text-2xl sm:text-3xl font-extrabold text-[#102A43] tracking-tight leading-none">
+                  {dashboardMetrics?.completed || 0}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isSeniorDashboard && dashboardMetrics?.departmentWiseCompletion && (
+          <div className="bg-white border border-[#E3E8EF] rounded-xl p-4 sm:p-5 space-y-3 shadow-2xs mt-4">
+            <h2 className="text-sm sm:text-base font-bold text-[#102A43]">Department-wise Verification Status</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              {dashboardMetrics.departmentWiseCompletion.map((dept: any, idx: number) => (
+                <div key={idx} className="bg-[#F8FAFD] p-3 rounded-lg border border-[#E3E8EF]">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold text-xs text-[#14213D]">{dept.department}</span>
+                    <span className="text-xs font-bold text-[#1D5FD1]">{dept.percentage}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
+                    <div className="bg-[#1D5FD1] h-2 rounded-full" style={{ width: `${dept.percentage}%` }}></div>
+                  </div>
+                  <div className="text-[10px] text-[#53627A]">{dept.pending} cases pending review</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ================================================================= */}
         {/* QUICK ACTIONS SECTION (Compact Card, 2 x 2 Grid, ~165-175px)      */}

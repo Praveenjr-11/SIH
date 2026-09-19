@@ -239,87 +239,135 @@ export default function ParcelInspector({ parcel, onClose }: ParcelInspectorProp
         {/* ================================================================= */}
         {activeTab === "overview" && (
           <div className="space-y-4">
-            <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
-              <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
-                  Administrative & Spatial Profile
-                </span>
-                <span className="text-[10px] font-mono text-[#53627A] bg-[#F7F9FC] border border-[#E3E8EF] px-2 py-0.5 rounded">
-                  ULPIN: {parcel.ulpin}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Village</span>
-                  <span className="font-bold text-[#102A43] text-sm">{parcel.village}</span>
-                </div>
-
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Taluk</span>
-                  <span className="font-bold text-[#102A43] text-sm">{parcel.taluk}</span>
-                </div>
-
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">District</span>
-                  <span className="font-bold text-[#102A43] text-sm">{parcel.district}</span>
-                </div>
-
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">State</span>
-                  <span className="font-bold text-[#102A43] text-sm">{parcel.state || "Tamil Nadu"}</span>
-                </div>
-
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Coordinates</span>
-                  <span className="font-mono font-bold text-[#102A43] text-xs">
-                    {centerLat.toFixed(6)}° N, {centerLng.toFixed(6)}° E
+            <div className="space-y-4">
+              {/* Boundary Information & Geometry Confidence Panel */}
+              <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+                <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#102A43] flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-[#1D5FD1]" />
+                    Boundary Information
                   </span>
                 </div>
-
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Property Type</span>
-                  <span className="font-bold text-[#102A43] text-xs">{parcel.landClassification || "Ryotwari Registered Land"}</span>
-                </div>
-
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Master Plan Zone</span>
-                  <span className="font-bold text-[#1D5FD1] text-xs">{zoning.zoneCategory}</span>
-                </div>
-
-                <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
-                  <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Building Permission</span>
-                  <span className="font-bold text-[#16845B] text-xs">{zoning.permissibleFSI} · Max {zoning.maxHeightMeters}m</span>
-                </div>
-
-                <div className="sm:col-span-2 bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] flex items-center justify-between">
-                  <div>
-                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Encumbrance</span>
-                    <span className="font-bold text-[#102A43] text-xs">{parcel.encumbranceStatus || "Clear Title"}</span>
+                
+                {(parcel as any)._identifyIntelligence?.boundaryStatus === 'UNAVAILABLE' ? (
+                  <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+                    <div className="flex items-start gap-2 text-orange-800">
+                      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                      <div className="text-xs">
+                        <span className="font-bold block mb-1">Cadastral Geometry Unavailable</span>
+                        <p>{(parcel as any)._identifyIntelligence.message}</p>
+                        <p className="mt-1 font-semibold">Do not rely on click coordinates for precise legal boundaries.</p>
+                        <button className="mt-2 px-3 py-1.5 bg-orange-600 text-white font-medium rounded shadow-sm hover:bg-orange-700 transition-colors">
+                          Request Manual Field Survey
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
-                    parcel.encumbranceStatus === "Disputed"
-                      ? "bg-rose-50 text-[#D9363E] border-rose-200"
-                      : "bg-emerald-50 text-[#16845B] border-emerald-200"
-                  }`}>
-                    {parcel.encumbranceStatus || "CLEAR TITLE"}
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Geometry Source</span>
+                      <span className="font-bold text-[#102A43] text-sm">{(parcel as any)._identifyIntelligence?.geometrySource || "Official Cadastral Layer"}</span>
+                    </div>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Calculated Area</span>
+                      <span className="font-bold text-[#102A43] text-sm">{(parcel as any)._identifyIntelligence?.areaSqM || Math.round(parcel.areaAcres * 4046.86)} sq.m</span>
+                    </div>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Perimeter</span>
+                      <span className="font-bold text-[#102A43] text-sm">{(parcel as any)._identifyIntelligence?.perimeterM || "N/A"} m</span>
+                    </div>
+                    <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                      <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Confidence</span>
+                      <span className="font-bold text-[#16845B] text-sm flex items-center gap-1"><CheckCircle2 className="w-3.5 h-3.5"/> High Precision</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Administrative & Spatial Profile (Land Records) */}
+              <div className="bg-white border border-[#E3E8EF] rounded-lg p-4 space-y-3 shadow-xs">
+                <div className="flex items-center justify-between border-b border-[#E3E8EF] pb-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#102A43]">
+                    Administrative & Spatial Profile
+                  </span>
+                  <span className="text-[10px] font-mono text-[#53627A] bg-[#F7F9FC] border border-[#E3E8EF] px-2 py-0.5 rounded">
+                    ULPIN: {parcel.ulpin}
                   </span>
                 </div>
-              </div>
-            </div>
 
-            {/* Cryptographic Audit Hash if Immutable */}
-            {(parcel.verificationStatus === "IMMUTABLE" || parcel.provenanceHash) && (
-              <div className="p-3 bg-[#F1F5FB] border border-[#E3E8EF] rounded-lg text-xs space-y-1">
-                <span className="font-bold text-[#102A43] flex items-center space-x-1.5">
-                  <Lock className="w-3.5 h-3.5 text-[#16845B]" />
-                  <span>Immutable DPI Ledger Hash</span>
-                </span>
-                <code className="block text-[10px] font-mono text-[#1D5FD1] break-all bg-white p-2 rounded border border-[#E3E8EF]">
-                  {parcel.provenanceHash || "SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
-                </code>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Village</span>
+                    <span className="font-bold text-[#102A43] text-sm">{parcel.village}</span>
+                  </div>
+
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Taluk</span>
+                    <span className="font-bold text-[#102A43] text-sm">{parcel.taluk}</span>
+                  </div>
+
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">District</span>
+                    <span className="font-bold text-[#102A43] text-sm">{parcel.district}</span>
+                  </div>
+
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">State</span>
+                    <span className="font-bold text-[#102A43] text-sm">{parcel.state || "Tamil Nadu"}</span>
+                  </div>
+
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Coordinates</span>
+                    <span className="font-mono font-bold text-[#102A43] text-xs">
+                      {centerLat.toFixed(6)}° N, {centerLng.toFixed(6)}° E
+                    </span>
+                  </div>
+
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Property Type</span>
+                    <span className="font-bold text-[#102A43] text-xs">{parcel.landClassification || "Ryotwari Registered Land"}</span>
+                  </div>
+
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Master Plan Zone</span>
+                    <span className="font-bold text-[#1D5FD1] text-xs">{zoning.zoneCategory}</span>
+                  </div>
+
+                  <div className="bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF]">
+                    <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Building Permission</span>
+                    <span className="font-bold text-[#16845B] text-xs">{zoning.permissibleFSI} · Max {zoning.maxHeightMeters}m</span>
+                  </div>
+
+                  <div className="sm:col-span-2 bg-[#F7F9FC] p-3 rounded-md border border-[#E3E8EF] flex items-center justify-between">
+                    <div>
+                      <span className="text-[#53627A] block text-[10px] font-semibold uppercase">Encumbrance</span>
+                      <span className="font-bold text-[#102A43] text-xs">{parcel.encumbranceStatus || "Clear Title"}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${
+                      parcel.encumbranceStatus === "Disputed"
+                        ? "bg-rose-50 text-[#D9363E] border-rose-200"
+                        : "bg-emerald-50 text-[#16845B] border-emerald-200"
+                    }`}>
+                      {parcel.encumbranceStatus || "CLEAR TITLE"}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Cryptographic Audit Hash if Immutable */}
+              {(parcel.verificationStatus === "IMMUTABLE" || parcel.provenanceHash) && (
+                <div className="p-3 bg-[#F1F5FB] border border-[#E3E8EF] rounded-lg text-xs space-y-1">
+                  <span className="font-bold text-[#102A43] flex items-center space-x-1.5">
+                    <Lock className="w-3.5 h-3.5 text-[#16845B]" />
+                    <span>Immutable DPI Ledger Hash</span>
+                  </span>
+                  <code className="block text-[10px] font-mono text-[#1D5FD1] break-all bg-white p-2 rounded border border-[#E3E8EF]">
+                    {parcel.provenanceHash || "SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+                  </code>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

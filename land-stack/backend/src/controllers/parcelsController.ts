@@ -233,3 +233,98 @@ export const getParcelGeoJSON = async (req: Request, res: Response) => {
   res.json({ type: 'FeatureCollection', features });
 };
 
+export const identifyParcel = async (req: Request, res: Response) => {
+  const { lat, lng } = req.query;
+
+  if (!lat || !lng) {
+    return res.status(400).json({ success: false, error: 'Missing lat or lng parameters' });
+  }
+
+  const latitude = parseFloat(lat as string);
+  const longitude = parseFloat(lng as string);
+
+  if (isNaN(latitude) || isNaN(longitude)) {
+    return res.status(400).json({ success: false, error: 'Invalid lat or lng' });
+  }
+
+  try {
+    const result = await queryPostGIS(`
+      SELECT 
+        id, ulpin, survey_number, village_name, taluk_name, district_name, state_name,
+        area_acres, area_sq_meters, land_classification, current_use,
+        owner_name, owner_aadhaar_hash, registration_doc_no, registration_date,
+        encumbrance_status, verification_status, provenance_hash,
+        zoning_details_json, property_tax_details_json, court_case_details_json,
+        gsi_geology_json, digital_facets_json,
+        ST_AsGeoJSON(geom_text) as geometry,
+        ST_Area(geom_text::geography) as computed_area_sq_m,
+        ST_Perimeter(geom_text::geography) as computed_perimeter_m
+      FROM parcels
+      WHERE ST_Contains(geom_text, ST_SetSRID(ST_Point($1, $2), 4326))
+      LIMIT 1`,
+      [longitude, latitude]
+    );
+
+    if (result && result.rows && result.rows.length > 0) {
+      const row = result.rows[0];
+      const parcel = rowToParcel(row);
+      return res.json({
+        success: true,
+        parcelStatus: 'IDENTIFIED',
+        boundaryStatus: 'AVAILABLE',
+        geometrySource: 'Official Cadastral Layer',
+        areaSqM: row.computed_area_sq_m,
+        perimeterM: row.computed_perimeter_m,
+        requiresSurveyVerification: false,
+        parcel
+      });
+    }
+  } catch (err) {
+    // PostGIS error or missing, fallback to JS math on parcelsData
+  }
+
+  // Fallback: simple point in bounding box / polygon check
+  // Since coordinates in mock data are [ [ [lng, lat], ... ] ] or similar
+  let foundFallback = null;
+  for (const p of parcelsData) {
+    if (p.coordinates && p.coordinates.length > 0) {
+      const coords = p.coordinates[0];
+      let inside = false;
+      for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+        const xi = coords[i][0], yi = coords[i][1];
+        const xj = coords[j][0], yj = coords[j][1];
+        const intersect = ((yi > latitude) !== (yj > latitude)) &&
+            (longitude < (xj - xi) * (latitude - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      if (inside) {
+        foundFallback = p;
+        break;
+      }
+    }
+  }
+
+  if (foundFallback) {
+    return res.json({
+      success: true,
+      parcelStatus: 'IDENTIFIED',
+      boundaryStatus: 'AVAILABLE',
+      geometrySource: 'Mock Fallback Layer',
+      areaSqM: foundFallback.areaSqMeters || Math.round(foundFallback.areaAcres * 4046.86),
+      perimeterM: Math.round(Math.sqrt(foundFallback.areaAcres * 4046.86) * 4),
+      requiresSurveyVerification: false,
+      parcel: foundFallback
+    });
+  }
+
+  return res.json({
+    success: true,
+    parcelStatus: 'IDENTIFIED',
+    boundaryStatus: 'UNAVAILABLE',
+    geometrySource: null,
+    areaSqM: null,
+    perimeterM: null,
+    requiresSurveyVerification: true,
+    message: 'Official cadastral geometry is unavailable for this location.'
+  });
+};

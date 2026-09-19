@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllParcels, getParcelByUlpin, getParcelGeoJSON } from '../controllers/parcelsController.js';
+import { getAllParcels, getParcelByUlpin, getParcelGeoJSON, identifyParcel } from '../controllers/parcelsController.js';
 import { authenticateOfficerToken, requireRole, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { advanceVerificationStatus, VERIFICATION_STATES } from '../services/verificationService.js';
 import { Response } from 'express';
@@ -9,6 +9,7 @@ const router = Router();
 // Public endpoints (citizens can access — rate-limited in server.ts)
 router.get('/', getAllParcels);
 router.get('/geojson', getParcelGeoJSON);
+router.get('/identify', identifyParcel);
 router.get('/:ulpin', getParcelByUlpin);
 
 /**

@@ -79,7 +79,8 @@ export async function fetchCasesList(): Promise<LandCaseItem[]> {
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {})
-      }
+      },
+      credentials: "include"
     });
 
     if (!res.ok) {
@@ -118,6 +119,32 @@ export async function fetchCasesList(): Promise<LandCaseItem[]> {
   }
 }
 
+export async function fetchDashboardMetrics(): Promise<any> {
+  try {
+    const token = typeof window !== "undefined" ? localStorage.getItem("landstack_officer_token") : null;
+    const res = await fetch(`${API_BASE_URL}/cases/dashboard-metrics`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      credentials: "include"
+    });
+
+    if (!res.ok) {
+      throw new Error(`API Error: ${res.status}`);
+    }
+
+    const data = await res.json();
+    if (data.success) {
+      return data;
+    }
+    return null;
+  } catch (err) {
+    console.warn("Backend API fetch for dashboard metrics failed:", err);
+    return null;
+  }
+}
+
 export async function fetchCaseById(id: string): Promise<DetailedLandCase | null> {
   try {
     const token = typeof window !== "undefined" ? localStorage.getItem("landstack_officer_token") : null;
@@ -125,7 +152,8 @@ export async function fetchCaseById(id: string): Promise<DetailedLandCase | null
       headers: {
         "Content-Type": "application/json",
         ...(token ? { Authorization: `Bearer ${token}` } : {})
-      }
+      },
+      credentials: "include"
     });
 
     if (!res.ok) {

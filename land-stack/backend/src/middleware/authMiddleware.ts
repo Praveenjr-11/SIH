@@ -37,7 +37,13 @@ export function verifyOfficerToken(token: string): AuthenticatedOfficerPayload |
 
 export function authenticateOfficerToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization || (req.headers['x-officer-token'] as string);
-  if (!authHeader) {
+  let token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
+
+  if (!token && req.cookies && req.cookies.officer_token) {
+    token = req.cookies.officer_token;
+  }
+
+  if (!token) {
     return res.status(401).json({
       success: false,
       error: {
@@ -49,7 +55,6 @@ export function authenticateOfficerToken(req: AuthenticatedRequest, res: Respons
     });
   }
 
-  const token = authHeader.startsWith('Bearer ') ? authHeader.substring(7) : authHeader;
   const decoded = verifyOfficerToken(token);
 
   if (!decoded) {

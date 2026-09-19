@@ -101,7 +101,8 @@ export async function fetchMutations() {
   try {
     const res = await fetch(`${API_BASE}/mutations`, { 
       headers: getAuthHeader(),
-      cache: 'no-store' 
+      cache: 'no-store',
+      credentials: 'include'
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -116,7 +117,8 @@ export async function fetchAnalytics() {
   try {
     const res = await fetch(`${API_BASE}/analytics/dashboard`, { 
       headers: getAuthHeader(),
-      cache: 'no-store' 
+      cache: 'no-store',
+      credentials: 'include'
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -177,7 +179,8 @@ export async function fetchArchitectureSpecs() {
   try {
     const res = await fetch(`${API_BASE}/analytics/architecture-specs`, { 
       headers: getAuthHeader(),
-      cache: 'no-store' 
+      cache: 'no-store',
+      credentials: 'include'
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();

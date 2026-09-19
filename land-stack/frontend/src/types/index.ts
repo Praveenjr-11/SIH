@@ -149,3 +149,34 @@ export interface LandAnalytics {
   caseStatusBreakdown?: { status: string; label: string; count: number; percentage: number; color: string }[];
 }
 
+export type CaseStatus = 
+  | 'NEW' | 'CASE_CREATED' | 'PARCEL_IDENTIFIED'
+  | 'REVENUE_VERIFICATION' | 'SURVEY_VERIFICATION' | 'REGISTRATION_VERIFICATION'
+  | 'GOVERNMENT_LAND_CHECK' | 'PLANNING_AND_CONSTRAINT_CHECK' | 'FIELD_INSPECTION'
+  | 'CONSOLIDATED_REVIEW' | 'OFFICER_RECOMMENDATION' | 'CLARIFICATION_REQUIRED'
+  | 'APPROVED' | 'REJECTED' | 'CLOSED';
+
+export type DepartmentVerificationStatus = 
+  | 'PENDING' | 'IN_PROGRESS' | 'VERIFIED' | 'CONFLICT_FOUND' | 'DOCUMENT_REQUIRED' 
+  | 'FIELD_INSPECTION_REQUIRED' | 'SOURCE_UNAVAILABLE' | 'ACCESS_RESTRICTED' 
+  | 'NOT_APPLICABLE' | 'REJECTED';
+
+export interface VerificationFinding {
+  field: string;
+  status: 'MATCHED' | 'CONFLICT' | 'UNVERIFIED';
+  source: string;
+  message?: string;
+}
+
+export interface VerificationResult {
+  id?: number;
+  caseId: string | number;
+  department: string;
+  verificationStatus: DepartmentVerificationStatus;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  findings?: VerificationFinding[];
+  evidenceIds?: string[];
+  remarks?: string;
+  requiresFurtherReview?: boolean;
+}

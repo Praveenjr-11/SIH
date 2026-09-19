@@ -81,7 +81,7 @@ export default function OfficerCasesPage() {
       try {
         const data = await fetchCasesList();
         
-        const isStateLevel = officer.role === "SYSTEM_ADMIN" || officer.role === "STATE_OFFICER";
+        const isStateLevel = officer.role === "SYSTEM_ADMIN" || officer.role === "STATE_OFFICER" || officer.role === "SUPER_ADMIN";
         const isDistrictLevel = ["DISTRICT_COLLECTOR", "DRO", "RDO", "SURVEY_OFFICER", "TOWN_PLANNER", "AD_SURVEY"].includes(officer.role);
         
         const authorizedCases = data.filter((c: any) => {
@@ -121,7 +121,7 @@ export default function OfficerCasesPage() {
 
   // ACTIVE FILTER COUNT & DETECTOR
   const isFiltered = useMemo(() => {
-    const isStateLevel = officer?.role === "SYSTEM_ADMIN" || officer?.role === "STATE_OFFICER";
+    const isStateLevel = officer?.role === "SYSTEM_ADMIN" || officer?.role === "STATE_OFFICER" || officer?.role === "SUPER_ADMIN";
     const defaultDistrict = isStateLevel ? "ALL_DISTRICTS" : (officer?.district || "ALL_DISTRICTS");
     return (
       searchTerm.trim() !== "" ||
@@ -139,7 +139,7 @@ export default function OfficerCasesPage() {
   const handleResetFilters = () => {
     setSearchTerm("");
     setStatusFilter("ALL");
-    const isStateLevel = officer?.role === "SYSTEM_ADMIN" || officer?.role === "STATE_OFFICER";
+    const isStateLevel = officer?.role === "SYSTEM_ADMIN" || officer?.role === "STATE_OFFICER" || officer?.role === "SUPER_ADMIN";
     setDistrictFilter(isStateLevel ? "ALL_DISTRICTS" : (officer?.district || "ALL_DISTRICTS"));
     setRiskFilter("ALL_RISK");
     setCaseTypeFilter("ALL_TYPES");
@@ -507,7 +507,7 @@ export default function OfficerCasesPage() {
               <select
                 value={districtFilter}
                 onChange={(e) => setDistrictFilter(e.target.value)}
-                disabled={!(officer?.role === "SYSTEM_ADMIN" || officer?.role === "STATE_OFFICER")}
+                disabled={!(officer?.role === "SYSTEM_ADMIN" || officer?.role === "STATE_OFFICER" || officer?.role === "SUPER_ADMIN")}
                 className="w-full bg-[#F8FAFD] border border-[#E3E8EF] rounded-md px-2.5 py-2 text-xs text-[#102A43] focus:border-[#1D5FD1] focus:outline-none cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
               >
                 {TN_DISTRICTS.map((dist) => (

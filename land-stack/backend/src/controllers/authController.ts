@@ -16,149 +16,82 @@ export const AUTH_ROLES = [
   { role_code: 'SYSTEM_ADMIN', name: 'System Administrator', rank: 10 }
 ];
 
-/**
- * Demo credential store — bcrypt-hashed passwords for hackathon demo.
- * In production this would be an `officers` table with hashed passwords.
- * Hash is bcrypt of 'demo1234' with saltRounds=10.
- *
- * To regenerate: await bcrypt.hash('demo1234', 10)
- */
-const DEMO_PASSWORD_HASH = '$2b$10$lESBG.dAtCsKg9dldTOfPO5oORPMtroInObcALfdfrNAL7Un1TGra';
-
-/** Maps partial email patterns to pre-hashed credentials for demo login */
-const OFFICER_CREDENTIALS: Record<string, string> = {
-  default: DEMO_PASSWORD_HASH,
-};
-
-async function verifyOfficerPassword(password: string): Promise<boolean> {
-  if (!password) return false;
-  try {
-    // All demo officers share the same demo password: 'demo1234'
-    return await bcrypt.compare(password, DEMO_PASSWORD_HASH);
-  } catch {
-    return false;
-  }
-}
+import { queryPostGIS } from '../gis/config/db.js';
 
 export async function loginOfficer(req: Request, res: Response) {
   try {
-    const { email, role, district, taluk, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!email && !role) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Missing required credentials: email or role'
+        error: 'Missing required credentials: email and password'
       });
     }
 
-    // Verify password via bcrypt
-    const passwordValid = await verifyOfficerPassword(password);
+    const dbRes = await queryPostGIS(`SELECT * FROM officer_accounts WHERE email = $1 OR employee_code = $1 LIMIT 1`, [email]);
+    if (dbRes.rows.length === 0) {
+      return res.status(401).json({
+        success: false,
+        error: 'UNAUTHORIZED: Invalid credentials.'
+      });
+    }
+
+    const account = dbRes.rows[0];
+
+    if (account.account_status !== 'ACTIVE') {
+      return res.status(403).json({
+        success: false,
+        error: `FORBIDDEN: Account is ${account.account_status}. Please contact system administrator.`
+      });
+    }
+
+    const passwordValid = await bcrypt.compare(password, account.password_hash);
     if (!passwordValid) {
       return res.status(401).json({
         success: false,
-        error: 'UNAUTHORIZED: Invalid credentials. Use demo password: demo1234'
+        error: 'UNAUTHORIZED: Invalid credentials.'
       });
     }
 
-    const selectedDistrict = district || 'Kanchipuram';
-    const selectedTaluk = taluk || 'Sriperumbudur';
-    const assigned: any = getOfficersForLocation(selectedDistrict, selectedTaluk) || {};
+    // Update last_login_at
+    await queryPostGIS(`UPDATE officer_accounts SET last_login_at = NOW() WHERE id = $1`, [account.id]);
 
-    let officerName = 'Thiru K. Muthusamy, IAS';
-    let officerDesignation = 'District Collector & District Magistrate';
-    let officerRole = role; // Do not default yet
-    let rank = 2;
-    let badgeNo = 'TN-IAS-2012-042';
-
-    if (officerRole === 'DISTRICT_COLLECTOR' || email?.includes('collr') || (!officerRole && !email)) {
-      officerName = assigned.collector?.officerName || 'Thiru K. Muthusamy, IAS';
-      officerDesignation = assigned.collector?.designation || 'District Collector & District Magistrate';
-      officerRole = 'DISTRICT_COLLECTOR';
-      rank = 2;
-      badgeNo = 'TN-IAS-2012-042';
-    } else if (officerRole === 'DRO' || email?.includes('dro')) {
-      officerName = assigned.dro?.officerName || 'District Revenue Officer';
-      officerDesignation = assigned.dro?.designation || 'District Revenue Officer';
-      officerRole = 'DRO';
-      rank = 3;
-      badgeNo = 'TN-DRO-2015-108';
-    } else if (officerRole === 'RDO' || email?.includes('rdo')) {
-      officerName = assigned.rdo?.officerName || 'Revenue Divisional Officer';
-      officerDesignation = assigned.rdo?.designation || 'Revenue Divisional Officer';
-      officerRole = 'RDO';
-      rank = 4;
-      badgeNo = 'TN-RDO-2018-074';
-    } else if (officerRole === 'TAHSILDAR' || email?.includes('tahsildar')) {
-      officerName = assigned.tahsildar?.officerName || 'Taluk Tahsildar';
-      officerDesignation = assigned.tahsildar?.designation || 'Taluk Tahsildar';
-      officerRole = 'TAHSILDAR';
-      rank = 5;
-      badgeNo = 'TN-TAH-2020-312';
-    } else if (officerRole === 'SURVEY_OFFICER' || email?.includes('survey')) {
-      officerName = assigned.surveyAD?.officerName || 'Er. M. Gunasekar';
-      officerDesignation = assigned.surveyAD?.designation || 'Assistant Director of Survey';
-      officerRole = 'SURVEY_OFFICER';
-      rank = 9;
-      badgeNo = 'TN-SURV-2017-089';
-    } else if (officerRole === 'SUB_REGISTRAR' || email?.includes('sro') || email?.includes('reg')) {
-      officerName = assigned.sro?.officerName || 'Sub-Registrar';
-      officerDesignation = assigned.sro?.designation || 'Sub-Registrar';
-      officerRole = 'SUB_REGISTRAR';
-      rank = 6;
-      badgeNo = 'TN-REG-2019-112';
-    } else if (officerRole === 'TOWN_PLANNER' || email?.includes('dtcp')) {
-      officerName = assigned.dtcpOfficer?.officerName || 'Er. R. Anitha';
-      officerDesignation = assigned.dtcpOfficer?.designation || 'Senior Town Planning Officer';
-      officerRole = 'TOWN_PLANNER';
-      rank = 7;
-      badgeNo = 'TN-DTCP-2016-045';
-    } else if (officerRole === 'EXECUTIVE_ENGINEER_WRD' || email?.includes('wrd') || email?.includes('pwd')) {
-      officerName = assigned.wrdEE?.officerName || 'Executive Engineer (WRD)';
-      officerDesignation = assigned.wrdEE?.designation || 'Executive Engineer (WRD)';
-      officerRole = 'EXECUTIVE_ENGINEER_WRD';
-      rank = 8;
-      badgeNo = 'TN-WRD-2014-088';
-    } else if (officerRole === 'DISTRICT_FOREST_OFFICER' || email?.includes('dfo') || email?.includes('forest')) {
-      officerName = assigned.forestOfficer?.officerName || 'District Forest Officer';
-      officerDesignation = assigned.forestOfficer?.designation || 'District Forest Officer';
-      officerRole = 'DISTRICT_FOREST_OFFICER';
-      rank = 6;
-      badgeNo = 'TN-IFS-2015-021';
-    } else if (officerRole === 'MUNICIPAL_COMMISSIONER' || email?.includes('commr') || email?.includes('bdo') || email?.includes('maws')) {
-      officerName = assigned.mawsOfficer?.officerName || 'Municipal Commissioner / BDO';
-      officerDesignation = assigned.mawsOfficer?.designation || 'Municipal Commissioner / BDO';
-      officerRole = 'MUNICIPAL_COMMISSIONER';
-      rank = 6;
-      badgeNo = 'TN-MAWS-2018-092';
-    } else {
-      officerName = assigned.collector?.officerName || 'Thiru K. Muthusamy, IAS';
-      officerRole = 'DISTRICT_COLLECTOR'; // Fallback if no match
-    }
+    // Rank heuristic based on role for backward compatibility
+    let rank = 5;
+    const roleMatch = AUTH_ROLES.find(r => r.role_code === account.role);
+    if (roleMatch) rank = roleMatch.rank;
 
     const payload = {
-      id: 101,
-      officer_code: `OFF-${rank}01`,
-      full_name: officerName,
-      email: email || `${officerRole.toLowerCase()}.${selectedTaluk.toLowerCase()}@tn.gov.in`,
-      role: officerRole,
+      id: account.id, // Using UUID or internal ID
+      officer_code: account.employee_code,
+      full_name: account.full_name,
+      email: account.email,
+      role: account.role,
       level_rank: rank,
-      district: selectedDistrict,
-      taluk: selectedTaluk,
+      district: account.district,
+      taluk: account.taluk,
       state: 'Tamil Nadu'
     };
 
-    // Real JWT — cryptographically signed with HS256, not a raw base64 blob
     const token = signOfficerToken(payload);
+
+    res.cookie('officer_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
 
     return res.json({
       success: true,
       message: 'Officer authenticated successfully',
-      token,
+      token, // Also return for backward compatibility if needed temporarily
       officer: {
         ...payload,
-        badge_number: badgeNo,
-        designation: officerDesignation,
-        department: 'Revenue & Disaster Management Department'
+        badge_number: account.employee_code,
+        designation: account.designation,
+        department: account.department
       }
     });
 
@@ -183,8 +116,39 @@ export async function getCurrentOfficerProfile(req: AuthenticatedRequest, res: R
 }
 
 export async function logoutOfficer(req: Request, res: Response) {
+  res.clearCookie('officer_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  });
   return res.json({
     success: true,
     message: 'Officer logged out successfully. Token invalidated.'
   });
+}
+
+export async function changePassword(req: AuthenticatedRequest, res: Response) {
+  try {
+    const officer = req.officer;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!officer || !currentPassword || !newPassword) {
+      return res.status(400).json({ success: false, error: 'Missing parameters' });
+    }
+
+    const dbRes = await queryPostGIS(`SELECT password_hash FROM officer_accounts WHERE id = $1`, [officer.id]);
+    if (dbRes.rows.length === 0) return res.status(404).json({ success: false, error: 'Account not found' });
+
+    const passwordValid = await bcrypt.compare(currentPassword, dbRes.rows[0].password_hash);
+    if (!passwordValid) {
+      return res.status(401).json({ success: false, error: 'Current password is incorrect' });
+    }
+
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await queryPostGIS(`UPDATE officer_accounts SET password_hash = $1 WHERE id = $2`, [newHash, officer.id]);
+
+    return res.json({ success: true, message: 'Password updated successfully' });
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Failed to update password', details: err.message });
+  }
 }

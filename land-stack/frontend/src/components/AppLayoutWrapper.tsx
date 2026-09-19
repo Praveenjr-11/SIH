@@ -56,6 +56,8 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
   // (On map page, opening sidebar opens as overlay drawer so the map remains 100% full width and aligned)
   const applyDesktopPadding = showSidebar && sidebarOpen && !isMapPage;
 
+  const isLoginPage = pathname === "/officer/login";
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F7F9FC] overflow-x-hidden">
       {showSidebar && (
@@ -65,10 +67,12 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
         />
       )}
       <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${applyDesktopPadding ? "md:pl-[228px]" : "pl-0"}`}>
-        <Navbar 
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-          showSidebarToggle={showSidebar} 
-        />
+        {!isLoginPage && (
+          <Navbar 
+            onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+            showSidebarToggle={showSidebar} 
+          />
+        )}
         <main className={`flex-1 bg-[#F7F9FC] flex flex-col ${isMapPage ? "h-[calc(100vh-64px)] min-h-[calc(100vh-64px)] overflow-hidden" : ""}`}>
           {children}
         </main>

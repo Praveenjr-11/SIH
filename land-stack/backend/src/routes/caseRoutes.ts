@@ -9,7 +9,8 @@ import {
   requestInfoCase,
   requestInspectionCase,
   getCaseDepartmentTimeline,
-  submitCaseDepartmentReview
+  submitCaseDepartmentReview,
+  getDashboardMetrics
 } from '../controllers/caseController.js';
 import { authenticateOfficerToken, enforceJurisdiction } from '../middleware/authMiddleware.js';
 
@@ -17,6 +18,7 @@ const router = Router();
 
 router.post('/', authenticateOfficerToken as any, enforceJurisdiction as any, createLandCase as any);
 router.get('/', authenticateOfficerToken as any, getCasesList as any);
+router.get('/dashboard-metrics', authenticateOfficerToken as any, getDashboardMetrics as any);
 router.get('/:id', authenticateOfficerToken as any, getCaseDetails as any);
 router.get('/:id/department-timeline', authenticateOfficerToken as any, getCaseDepartmentTimeline as any);
 router.post('/:id/department-review', authenticateOfficerToken as any, enforceJurisdiction as any, submitCaseDepartmentReview as any);

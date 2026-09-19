@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import parcelsRouter from './routes/parcels.js';
 import gsiRouter from './routes/gsi.js';
 import mutationsRouter from './routes/mutations.js';
@@ -14,6 +15,7 @@ import reportRouter from './routes/reportRoutes.js';
 import healthRouter from './routes/health.js';
 import docsRouter from './routes/docs.js';
 import officersRouter from './routes/officers.js';
+import adminRouter from './routes/adminRoutes.js';
 import landRouter from './routes/land.js';
 import governmentRouter from './routes/government.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
@@ -34,12 +36,14 @@ app.use(structuredLoggerMiddleware);
 
 // Middleware
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Officer-Token']
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Public Spatial & System Health Endpoints (Unrestricted)
 app.use('/api/gis', phase4GisRouter);
@@ -70,6 +74,7 @@ app.use('/api/v1/cases', authenticateOfficerToken as any, caseRouter);
 app.use('/api/v1/reports', authenticateOfficerToken as any, reportRouter);
 app.use('/api/v1/analytics', authenticateOfficerToken as any, analyticsRouter);
 app.use('/api/v1/mutations', authenticateOfficerToken as any, mutationsRouter);
+app.use('/api/v1/admin', adminRouter);
 
 // Aliases for officer endpoints
 app.use('/api/officer/dashboard', authenticateOfficerToken as any, dashboardRouter);

@@ -22,8 +22,8 @@ interface MapControlsProps {
   currentBasemap?: BasemapType;
   onSelectBasemap?: (basemap: BasemapType) => void;
   onToggleBasemap?: () => void;
-  measureMode: "off" | "distance" | "area";
-  onSetMeasureMode: (mode: "off" | "distance" | "area") => void;
+  measureMode: "off" | "distance" | "area" | "select_zone";
+  onSetMeasureMode: (mode: "off" | "distance" | "area" | "select_zone") => void;
   onClearMeasure: () => void;
   onGoToPoint?: (lat: number, lng: number) => void;
   isLayerPanelOpen?: boolean;
@@ -86,7 +86,7 @@ export default function MapControls({
     }
   };
 
-  const handleMeasureToggle = (mode: "distance" | "area") => {
+  const handleMeasureToggle = (mode: "distance" | "area" | "select_zone") => {
     if (measureMode === mode) {
       onSetMeasureMode("off");
     } else {
@@ -175,7 +175,7 @@ export default function MapControls({
           >
             <Ruler className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">
-              {measureMode === "distance" ? "Distance" : measureMode === "area" ? "Area" : "Measure"}
+              {measureMode === "distance" ? "Distance" : measureMode === "area" ? "Area" : measureMode === "select_zone" ? "Zone Select" : "Measure"}
             </span>
           </button>
 
@@ -218,6 +218,17 @@ export default function MapControls({
             >
               <span>📐</span>
               <span>Area</span>
+            </button>
+            <button
+              onClick={() => handleMeasureToggle("select_zone")}
+              className={`w-full px-2.5 py-1.5 rounded-md text-left transition-colors flex items-center space-x-2 ${
+                measureMode === "select_zone"
+                  ? "bg-[#F1F5FB] text-[#1D5FD1] font-bold"
+                  : "text-[#102A43] hover:bg-[#F7F9FC]"
+              }`}
+            >
+              <span>📍</span>
+              <span>Zone Select</span>
             </button>
           </div>
         )}
